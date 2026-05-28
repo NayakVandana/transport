@@ -1,26 +1,130 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { formatMoney } from '@/lib/freightCalculator';
+import type { FreightInvoice } from '@/types/transport';
+import { Head, Link } from '@inertiajs/react';
 
-export default function Dashboard() {
+interface Props {
+    stats: {
+        customers: number;
+        invoices: number;
+        outstanding: number;
+        has_company: boolean;
+    };
+    recentInvoices: (FreightInvoice & { customer?: { name: string } })[];
+}
+
+export default function Dashboard({ stats, recentInvoices }: Props) {
     return (
         <AuthenticatedLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Dashboard
+                    Transport Dashboard
                 </h2>
             }
         >
             <Head title="Dashboard" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            You're logged in!
+            <div className="py-8">
+                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+                    {!stats.has_company && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                            Set up your{' '}
+                            <Link
+                                href={route('company.edit')}
+                                className="font-semibold underline"
+                            >
+                                company profile
+                            </Link>{' '}
+                            before creating tax invoices.
                         </div>
+                    )}
+
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard label="Customers" value={String(stats.customers)} />
+                        <StatCard label="Invoices" value={String(stats.invoices)} />
+                        <StatCard
+                            label="Outstanding Balance"
+                            value={`₹ ${formatMoney(stats.outstanding)}`}
+                        />
+                        <div className="flex items-center rounded-lg bg-white p-5 shadow">
+                            <Link
+                                href={route('invoices.create')}
+                                className="w-full rounded-md bg-indigo-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-indigo-700"
+                            >
+                                New Tax Invoice
+                            </Link>
+                        </div>
+                    </div>
+
+                    <div className="overflow-hidden rounded-lg bg-white shadow">
+                        <div className="border-b px-6 py-4">
+                            <h3 className="font-semibold text-gray-800">Recent Invoices</h3>
+                        </div>
+                        <table className="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                        Bill No
+                                    </th>
+                                    <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                        Customer
+                                    </th>
+                                    <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                        Date
+                                    </th>
+                                    <th className="px-6 py-3 text-right font-medium text-gray-500">
+                                        Balance
+                                    </th>
+                                    <th className="px-6 py-3 text-right font-medium text-gray-500">
+                                        Status
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {recentInvoices.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                                            No invoices yet.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    recentInvoices.map((inv) => (
+                                        <tr key={inv.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-3">
+                                                <Link
+                                                    href={route('invoices.show', inv.id)}
+                                                    className="text-indigo-600 hover:underline"
+                                                >
+                                                    {inv.bill_number}
+                                                </Link>
+                                            </td>
+                                            <td className="px-6 py-3">
+                                                {inv.customer?.name}
+                                            </td>
+                                            <td className="px-6 py-3">{inv.invoice_date}</td>
+                                            <td className="px-6 py-3 text-right">
+                                                ₹ {formatMoney(inv.balance_amount)}
+                                            </td>
+                                            <td className="px-6 py-3 text-right capitalize">
+                                                {inv.status}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </AuthenticatedLayout>
+    );
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-lg bg-white p-5 shadow">
+            <p className="text-sm text-gray-500">{label}</p>
+            <p className="mt-1 text-2xl font-semibold text-gray-900">{value}</p>
+        </div>
     );
 }
