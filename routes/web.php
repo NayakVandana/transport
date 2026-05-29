@@ -52,6 +52,10 @@ Route::get('/expenses', fn () => Inertia::render('Expenses/Index'))->name('expen
 Route::get('/expenses/create', fn () => Inertia::render('Expenses/Form'))->name('expenses.create');
 Route::get('/expenses/{id}/edit', fn (int $id) => Inertia::render('Expenses/Form', ['expenseId' => $id]))->name('expenses.edit');
 
+Route::get('/payments', fn () => Inertia::render('Payments/Index'))->name('payments.index');
+Route::get('/payments/create', fn () => Inertia::render('Payments/Form'))->name('payments.create');
+Route::get('/payments/{id}/edit', fn (int $id) => Inertia::render('Payments/Form', ['paymentId' => $id]))->name('payments.edit');
+
 Route::get('/routes', fn () => Inertia::render('Routes/Index'))->name('routes.index');
 
 Route::get('/invoices', fn () => Inertia::render('Invoices/Index'))->name('invoices.index');

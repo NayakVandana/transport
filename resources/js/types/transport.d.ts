@@ -86,6 +86,24 @@ export interface ExpenseOption {
     label: string;
 }
 
+export interface Payment {
+    id: number;
+    payment_date: string;
+    direction: 'receipt' | 'payout';
+    amount: string | number;
+    payment_method: string;
+    reference_number?: string | null;
+    notes?: string | null;
+    customer_id?: number | null;
+    booking_id?: number | null;
+    freight_invoice_id?: number | null;
+    customer?: Pick<Customer, 'id' | 'name'>;
+    booking?: Pick<Booking, 'id' | 'booking_date'> & {
+        vehicle?: Pick<Vehicle, 'id' | 'vehicle_number'>;
+    };
+    freight_invoice?: Pick<FreightInvoice, 'id' | 'bill_number' | 'invoice_date'>;
+}
+
 export interface Customer {
     id: number;
     name: string;
