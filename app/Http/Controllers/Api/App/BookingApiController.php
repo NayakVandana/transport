@@ -48,6 +48,7 @@ class BookingApiController extends Controller
 
             return $this->sendJsonResponse(true, 'Booking form data loaded.', [
                 'vehicles' => BookingReport::vehiclesForUser($userId),
+                'drivers' => BookingReport::driversForUser($userId),
                 'validationMessages' => BookingValidation::forFrontend(),
             ], 200);
         } catch (Exception $e) {
@@ -67,13 +68,17 @@ class BookingApiController extends Controller
             }
 
             $booking = Booking::query()
-                ->with('vehicle:id,vehicle_number')
+                ->with([
+                    'vehicle:id,vehicle_number',
+                    'driver:id,name,mobile',
+                ])
                 ->where('user_id', $request->user()->id)
                 ->findOrFail($request->input('id'));
 
             return $this->sendJsonResponse(true, 'Booking loaded.', [
                 'booking' => $booking,
                 'vehicles' => BookingReport::vehiclesForUser((int) $request->user()->id),
+                'drivers' => BookingReport::driversForUser((int) $request->user()->id),
                 'validationMessages' => BookingValidation::forFrontend(),
             ], 200);
         } catch (Exception $e) {
@@ -90,7 +95,10 @@ class BookingApiController extends Controller
             ]);
 
             return $this->sendJsonResponse(true, 'Booking created.', [
-                'booking' => $booking->load('vehicle:id,vehicle_number'),
+                'booking' => $booking->load([
+                    'vehicle:id,vehicle_number',
+                    'driver:id,name,mobile',
+                ]),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -115,7 +123,10 @@ class BookingApiController extends Controller
             $booking->update($this->payload($request));
 
             return $this->sendJsonResponse(true, 'Booking updated.', [
-                'booking' => $booking->fresh()->load('vehicle:id,vehicle_number'),
+                'booking' => $booking->fresh()->load([
+                    'vehicle:id,vehicle_number',
+                    'driver:id,name,mobile',
+                ]),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -163,12 +174,13 @@ class BookingApiController extends Controller
                 fputcsv($handle, ['Filters', $filterSummary]);
                 fputcsv($handle, ['Generated', now()->format('d-m-Y H:i')]);
                 fputcsv($handle, []);
-                fputcsv($handle, ['Date', 'Vehicle', 'Freight', 'Advance', 'Empty', 'Maintenance', 'Balance']);
+                fputcsv($handle, ['Date', 'Vehicle', 'Driver', 'Freight', 'Advance', 'Empty', 'Maintenance', 'Balance']);
 
                 foreach ($bookings as $booking) {
                     fputcsv($handle, [
                         $booking->booking_date->format('Y-m-d'),
                         $booking->vehicle?->vehicle_number ?? '',
+                        $booking->driver?->name ?? '',
                         $booking->freight,
                         $booking->advance,
                         $booking->empty_charge,

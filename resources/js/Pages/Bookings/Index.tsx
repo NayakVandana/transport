@@ -318,6 +318,9 @@ export default function BookingsIndex() {
                                             <th className="px-4 py-3 text-left font-medium text-gray-500">
                                                 Vehicle
                                             </th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-500">
+                                                Driver
+                                            </th>
                                             <th className="px-4 py-3 text-right font-medium text-gray-500">
                                                 Freight
                                             </th>
@@ -342,7 +345,7 @@ export default function BookingsIndex() {
                                         {!bookings || bookings.data.length === 0 ? (
                                             <tr>
                                                 <td
-                                                    colSpan={8}
+                                                    colSpan={9}
                                                     className="px-6 py-8 text-center text-gray-500"
                                                 >
                                                     {hasFilters
@@ -358,6 +361,9 @@ export default function BookingsIndex() {
                                                     </td>
                                                     <td className="px-4 py-3 font-mono font-medium">
                                                         {booking.vehicle?.vehicle_number ?? '—'}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {booking.driver?.name ?? '—'}
                                                     </td>
                                                     <td className="px-4 py-3 text-right">
                                                         ₹ {formatMoney(booking.freight)}

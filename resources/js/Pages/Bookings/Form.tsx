@@ -10,7 +10,7 @@ import {
     type BookingValidationMessages,
 } from '@/lib/bookingValidation';
 import { calculateBookingBalance, formatMoney } from '@/lib/freightCalculator';
-import type { Booking, Vehicle } from '@/types/transport';
+import type { Booking, Driver, Vehicle } from '@/types/transport';
 import { Head, router } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 
@@ -21,11 +21,13 @@ function dateInputValue(value?: string | null): string {
 type BookingShowData = {
     booking: Booking;
     vehicles: Pick<Vehicle, 'id' | 'vehicle_number'>[];
+    drivers: Pick<Driver, 'id' | 'name' | 'mobile' | 'license_number'>[];
     validationMessages: BookingValidationMessages;
 };
 
 type BookingMetaData = {
     vehicles: Pick<Vehicle, 'id' | 'vehicle_number'>[];
+    drivers: Pick<Driver, 'id' | 'name' | 'mobile' | 'license_number'>[];
     validationMessages: BookingValidationMessages;
 };
 
@@ -56,6 +58,7 @@ export default function BookingForm({ bookingId }: { bookingId?: number }) {
     );
 
     const [vehicles, setVehicles] = useState<Pick<Vehicle, 'id' | 'vehicle_number'>[]>([]);
+    const [drivers, setDrivers] = useState<Pick<Driver, 'id' | 'name' | 'mobile' | 'license_number'>[]>([]);
     const [validationMessages, setValidationMessages] = useState<BookingValidationMessages>({});
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
@@ -64,6 +67,7 @@ export default function BookingForm({ bookingId }: { bookingId?: number }) {
     const [data, setData] = useState<BookingFormData>({
         booking_date: new Date().toISOString().slice(0, 10),
         vehicle_id: '',
+        driver_id: '',
         freight: '',
         advance: '0',
         empty_charge: '0',
@@ -89,10 +93,12 @@ export default function BookingForm({ bookingId }: { bookingId?: number }) {
 
                     const booking = res.data.booking;
                     setVehicles(res.data.vehicles);
+                    setDrivers(res.data.drivers);
                     setValidationMessages(res.data.validationMessages);
                     setData({
                         booking_date: dateInputValue(booking.booking_date),
                         vehicle_id: booking.vehicle_id ? String(booking.vehicle_id) : '',
+                        driver_id: booking.driver_id ? String(booking.driver_id) : '',
                         freight: booking.freight != null ? String(booking.freight) : '',
                         advance: booking.advance != null ? String(booking.advance) : '0',
                         empty_charge:
@@ -112,6 +118,7 @@ export default function BookingForm({ bookingId }: { bookingId?: number }) {
                     }
 
                     setVehicles(res.data.vehicles);
+                    setDrivers(res.data.drivers);
                     setValidationMessages(res.data.validationMessages);
                 }
             } catch {
@@ -160,6 +167,7 @@ export default function BookingForm({ bookingId }: { bookingId?: number }) {
             const payload = {
                 ...data,
                 vehicle_id: Number(data.vehicle_id),
+                driver_id: data.driver_id ? Number(data.driver_id) : null,
                 freight: Number(data.freight),
                 advance: Number(data.advance),
                 empty_charge: Number(data.empty_charge),
@@ -232,6 +240,26 @@ export default function BookingForm({ bookingId }: { bookingId?: number }) {
                                     {vehicles.map((vehicle) => (
                                         <option key={vehicle.id} value={vehicle.id}>
                                             {vehicle.vehicle_number}
+                                        </option>
+                                    ))}
+                                </select>
+                            </Field>
+
+                            <Field label="Driver" error={errors.driver_id}>
+                                <select
+                                    className={
+                                        errors.driver_id
+                                            ? 'mt-1 block w-full rounded-md border-red-500 shadow-sm focus:border-red-500 focus:ring-red-500'
+                                            : 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500'
+                                    }
+                                    value={data.driver_id}
+                                    onChange={(e) => setField('driver_id', e.target.value)}
+                                >
+                                    <option value="">Select driver (optional)</option>
+                                    {drivers.map((driver) => (
+                                        <option key={driver.id} value={driver.id}>
+                                            {driver.name}
+                                            {driver.license_number ? ` (${driver.license_number})` : ''}
                                         </option>
                                     ))}
                                 </select>

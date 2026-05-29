@@ -40,6 +40,10 @@ Route::get('/vehicles', fn () => Inertia::render('Vehicles/Index'))->name('vehic
 Route::get('/vehicles/create', fn () => Inertia::render('Vehicles/Form'))->name('vehicles.create');
 Route::get('/vehicles/{id}/edit', fn (int $id) => Inertia::render('Vehicles/Form', ['vehicleId' => $id]))->name('vehicles.edit');
 
+Route::get('/drivers', fn () => Inertia::render('Drivers/Index'))->name('drivers.index');
+Route::get('/drivers/create', fn () => Inertia::render('Drivers/Form'))->name('drivers.create');
+Route::get('/drivers/{id}/edit', fn (int $id) => Inertia::render('Drivers/Form', ['driverId' => $id]))->name('drivers.edit');
+
 Route::get('/bookings', fn () => Inertia::render('Bookings/Index'))->name('bookings.index');
 Route::get('/bookings/create', fn () => Inertia::render('Bookings/Form'))->name('bookings.create');
 Route::get('/bookings/{id}/edit', fn (int $id) => Inertia::render('Bookings/Form', ['bookingId' => $id]))->name('bookings.edit');

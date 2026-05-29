@@ -35,6 +35,18 @@ export interface Vehicle {
     status: 'active' | 'inactive';
 }
 
+export interface Driver {
+    id: number;
+    name: string;
+    mobile?: string | null;
+    license_number?: string | null;
+    license_expiry?: string | null;
+    joining_date?: string | null;
+    salary?: string | number | null;
+    address?: string | null;
+    status: 'active' | 'inactive';
+}
+
 export interface RouteLocation {
     id: number;
     name: string;
@@ -44,12 +56,14 @@ export interface Booking {
     id: number;
     booking_date: string;
     vehicle_id: number;
+    driver_id?: number | null;
     freight: string | number;
     advance: string | number;
     empty_charge: string | number;
     maintenance: string | number;
     balance: string | number;
     vehicle?: Pick<Vehicle, 'id' | 'vehicle_number'>;
+    driver?: Pick<Driver, 'id' | 'name' | 'mobile'>;
 }
 
 export interface Customer {

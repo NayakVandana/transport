@@ -20,6 +20,14 @@ class BookingRequest extends FormRequest
                 'vehicle_id' => (int) $this->vehicle_id,
             ]);
         }
+
+        if ($this->has('driver_id') && $this->driver_id !== '') {
+            $this->merge([
+                'driver_id' => (int) $this->driver_id,
+            ]);
+        } else {
+            $this->merge(['driver_id' => null]);
+        }
     }
 
     /** @return array<string, mixed> */
@@ -31,6 +39,13 @@ class BookingRequest extends FormRequest
                 'required',
                 'integer',
                 Rule::exists('vehicles', 'id')->where(
+                    fn ($query) => $query->where('user_id', $this->user()->id)->whereNull('deleted_at'),
+                ),
+            ],
+            'driver_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('drivers', 'id')->where(
                     fn ($query) => $query->where('user_id', $this->user()->id)->whereNull('deleted_at'),
                 ),
             ],

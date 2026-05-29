@@ -1,6 +1,7 @@
 export type BookingFormData = {
     booking_date: string;
     vehicle_id: string;
+    driver_id: string;
     freight: string;
     advance: string;
     empty_charge: string;

@@ -14,6 +14,7 @@ class Booking extends Model
         'user_id',
         'booking_date',
         'vehicle_id',
+        'driver_id',
         'freight',
         'advance',
         'empty_charge',
@@ -41,5 +42,10 @@ class Booking extends Model
     public function vehicle(): BelongsTo
     {
         return $this->belongsTo(Vehicle::class);
+    }
+
+    public function driver(): BelongsTo
+    {
+        return $this->belongsTo(Driver::class);
     }
 }

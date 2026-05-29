@@ -30,6 +30,7 @@
             <tr>
                 <th>Date</th>
                 <th>Vehicle</th>
+                <th>Driver</th>
                 <th class="num">Freight</th>
                 <th class="num">Advance</th>
                 <th class="num">Empty</th>
@@ -42,6 +43,7 @@
                 <tr>
                     <td>{{ $booking->booking_date->format('d-m-Y') }}</td>
                     <td>{{ $booking->vehicle?->vehicle_number ?? '—' }}</td>
+                    <td>{{ $booking->driver?->name ?? '—' }}</td>
                     <td class="num">{{ $money($booking->freight) }}</td>
                     <td class="num">{{ $money($booking->advance) }}</td>
                     <td class="num">{{ $money($booking->empty_charge) }}</td>
@@ -50,14 +52,14 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" style="text-align:center;">No bookings found.</td>
+                    <td colspan="8" style="text-align:center;">No bookings found.</td>
                 </tr>
             @endforelse
         </tbody>
         @if ($totals['count'] > 0)
             <tfoot>
                 <tr>
-                    <td colspan="2">Grand Total ({{ $totals['count'] }} bookings)</td>
+                    <td colspan="3">Grand Total ({{ $totals['count'] }} bookings)</td>
                     <td class="num">{{ $money($totals['freight']) }}</td>
                     <td class="num">{{ $money($totals['advance']) }}</td>
                     <td class="num">{{ $money($totals['empty_charge']) }}</td>

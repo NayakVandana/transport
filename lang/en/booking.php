@@ -4,6 +4,7 @@ return [
     'fields' => [
         'booking_date' => 'Date',
         'vehicle_id' => 'Vehicle',
+        'driver_id' => 'Driver',
         'freight' => 'Freight',
         'advance' => 'Advance',
         'empty_charge' => 'Empty',
@@ -18,6 +19,9 @@ return [
         'vehicle_id' => [
             'required' => 'Please select a vehicle.',
             'exists' => 'The selected vehicle is not valid.',
+        ],
+        'driver_id' => [
+            'exists' => 'The selected driver is not valid.',
         ],
         'freight' => [
             'required' => 'Please enter the freight amount.',

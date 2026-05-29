@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\App\BookingApiController;
 use App\Http\Controllers\Api\App\CompanyApiController;
 use App\Http\Controllers\Api\App\CustomerApiController;
 use App\Http\Controllers\Api\App\DashboardApiController;
+use App\Http\Controllers\Api\App\DriverApiController;
 use App\Http\Controllers\Api\App\FreightInvoiceApiController;
 use App\Http\Controllers\Api\App\ProfileApiController;
 use App\Http\Controllers\Api\App\RouteLocationApiController;
@@ -36,6 +37,12 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/vehicles/vehicle-store', [VehicleApiController::class, 'postVehicleStore']);
     Route::post('/vehicles/vehicle-update', [VehicleApiController::class, 'postVehicleUpdate']);
     Route::post('/vehicles/vehicle-destroy', [VehicleApiController::class, 'postVehicleDestroy']);
+
+    Route::post('/drivers/drivers-list', [DriverApiController::class, 'postDriversList']);
+    Route::post('/drivers/driver-show', [DriverApiController::class, 'postDriverShow']);
+    Route::post('/drivers/driver-store', [DriverApiController::class, 'postDriverStore']);
+    Route::post('/drivers/driver-update', [DriverApiController::class, 'postDriverUpdate']);
+    Route::post('/drivers/driver-destroy', [DriverApiController::class, 'postDriverDestroy']);
 
     Route::post('/bookings/bookings-list', [BookingApiController::class, 'postBookingsList']);
     Route::post('/bookings/booking-meta', [BookingApiController::class, 'postBookingMeta']);

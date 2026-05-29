@@ -11,14 +11,12 @@ return new class extends Migration
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
 
-            // Owner
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
 
-            // Booking details
             $table->date('booking_date');
             $table->foreignId('vehicle_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('driver_id')->nullable()->constrained()->nullOnDelete();
 
-            // Amounts
             $table->decimal('freight', 14, 2)->default(0);
             $table->decimal('advance', 14, 2)->default(0);
             $table->decimal('empty_charge', 14, 2)->default(0);

@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Booking;
+use App\Models\Driver;
 use App\Models\Vehicle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -64,11 +65,24 @@ class BookingReport
             ->get(['id', 'vehicle_number']);
     }
 
+    /** @return Collection<int, Driver> */
+    public static function driversForUser(int $userId): Collection
+    {
+        return Driver::query()
+            ->where('user_id', $userId)
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get(['id', 'name', 'mobile', 'license_number']);
+    }
+
     /** @param  array{vehicle_id: string, date_range: string, date_from: string, date_to: string}  $filters */
     public static function filteredQuery(int $userId, array $filters): Builder
     {
         return Booking::query()
-            ->with('vehicle:id,vehicle_number')
+            ->with([
+                'vehicle:id,vehicle_number',
+                'driver:id,name,mobile',
+            ])
             ->where('user_id', $userId)
             ->when($filters['vehicle_id'], fn ($query, $vehicleId) => $query->where('vehicle_id', $vehicleId))
             ->when($filters['date_from'], fn ($query, $dateFrom) => $query->whereDate('booking_date', '>=', $dateFrom))
