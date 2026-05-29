@@ -66,6 +66,26 @@ export interface Booking {
     driver?: Pick<Driver, 'id' | 'name' | 'mobile'>;
 }
 
+export interface Expense {
+    id: number;
+    expense_date: string;
+    category: string;
+    amount: string | number;
+    description?: string | null;
+    vehicle_id?: number | null;
+    driver_id?: number | null;
+    payment_method?: string | null;
+    bill_copy?: string | null;
+    bill_copy_url?: string | null;
+    vehicle?: Pick<Vehicle, 'id' | 'vehicle_number'>;
+    driver?: Pick<Driver, 'id' | 'name'>;
+}
+
+export interface ExpenseOption {
+    value: string;
+    label: string;
+}
+
 export interface Customer {
     id: number;
     name: string;

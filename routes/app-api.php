@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\App\CompanyApiController;
 use App\Http\Controllers\Api\App\CustomerApiController;
 use App\Http\Controllers\Api\App\DashboardApiController;
 use App\Http\Controllers\Api\App\DriverApiController;
+use App\Http\Controllers\Api\App\ExpenseApiController;
 use App\Http\Controllers\Api\App\FreightInvoiceApiController;
 use App\Http\Controllers\Api\App\ProfileApiController;
 use App\Http\Controllers\Api\App\RouteLocationApiController;
@@ -52,6 +53,13 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/bookings/booking-destroy', [BookingApiController::class, 'postBookingDestroy']);
     Route::post('/bookings/bookings-export-csv', [BookingApiController::class, 'postBookingsExportCsv']);
     Route::post('/bookings/bookings-export-pdf', [BookingApiController::class, 'postBookingsExportPdf']);
+
+    Route::post('/expenses/expenses-list', [ExpenseApiController::class, 'postExpensesList']);
+    Route::post('/expenses/expense-meta', [ExpenseApiController::class, 'postExpenseMeta']);
+    Route::post('/expenses/expense-show', [ExpenseApiController::class, 'postExpenseShow']);
+    Route::post('/expenses/expense-store', [ExpenseApiController::class, 'postExpenseStore']);
+    Route::post('/expenses/expense-update', [ExpenseApiController::class, 'postExpenseUpdate']);
+    Route::post('/expenses/expense-destroy', [ExpenseApiController::class, 'postExpenseDestroy']);
 
     Route::post('/routes/routes-list', [RouteLocationApiController::class, 'postRoutesList']);
     Route::post('/routes/route-store', [RouteLocationApiController::class, 'postRouteStore']);

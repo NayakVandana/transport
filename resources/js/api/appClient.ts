@@ -26,6 +26,20 @@ export async function appApiPost<T>(
     return res.data;
 }
 
+export async function appApiPostFormData<T>(
+    path: string,
+    data: FormData,
+): Promise<T> {
+    const res = await axios.post<T>(`/api/v1/app${path}`, data, {
+        headers: {
+            ...appHeaders(),
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+
+    return res.data;
+}
+
 export async function appApiDownload(
     path: string,
     data: Record<string, unknown>,
