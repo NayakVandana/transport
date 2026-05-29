@@ -51,6 +51,21 @@ export function formatMoney(value: number | string): string {
     });
 }
 
+export function calculateBookingBalance(
+    freight: number | string,
+    advance: number | string,
+    emptyCharge: number | string,
+    maintenance: number | string,
+): number {
+    const total =
+        (Number(freight) || 0) +
+        (Number(emptyCharge) || 0) -
+        (Number(advance) || 0) -
+        (Number(maintenance) || 0);
+
+    return Math.round(total * 100) / 100;
+}
+
 export function formatDate(d: string | null | undefined, short = false): string {
     if (!d) return '';
     const date = new Date(d);

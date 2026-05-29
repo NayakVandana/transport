@@ -25,5 +25,9 @@
         "tailwindcss": "^3.2.1",
         "typescript": "^5.0.2",
         "vite": "^6.0.11"
+    },
+    "dependencies": {
+        "dayjs": "^1.11.21",
+        "react-tailwindcss-datepicker": "^1.7.3"
     }
 }

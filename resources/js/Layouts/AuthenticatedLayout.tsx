@@ -1,8 +1,11 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
-import FlashMessage from '@/Components/FlashMessage';
 import SidebarNavLink from '@/Components/SidebarNavLink';
-import { Link, usePage } from '@inertiajs/react';
-import { PropsWithChildren, ReactNode, useState } from 'react';
+import { appApiPost, type ApiEnvelope } from '@/api/appClient';
+import { clearAuthUserCache, useAuthUser } from '@/auth/useAuthUser';
+import { getUserApiToken, setUserApiToken } from '@/auth/authToken';
+import { loginUrl } from '@/utils/requireAuth';
+import { Link, router } from '@inertiajs/react';
+import { PropsWithChildren, ReactNode, useEffect, useState } from 'react';
 
 type NavItem = {
     name: string;
@@ -71,6 +74,16 @@ const navItems: NavItem[] = [
         ),
     },
     {
+        name: 'Bookings',
+        route: 'bookings.index',
+        isActive: () => (route().current('bookings.*') ?? false),
+        icon: (
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+        ),
+    },
+    {
         name: 'Routes (From)',
         route: 'routes.index',
         isActive: () => (route().current('routes.*') ?? false),
@@ -93,8 +106,14 @@ const navItems: NavItem[] = [
     },
 ];
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-    const user = usePage().props.auth.user;
+function SidebarContent({
+    onNavigate,
+    onLogout,
+}: {
+    onNavigate?: () => void;
+    onLogout: () => void;
+}) {
+    const { user } = useAuthUser();
 
     return (
         <div className="flex h-full flex-col">
@@ -121,8 +140,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
             <div className="border-t border-slate-700 p-3">
                 <div className="mb-3 truncate px-3">
-                    <p className="truncate text-sm font-medium text-white">{user.name}</p>
-                    <p className="truncate text-xs text-slate-400">{user.email}</p>
+                    <p className="truncate text-sm font-medium text-white">{user?.name ?? '—'}</p>
+                    <p className="truncate text-xs text-slate-400">{user?.email ?? ''}</p>
                 </div>
                 <SidebarNavLink
                     href={route('profile.edit')}
@@ -136,18 +155,19 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 >
                     Profile
                 </SidebarNavLink>
-                <Link
-                    href={route('logout')}
-                    method="post"
-                    as="button"
-                    onClick={onNavigate}
+                <button
+                    type="button"
+                    onClick={() => {
+                        onNavigate?.();
+                        onLogout();
+                    }}
                     className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
                 >
                     <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
                     Log Out
-                </Link>
+                </button>
             </div>
         </div>
     );
@@ -157,15 +177,44 @@ export default function Authenticated({
     header,
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
+    const { user, loading } = useAuthUser();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const hasToken = Boolean(getUserApiToken());
+
+    useEffect(() => {
+        if (!hasToken) {
+            router.visit(loginUrl(window.location.pathname));
+
+            return;
+        }
+
+        if (!loading && !user) {
+            setUserApiToken(null);
+            clearAuthUserCache();
+            router.visit(loginUrl(window.location.pathname));
+        }
+    }, [hasToken, loading, user]);
 
     const closeSidebar = () => setSidebarOpen(false);
 
+    if (!hasToken) {
+        return null;
+    }
+
+    const handleLogout = async () => {
+        try {
+            await appApiPost<ApiEnvelope<null>>('/auth/auth-logout', {});
+        } catch {
+            // Continue local logout even if API call fails.
+        }
+
+        setUserApiToken(null);
+        clearAuthUserCache();
+        router.visit(route('login'));
+    };
+
     return (
         <div className="min-h-screen bg-gray-100">
-            <FlashMessage />
-
-            {/* Mobile sidebar overlay */}
             {sidebarOpen && (
                 <div
                     className="fixed inset-0 z-40 bg-gray-900/50 lg:hidden"
@@ -173,19 +222,16 @@ export default function Authenticated({
                 />
             )}
 
-            {/* Sidebar */}
             <aside
                 className={
                     'fixed inset-y-0 left-0 z-50 w-64 transform bg-slate-900 transition-transform duration-200 ease-in-out lg:translate-x-0 ' +
                     (sidebarOpen ? 'translate-x-0' : '-translate-x-full')
                 }
             >
-                <SidebarContent onNavigate={closeSidebar} />
+                <SidebarContent onNavigate={closeSidebar} onLogout={handleLogout} />
             </aside>
 
-            {/* Main area */}
             <div className="lg:pl-64">
-                {/* Top bar */}
                 <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:px-6 lg:px-8">
                     <button
                         type="button"

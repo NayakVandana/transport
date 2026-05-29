@@ -4,8 +4,28 @@ import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
-import { useForm } from '@inertiajs/react';
+import { appApiPost, type ApiEnvelope } from '@/api/appClient';
+import { clearAuthUserCache } from '@/auth/useAuthUser';
+import { setUserApiToken } from '@/auth/authToken';
+import { router } from '@inertiajs/react';
 import { FormEventHandler, useRef, useState } from 'react';
+
+function apiFieldErrors(data: unknown): Record<string, string> {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        return {};
+    }
+
+    const errors: Record<string, string> = {};
+    for (const [key, val] of Object.entries(data)) {
+        if (Array.isArray(val) && val[0]) {
+            errors[key] = String(val[0]);
+        } else if (typeof val === 'string') {
+            errors[key] = val;
+        }
+    }
+
+    return errors;
+}
 
 export default function DeleteUserForm({
     className = '',
@@ -13,40 +33,50 @@ export default function DeleteUserForm({
     className?: string;
 }) {
     const [confirmingUserDeletion, setConfirmingUserDeletion] = useState(false);
+    const [password, setPassword] = useState('');
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
     const passwordInput = useRef<HTMLInputElement>(null);
-
-    const {
-        data,
-        setData,
-        delete: destroy,
-        processing,
-        reset,
-        errors,
-        clearErrors,
-    } = useForm({
-        password: '',
-    });
 
     const confirmUserDeletion = () => {
         setConfirmingUserDeletion(true);
     };
 
-    const deleteUser: FormEventHandler = (e) => {
-        e.preventDefault();
-
-        destroy(route('profile.destroy'), {
-            preserveScroll: true,
-            onSuccess: () => closeModal(),
-            onError: () => passwordInput.current?.focus(),
-            onFinish: () => reset(),
-        });
-    };
-
     const closeModal = () => {
         setConfirmingUserDeletion(false);
+        setErrors({});
+        setPassword('');
+    };
 
-        clearErrors();
-        reset();
+    const deleteUser: FormEventHandler = async (e) => {
+        e.preventDefault();
+        setProcessing(true);
+        setErrors({});
+
+        try {
+            const res = await appApiPost<ApiEnvelope<null>>('/profile/profile-destroy', {
+                password,
+            });
+
+            if (!res.success) {
+                setErrors(apiFieldErrors(res.data));
+                if (!res.data) {
+                    setErrors({ password: res.message || 'Could not delete account.' });
+                }
+                passwordInput.current?.focus();
+                return;
+            }
+
+            setUserApiToken(null);
+            clearAuthUserCache();
+            closeModal();
+            router.visit(route('login'));
+        } catch {
+            setErrors({ password: 'Could not delete account.' });
+            passwordInput.current?.focus();
+        } finally {
+            setProcessing(false);
+        }
     };
 
     return (
@@ -93,10 +123,8 @@ export default function DeleteUserForm({
                             type="password"
                             name="password"
                             ref={passwordInput}
-                            value={data.password}
-                            onChange={(e) =>
-                                setData('password', e.target.value)
-                            }
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             className="mt-1 block w-3/4"
                             isFocused
                             placeholder="Password"

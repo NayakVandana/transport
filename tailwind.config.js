@@ -8,6 +8,7 @@ export default {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
         './resources/js/**/*.tsx',
+        './node_modules/react-tailwindcss-datepicker/dist/index.esm.js',
     ],
 
     theme: {

@@ -1,12 +1,50 @@
+import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { formatDate, formatMoney } from '@/lib/freightCalculator';
 import type { FreightInvoice } from '@/types/transport';
 import { Head } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
 function line(char: string, len = 80): string {
     return char.repeat(len);
 }
 
-export default function InvoicePrint({ invoice }: { invoice: FreightInvoice }) {
+export default function InvoicePrint({ invoiceId }: { invoiceId: number }) {
+    const [invoice, setInvoice] = useState<FreightInvoice | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        setLoading(true);
+
+        void appApiPost<ApiEnvelope<{ invoice: FreightInvoice }>>('/invoices/invoice-show', {
+            id: invoiceId,
+        })
+            .then((res) => {
+                if (!res.success || !res.data?.invoice) {
+                    setError(res.message || 'Could not load invoice.');
+                    return;
+                }
+
+                setInvoice(res.data.invoice);
+            })
+            .catch(() => {
+                setError('Could not load invoice.');
+            })
+            .finally(() => setLoading(false));
+    }, [invoiceId]);
+
+    if (loading) {
+        return <p className="p-8 text-center text-sm text-gray-500">Loading invoice…</p>;
+    }
+
+    if (error || !invoice) {
+        return (
+            <p className="m-8 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                {error ?? 'Invoice not found.'}
+            </p>
+        );
+    }
+
     const company = invoice.company!;
     const customer = invoice.customer!;
     const lines = invoice.lines ?? [];

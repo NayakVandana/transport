@@ -1,0 +1,59 @@
+<?php
+
+use App\Http\Controllers\Api\App\AuthApiController;
+use App\Http\Controllers\Api\App\BookingApiController;
+use App\Http\Controllers\Api\App\CompanyApiController;
+use App\Http\Controllers\Api\App\CustomerApiController;
+use App\Http\Controllers\Api\App\DashboardApiController;
+use App\Http\Controllers\Api\App\FreightInvoiceApiController;
+use App\Http\Controllers\Api\App\ProfileApiController;
+use App\Http\Controllers\Api\App\RouteLocationApiController;
+use App\Http\Controllers\Api\App\VehicleApiController;
+use Illuminate\Support\Facades\Route;
+
+Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
+    Route::post('/auth/auth-logout', [AuthApiController::class, 'postAuthLogout']);
+
+    Route::post('/profile/profile-show', [ProfileApiController::class, 'postProfileShow']);
+    Route::post('/profile/profile-update', [ProfileApiController::class, 'postProfileUpdate']);
+    Route::post('/profile/profile-password-update', [ProfileApiController::class, 'postProfilePasswordUpdate']);
+    Route::post('/profile/profile-destroy', [ProfileApiController::class, 'postProfileDestroy']);
+
+    Route::post('/dashboard/dashboard-summary', [DashboardApiController::class, 'postDashboardSummary']);
+
+    Route::post('/company/company-show', [CompanyApiController::class, 'postCompanyShow']);
+    Route::post('/company/company-update', [CompanyApiController::class, 'postCompanyUpdate']);
+
+    Route::post('/customers/customers-list', [CustomerApiController::class, 'postCustomersList']);
+    Route::post('/customers/customer-show', [CustomerApiController::class, 'postCustomerShow']);
+    Route::post('/customers/customer-store', [CustomerApiController::class, 'postCustomerStore']);
+    Route::post('/customers/customer-update', [CustomerApiController::class, 'postCustomerUpdate']);
+    Route::post('/customers/customer-destroy', [CustomerApiController::class, 'postCustomerDestroy']);
+
+    Route::post('/vehicles/vehicles-list', [VehicleApiController::class, 'postVehiclesList']);
+    Route::post('/vehicles/vehicle-meta', [VehicleApiController::class, 'postVehicleMeta']);
+    Route::post('/vehicles/vehicle-show', [VehicleApiController::class, 'postVehicleShow']);
+    Route::post('/vehicles/vehicle-store', [VehicleApiController::class, 'postVehicleStore']);
+    Route::post('/vehicles/vehicle-update', [VehicleApiController::class, 'postVehicleUpdate']);
+    Route::post('/vehicles/vehicle-destroy', [VehicleApiController::class, 'postVehicleDestroy']);
+
+    Route::post('/bookings/bookings-list', [BookingApiController::class, 'postBookingsList']);
+    Route::post('/bookings/booking-meta', [BookingApiController::class, 'postBookingMeta']);
+    Route::post('/bookings/booking-show', [BookingApiController::class, 'postBookingShow']);
+    Route::post('/bookings/booking-store', [BookingApiController::class, 'postBookingStore']);
+    Route::post('/bookings/booking-update', [BookingApiController::class, 'postBookingUpdate']);
+    Route::post('/bookings/booking-destroy', [BookingApiController::class, 'postBookingDestroy']);
+    Route::post('/bookings/bookings-export-csv', [BookingApiController::class, 'postBookingsExportCsv']);
+    Route::post('/bookings/bookings-export-pdf', [BookingApiController::class, 'postBookingsExportPdf']);
+
+    Route::post('/routes/routes-list', [RouteLocationApiController::class, 'postRoutesList']);
+    Route::post('/routes/route-store', [RouteLocationApiController::class, 'postRouteStore']);
+    Route::post('/routes/route-destroy', [RouteLocationApiController::class, 'postRouteDestroy']);
+
+    Route::post('/invoices/invoices-list', [FreightInvoiceApiController::class, 'postInvoicesList']);
+    Route::post('/invoices/invoice-meta', [FreightInvoiceApiController::class, 'postInvoiceMeta']);
+    Route::post('/invoices/invoice-show', [FreightInvoiceApiController::class, 'postInvoiceShow']);
+    Route::post('/invoices/invoice-store', [FreightInvoiceApiController::class, 'postInvoiceStore']);
+    Route::post('/invoices/invoice-update', [FreightInvoiceApiController::class, 'postInvoiceUpdate']);
+    Route::post('/invoices/invoice-destroy', [FreightInvoiceApiController::class, 'postInvoiceDestroy']);
+});

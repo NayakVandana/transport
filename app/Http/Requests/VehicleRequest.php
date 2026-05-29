@@ -25,7 +25,7 @@ class VehicleRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        $vehicleId = $this->route('vehicle')?->id;
+        $vehicleId = $this->route('vehicle')?->id ?? $this->integer('id') ?: null;
 
         return [
             'vehicle_number' => [

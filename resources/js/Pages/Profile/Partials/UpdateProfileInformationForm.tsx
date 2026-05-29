@@ -2,31 +2,76 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import { appApiPost, type ApiEnvelope } from '@/api/appClient';
+import { clearAuthUserCache, useAuthUser } from '@/auth/useAuthUser';
+import type { User } from '@/types';
 import { Transition } from '@headlessui/react';
-import { Link, useForm, usePage } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useEffect, useState } from 'react';
+
+function apiFieldErrors(data: unknown): Record<string, string> {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        return {};
+    }
+
+    const errors: Record<string, string> = {};
+    for (const [key, val] of Object.entries(data)) {
+        if (Array.isArray(val) && val[0]) {
+            errors[key] = String(val[0]);
+        } else if (typeof val === 'string') {
+            errors[key] = val;
+        }
+    }
+
+    return errors;
+}
 
 export default function UpdateProfileInformation({
-    mustVerifyEmail,
-    status,
     className = '',
 }: {
-    mustVerifyEmail: boolean;
-    status?: string;
     className?: string;
 }) {
-    const user = usePage().props.auth.user;
+    const { user, refresh } = useAuthUser();
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [recentlySuccessful, setRecentlySuccessful] = useState(false);
 
-    const { data, setData, patch, errors, processing, recentlySuccessful } =
-        useForm({
-            name: user.name,
-            email: user.email,
-        });
+    useEffect(() => {
+        if (user) {
+            setName(user.name);
+            setEmail(user.email);
+        }
+    }, [user]);
 
-    const submit: FormEventHandler = (e) => {
+    const submit: FormEventHandler = async (e) => {
         e.preventDefault();
+        setProcessing(true);
+        setErrors({});
+        setRecentlySuccessful(false);
 
-        patch(route('profile.update'));
+        try {
+            const res = await appApiPost<ApiEnvelope<{ user: User }>>(
+                '/profile/profile-update',
+                { name, email },
+            );
+
+            if (!res.success) {
+                setErrors(apiFieldErrors(res.data));
+                if (!res.data) {
+                    setErrors({ email: res.message || 'Could not update profile.' });
+                }
+                return;
+            }
+
+            clearAuthUserCache();
+            await refresh();
+            setRecentlySuccessful(true);
+        } catch {
+            setErrors({ email: 'Could not update profile.' });
+        } finally {
+            setProcessing(false);
+        }
     };
 
     return (
@@ -48,8 +93,8 @@ export default function UpdateProfileInformation({
                     <TextInput
                         id="name"
                         className="mt-1 block w-full"
-                        value={data.name}
-                        onChange={(e) => setData('name', e.target.value)}
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
                         required
                         isFocused
                         autoComplete="name"
@@ -65,8 +110,8 @@ export default function UpdateProfileInformation({
                         id="email"
                         type="email"
                         className="mt-1 block w-full"
-                        value={data.email}
-                        onChange={(e) => setData('email', e.target.value)}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         required
                         autoComplete="username"
                     />
@@ -74,26 +119,11 @@ export default function UpdateProfileInformation({
                     <InputError className="mt-2" message={errors.email} />
                 </div>
 
-                {mustVerifyEmail && user.email_verified_at === null && (
+                {user && !user.email_verified_at && (
                     <div>
                         <p className="mt-2 text-sm text-gray-800">
                             Your email address is unverified.
-                            <Link
-                                href={route('verification.send')}
-                                method="post"
-                                as="button"
-                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                            >
-                                Click here to re-send the verification email.
-                            </Link>
                         </p>
-
-                        {status === 'verification-link-sent' && (
-                            <div className="mt-2 text-sm font-medium text-green-600">
-                                A new verification link has been sent to your
-                                email address.
-                            </div>
-                        )}
                     </div>
                 )}
 

@@ -1,19 +1,22 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { invoiceReturnQuery } from '@/lib/invoiceReturn';
 import type { Vehicle } from '@/types/transport';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
+import { useEffect, useMemo, useState } from 'react';
 
-interface Paginated {
-    data: Vehicle[];
-}
+function useInvoiceReturn() {
+    return useMemo(() => {
+        const params = new URLSearchParams(window.location.search);
 
-interface Props {
-    vehicles: Paginated;
-    return_route?: string | null;
-    return_id?: number | null;
-    return_label?: string | null;
+        return {
+            return_route: params.get('return_route'),
+            return_id: params.get('return_id') ? Number(params.get('return_id')) : null,
+            return_label: params.get('return_label'),
+        };
+    }, []);
 }
 
 function formatDate(value?: string | null): string {
@@ -21,16 +24,51 @@ function formatDate(value?: string | null): string {
     return value.slice(0, 10);
 }
 
-export default function VehiclesIndex({
-    vehicles,
-    return_route,
-    return_id,
-    return_label,
-}: Props) {
-    const destroy = (id: number) => {
-        if (confirm('Remove this vehicle from the list?')) {
-            router.delete(route('vehicles.destroy', id));
+export default function VehiclesIndex() {
+    const { return_route, return_id, return_label } = useInvoiceReturn();
+    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const loadVehicles = async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const res = await appApiPost<
+                ApiEnvelope<{ vehicles: { data: Vehicle[] } }>
+            >('/vehicles/vehicles-list', {});
+
+            if (!res.success || !res.data?.vehicles) {
+                setError(res.message || 'Could not load vehicles.');
+                return;
+            }
+
+            setVehicles(res.data.vehicles.data);
+        } catch {
+            setError('Could not load vehicles.');
+        } finally {
+            setLoading(false);
         }
+    };
+
+    useEffect(() => {
+        void loadVehicles();
+    }, []);
+
+    const destroy = async (id: number) => {
+        if (!confirm('Remove this vehicle from the list?')) {
+            return;
+        }
+
+        const res = await appApiPost<ApiEnvelope<null>>('/vehicles/vehicle-destroy', { id });
+
+        if (!res.success) {
+            setError(res.message || 'Could not remove vehicle.');
+            return;
+        }
+
+        void loadVehicles();
     };
 
     const backHref =
@@ -79,94 +117,104 @@ export default function VehiclesIndex({
                         appear in the invoice dropdown.
                     </p>
 
-                    <div className="overflow-x-auto rounded-lg bg-white shadow">
-                        <table className="min-w-full divide-y divide-gray-200 text-sm">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-500">
-                                        Number
-                                    </th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-500">
-                                        Type
-                                    </th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-500">
-                                        Brand / Model
-                                    </th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-500">
-                                        Insurance Expiry
-                                    </th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-500">
-                                        Permit Expiry
-                                    </th>
-                                    <th className="px-4 py-3 text-left font-medium text-gray-500">
-                                        Status
-                                    </th>
-                                    <th className="px-4 py-3 text-right font-medium text-gray-500">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {vehicles.data.length === 0 ? (
+                    {error && (
+                        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                            {error}
+                        </p>
+                    )}
+
+                    {loading ? (
+                        <p className="text-center text-sm text-gray-500">Loading vehicles…</p>
+                    ) : (
+                        <div className="overflow-x-auto rounded-lg bg-white shadow">
+                            <table className="min-w-full divide-y divide-gray-200 text-sm">
+                                <thead className="bg-gray-50">
                                     <tr>
-                                        <td
-                                            colSpan={7}
-                                            className="px-6 py-8 text-center text-gray-500"
-                                        >
-                                            No vehicles yet.
-                                        </td>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">
+                                            Number
+                                        </th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">
+                                            Type
+                                        </th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">
+                                            Brand / Model
+                                        </th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">
+                                            Insurance Expiry
+                                        </th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">
+                                            Permit Expiry
+                                        </th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">
+                                            Status
+                                        </th>
+                                        <th className="px-4 py-3 text-right font-medium text-gray-500">
+                                            Actions
+                                        </th>
                                     </tr>
-                                ) : (
-                                    vehicles.data.map((v) => (
-                                        <tr key={v.id}>
-                                            <td className="px-4 py-3 font-mono font-medium">
-                                                {v.vehicle_number}
-                                            </td>
-                                            <td className="px-4 py-3 text-gray-600">
-                                                {v.vehicle_type ?? '—'}
-                                            </td>
-                                            <td className="px-4 py-3 text-gray-600">
-                                                {[v.brand, v.model].filter(Boolean).join(' ') ||
-                                                    '—'}
-                                            </td>
-                                            <td className="px-4 py-3 text-gray-600">
-                                                {formatDate(v.insurance_expiry)}
-                                            </td>
-                                            <td className="px-4 py-3 text-gray-600">
-                                                {formatDate(v.permit_expiry)}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <span
-                                                    className={
-                                                        v.status === 'active'
-                                                            ? 'text-green-700'
-                                                            : 'text-gray-500'
-                                                    }
-                                                >
-                                                    {v.status === 'active' ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </td>
-                                            <td className="space-x-3 px-4 py-3 text-right">
-                                                <Link
-                                                    href={route('vehicles.edit', v.id)}
-                                                    className="text-indigo-600 hover:underline"
-                                                >
-                                                    Edit
-                                                </Link>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => destroy(v.id)}
-                                                    className="text-red-600 hover:underline"
-                                                >
-                                                    Remove
-                                                </button>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200">
+                                    {vehicles.length === 0 ? (
+                                        <tr>
+                                            <td
+                                                colSpan={7}
+                                                className="px-6 py-8 text-center text-gray-500"
+                                            >
+                                                No vehicles yet.
                                             </td>
                                         </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                    ) : (
+                                        vehicles.map((v) => (
+                                            <tr key={v.id}>
+                                                <td className="px-4 py-3 font-mono font-medium">
+                                                    {v.vehicle_number}
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-600">
+                                                    {v.vehicle_type ?? '—'}
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-600">
+                                                    {[v.brand, v.model].filter(Boolean).join(' ') ||
+                                                        '—'}
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-600">
+                                                    {formatDate(v.insurance_expiry)}
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-600">
+                                                    {formatDate(v.permit_expiry)}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span
+                                                        className={
+                                                            v.status === 'active'
+                                                                ? 'text-green-700'
+                                                                : 'text-gray-500'
+                                                        }
+                                                    >
+                                                        {v.status === 'active' ? 'Active' : 'Inactive'}
+                                                    </span>
+                                                </td>
+                                                <td className="space-x-3 px-4 py-3 text-right">
+                                                    <Link
+                                                        href={route('vehicles.edit', v.id)}
+                                                        className="text-indigo-600 hover:underline"
+                                                    >
+                                                        Edit
+                                                    </Link>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => void destroy(v.id)}
+                                                        className="text-red-600 hover:underline"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
             </div>
         </AuthenticatedLayout>

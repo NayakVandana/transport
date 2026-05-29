@@ -2,9 +2,26 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { Transition } from '@headlessui/react';
-import { useForm } from '@inertiajs/react';
-import { FormEventHandler, useRef } from 'react';
+import { FormEventHandler, useRef, useState } from 'react';
+
+function apiFieldErrors(data: unknown): Record<string, string> {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        return {};
+    }
+
+    const errors: Record<string, string> = {};
+    for (const [key, val] of Object.entries(data)) {
+        if (Array.isArray(val) && val[0]) {
+            errors[key] = String(val[0]);
+        } else if (typeof val === 'string') {
+            errors[key] = val;
+        }
+    }
+
+    return errors;
+}
 
 export default function UpdatePasswordForm({
     className = '',
@@ -13,39 +30,60 @@ export default function UpdatePasswordForm({
 }) {
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [password, setPassword] = useState('');
+    const [passwordConfirmation, setPasswordConfirmation] = useState('');
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [recentlySuccessful, setRecentlySuccessful] = useState(false);
 
-    const {
-        data,
-        setData,
-        errors,
-        put,
-        reset,
-        processing,
-        recentlySuccessful,
-    } = useForm({
-        current_password: '',
-        password: '',
-        password_confirmation: '',
-    });
+    const reset = (...fields: ('current_password' | 'password' | 'password_confirmation')[]) => {
+        if (fields.includes('current_password')) setCurrentPassword('');
+        if (fields.includes('password')) setPassword('');
+        if (fields.includes('password_confirmation')) setPasswordConfirmation('');
+    };
 
-    const updatePassword: FormEventHandler = (e) => {
+    const updatePassword: FormEventHandler = async (e) => {
         e.preventDefault();
+        setProcessing(true);
+        setErrors({});
+        setRecentlySuccessful(false);
 
-        put(route('password.update'), {
-            preserveScroll: true,
-            onSuccess: () => reset(),
-            onError: (errors) => {
-                if (errors.password) {
+        try {
+            const res = await appApiPost<ApiEnvelope<null>>('/profile/profile-password-update', {
+                current_password: currentPassword,
+                password,
+                password_confirmation: passwordConfirmation,
+            });
+
+            if (!res.success) {
+                const fieldErrors = apiFieldErrors(res.data);
+                setErrors(fieldErrors);
+
+                if (fieldErrors.password) {
                     reset('password', 'password_confirmation');
                     passwordInput.current?.focus();
                 }
 
-                if (errors.current_password) {
+                if (fieldErrors.current_password) {
                     reset('current_password');
                     currentPasswordInput.current?.focus();
                 }
-            },
-        });
+
+                if (!res.data) {
+                    setErrors({ current_password: res.message || 'Could not update password.' });
+                }
+
+                return;
+            }
+
+            reset('current_password', 'password', 'password_confirmation');
+            setRecentlySuccessful(true);
+        } catch {
+            setErrors({ current_password: 'Could not update password.' });
+        } finally {
+            setProcessing(false);
+        }
     };
 
     return (
@@ -71,10 +109,8 @@ export default function UpdatePasswordForm({
                     <TextInput
                         id="current_password"
                         ref={currentPasswordInput}
-                        value={data.current_password}
-                        onChange={(e) =>
-                            setData('current_password', e.target.value)
-                        }
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
                         type="password"
                         className="mt-1 block w-full"
                         autoComplete="current-password"
@@ -92,8 +128,8 @@ export default function UpdatePasswordForm({
                     <TextInput
                         id="password"
                         ref={passwordInput}
-                        value={data.password}
-                        onChange={(e) => setData('password', e.target.value)}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         type="password"
                         className="mt-1 block w-full"
                         autoComplete="new-password"
@@ -110,10 +146,8 @@ export default function UpdatePasswordForm({
 
                     <TextInput
                         id="password_confirmation"
-                        value={data.password_confirmation}
-                        onChange={(e) =>
-                            setData('password_confirmation', e.target.value)
-                        }
+                        value={passwordConfirmation}
+                        onChange={(e) => setPasswordConfirmation(e.target.value)}
                         type="password"
                         className="mt-1 block w-full"
                         autoComplete="new-password"

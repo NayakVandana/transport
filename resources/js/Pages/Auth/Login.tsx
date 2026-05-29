@@ -3,29 +3,69 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import type { ApiEnvelope } from '@/api/apiClient';
+import { apiPost } from '@/api/apiClient';
+import { seedAuthUserCache, useAuthUser } from '@/auth/useAuthUser';
+import { setUserApiToken } from '@/auth/authToken';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import type { User } from '@/types';
+import { getPostAuthRedirect, registerUrl } from '@/utils/requireAuth';
+import { Head, Link, router } from '@inertiajs/react';
+import { FormEventHandler, useEffect, useState } from 'react';
+
+type LoginResponse = ApiEnvelope<{
+    user: User;
+    token: string;
+}>;
 
 export default function Login({
     status,
     canResetPassword,
+    redirect,
 }: {
     status?: string;
     canResetPassword: boolean;
+    redirect?: string | null;
 }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
-        email: '',
-        password: '',
-        remember: false as boolean,
-    });
+    const { isLoggedIn } = useAuthUser();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [remember, setRemember] = useState(false);
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
-    const submit: FormEventHandler = (e) => {
+    useEffect(() => {
+        if (isLoggedIn) {
+            router.visit(getPostAuthRedirect(redirect, route('dashboard')));
+        }
+    }, [isLoggedIn, redirect]);
+
+    const submit: FormEventHandler = async (e) => {
         e.preventDefault();
+        setProcessing(true);
+        setErrors({});
 
-        post(route('login'), {
-            onFinish: () => reset('password'),
-        });
+        try {
+            const res = await apiPost<LoginResponse>('/api/v1/auth/auth-login', {
+                email,
+                password,
+            });
+
+            if (!res.success || !res.data?.token) {
+                setErrors({ email: res.message || 'Invalid credentials.' });
+
+                return;
+            }
+
+            setUserApiToken(res.data.token);
+            seedAuthUserCache(res.data.user);
+
+            router.visit(getPostAuthRedirect(redirect, route('dashboard')));
+        } catch {
+            setErrors({ email: 'Could not sign in.' });
+        } finally {
+            setProcessing(false);
+        }
     };
 
     return (
@@ -46,11 +86,11 @@ export default function Login({
                         id="email"
                         type="email"
                         name="email"
-                        value={data.email}
+                        value={email}
                         className="mt-1 block w-full"
                         autoComplete="username"
                         isFocused={true}
-                        onChange={(e) => setData('email', e.target.value)}
+                        onChange={(e) => setEmail(e.target.value)}
                     />
 
                     <InputError message={errors.email} className="mt-2" />
@@ -63,10 +103,10 @@ export default function Login({
                         id="password"
                         type="password"
                         name="password"
-                        value={data.password}
+                        value={password}
                         className="mt-1 block w-full"
                         autoComplete="current-password"
-                        onChange={(e) => setData('password', e.target.value)}
+                        onChange={(e) => setPassword(e.target.value)}
                     />
 
                     <InputError message={errors.password} className="mt-2" />
@@ -76,12 +116,9 @@ export default function Login({
                     <label className="flex items-center">
                         <Checkbox
                             name="remember"
-                            checked={data.remember}
+                            checked={remember}
                             onChange={(e) =>
-                                setData(
-                                    'remember',
-                                    (e.target.checked || false) as false,
-                                )
+                                setRemember(e.target.checked || false)
                             }
                         />
                         <span className="ms-2 text-sm text-gray-600">
@@ -105,6 +142,16 @@ export default function Login({
                     </PrimaryButton>
                 </div>
             </form>
+
+            <p className="mt-4 text-center text-sm text-gray-600">
+                No account?{' '}
+                <Link
+                    href={registerUrl(redirect ?? undefined)}
+                    className="font-medium text-indigo-600 underline hover:text-gray-900"
+                >
+                    Register
+                </Link>
+            </p>
         </GuestLayout>
     );
 }
