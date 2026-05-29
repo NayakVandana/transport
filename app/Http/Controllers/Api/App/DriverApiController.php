@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\App;
 use App\Http\Controllers\Controller;
 use App\Models\Driver;
 use App\Support\DocumentValidation;
+use App\Support\ListFilter;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -15,16 +16,37 @@ class DriverApiController extends Controller
     public function postDriversList(Request $request)
     {
         try {
+            $userId = (int) $request->user()->id;
             $perPage = (int) ($request->input('per_page') ?: 15);
             $currentPage = (int) ($request->input('current_page') ?: 1);
+            $dateFilters = ListFilter::dateFromRequest($request);
+            $search = ListFilter::searchFromRequest($request);
+            $status = ListFilter::statusFromRequest($request, ['active', 'inactive']);
 
-            $drivers = Driver::query()
-                ->where('user_id', $request->user()->id)
-                ->orderBy('name')
-                ->paginate($perPage, ['*'], 'page', $currentPage);
+            $query = Driver::query()->where('user_id', $userId);
+            ListFilter::applySearch($query, $search, ['name', 'mobile', 'license_number']);
+            ListFilter::applyDate($query, $dateFilters, 'joining_date');
+            if ($status !== '') {
+                $query->where('status', $status);
+            }
+            $query->orderBy('name');
+
+            $drivers = $query->paginate($perPage, ['*'], 'page', $currentPage);
+
+            $filterSummary = ListFilter::summary([
+                $search !== '' ? 'Search: '.$search : null,
+                $status !== '' ? 'Status: '.ucfirst($status) : null,
+                ListFilter::dateSummary($dateFilters),
+            ], 'All drivers');
 
             return $this->sendJsonResponse(true, 'Drivers loaded.', [
                 'drivers' => $drivers,
+                'filters' => [
+                    'search' => $search,
+                    'status' => $status,
+                    ...$dateFilters,
+                ],
+                'filterSummary' => $filterSummary,
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);

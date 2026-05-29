@@ -1,12 +1,30 @@
+import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import { invalidateAppQuery, useAppQuery } from '@/hooks/useAppQuery';
+import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import { invoiceReturnQuery } from '@/lib/invoiceReturn';
 import type { Vehicle } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
+
+type VehicleFilters = ListFilters & {
+    status?: string;
+};
+
+type VehiclesListData = {
+    vehicles: { data: Vehicle[] };
+    filters: VehicleFilters;
+    filterSummary: string;
+};
+
+const defaultFilters: VehicleFilters = {
+    search: '',
+    status: '',
+    ...defaultDateFilters,
+};
 
 function useInvoiceReturn() {
     return useMemo(() => {
@@ -28,6 +46,7 @@ function formatDate(value?: string | null): string {
 export default function VehiclesIndex() {
     const { return_route, return_id, return_label } = useInvoiceReturn();
     const [actionError, setActionError] = useState<string | null>(null);
+    const [searchInput, setSearchInput] = useState('');
 
     const backHref =
         return_route && route().has(return_route)
@@ -64,20 +83,39 @@ export default function VehiclesIndex() {
         </div>,
     );
 
-    const { data: vehicles, loading, error, refresh } = useAppQuery(
-        'vehicles-list',
-        async () => {
-            const res = await appApiPost<
-                ApiEnvelope<{ vehicles: { data: Vehicle[] } }>
-            >('/vehicles/vehicles-list', {});
+    const {
+        data,
+        filters,
+        filterSummary,
+        dateValue,
+        loading,
+        error,
+        hasActiveFilters,
+        applyDateChange,
+        applySearch,
+        updateField,
+        clearFilters,
+        fetchList,
+    } = useFilteredList<VehiclesListData, VehicleFilters>({
+        defaultFilters,
+        extraFilterKeys: ['status'],
+        load: async (activeFilters) => {
+            const res = await appApiPost<ApiEnvelope<VehiclesListData>>(
+                '/vehicles/vehicles-list',
+                buildListFilterParams(activeFilters),
+            );
 
-            if (!res.success || !res.data?.vehicles) {
-                throw new Error(res.message || 'Could not load vehicles.');
-            }
-
-            return res.data.vehicles.data;
+            return {
+                success: res.success,
+                data: res.data,
+                message: res.message,
+                filters: res.data?.filters,
+                filterSummary: res.data?.filterSummary,
+            };
         },
-    );
+    });
+
+    const vehicles = data?.vehicles.data ?? [];
 
     const destroy = async (id: number) => {
         if (!confirm('Remove this vehicle from the list?')) {
@@ -91,8 +129,7 @@ export default function VehiclesIndex() {
             return;
         }
 
-        invalidateAppQuery('vehicles-list');
-        await refresh();
+        await fetchList();
     };
 
     const displayError = actionError ?? error;
@@ -102,7 +139,7 @@ export default function VehiclesIndex() {
             <Head title="Vehicles" />
 
             <div className="py-8">
-                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
                     <p className="text-sm text-gray-600">
                         Manage vehicle details, insurance, and permit expiry dates. Active vehicles
                         appear in the invoice dropdown.
@@ -114,7 +151,36 @@ export default function VehiclesIndex() {
                         </p>
                     )}
 
-                    {loading && !vehicles ? (
+                    <ListFilterBar
+                        dateValue={dateValue}
+                        onDateChange={applyDateChange}
+                        search={{
+                            value: searchInput,
+                            placeholder: 'Search number, type, brand…',
+                            onChange: setSearchInput,
+                            onSubmit: () => applySearch(searchInput),
+                        }}
+                        selects={[
+                            {
+                                name: 'status',
+                                label: 'Status',
+                                value: filters.status ?? '',
+                                options: [
+                                    { value: 'active', label: 'Active' },
+                                    { value: 'inactive', label: 'Inactive' },
+                                ],
+                                onChange: (value) => updateField('status', value),
+                            },
+                        ]}
+                        filterSummary={filterSummary}
+                        hasActiveFilters={hasActiveFilters}
+                        onClear={() => {
+                            setSearchInput('');
+                            clearFilters();
+                        }}
+                    />
+
+                    {loading && !data ? (
                         <p className="text-center text-sm text-gray-500">Loading vehicles…</p>
                     ) : (
                         <div className="overflow-x-auto rounded-lg bg-white shadow">
@@ -145,17 +211,19 @@ export default function VehiclesIndex() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {(vehicles ?? []).length === 0 ? (
+                                    {vehicles.length === 0 ? (
                                         <tr>
                                             <td
                                                 colSpan={7}
                                                 className="px-6 py-8 text-center text-gray-500"
                                             >
-                                                No vehicles yet.
+                                                {hasActiveFilters
+                                                    ? 'No vehicles match your filters.'
+                                                    : 'No vehicles yet.'}
                                             </td>
                                         </tr>
                                     ) : (
-                                        (vehicles ?? []).map((v) => (
+                                        vehicles.map((v) => (
                                             <tr key={v.id}>
                                                 <td className="px-4 py-3 font-mono font-medium">
                                                     {v.vehicle_number}

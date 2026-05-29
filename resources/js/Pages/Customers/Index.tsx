@@ -1,13 +1,29 @@
+import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import { invalidateAppQuery, useAppQuery } from '@/hooks/useAppQuery';
+import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import type { Customer } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 
+type CustomerFilters = ListFilters;
+
+type CustomersListData = {
+    customers: { data: Customer[] };
+    filters: CustomerFilters;
+    filterSummary: string;
+};
+
+const defaultFilters: CustomerFilters = {
+    search: '',
+    ...defaultDateFilters,
+};
+
 export default function CustomersIndex() {
     const [actionError, setActionError] = useState<string | null>(null);
+    const [searchInput, setSearchInput] = useState('');
 
     usePageHeader(
         <div className="flex items-center justify-between">
@@ -18,20 +34,37 @@ export default function CustomersIndex() {
         </div>,
     );
 
-    const { data: customers, loading, error, refresh } = useAppQuery(
-        'customers-list',
-        async () => {
-            const res = await appApiPost<
-                ApiEnvelope<{ customers: { data: Customer[] } }>
-            >('/customers/customers-list', {});
+    const {
+        data,
+        filters,
+        filterSummary,
+        dateValue,
+        loading,
+        error,
+        hasActiveFilters,
+        applyDateChange,
+        applySearch,
+        clearFilters,
+        fetchList,
+    } = useFilteredList<CustomersListData, CustomerFilters>({
+        defaultFilters,
+        load: async (activeFilters) => {
+            const res = await appApiPost<ApiEnvelope<CustomersListData>>(
+                '/customers/customers-list',
+                buildListFilterParams(activeFilters),
+            );
 
-            if (!res.success || !res.data?.customers) {
-                throw new Error(res.message || 'Could not load customers.');
-            }
-
-            return res.data.customers.data;
+            return {
+                success: res.success,
+                data: res.data,
+                message: res.message,
+                filters: res.data?.filters,
+                filterSummary: res.data?.filterSummary,
+            };
         },
-    );
+    });
+
+    const customers = data?.customers.data ?? [];
 
     const destroy = async (id: number) => {
         if (!confirm('Delete this customer?')) {
@@ -45,8 +78,7 @@ export default function CustomersIndex() {
             return;
         }
 
-        invalidateAppQuery('customers-list');
-        await refresh();
+        await fetchList();
     };
 
     const displayError = actionError ?? error;
@@ -56,14 +88,31 @@ export default function CustomersIndex() {
             <Head title="Customers" />
 
             <div className="py-8">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
                     {displayError && (
-                        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {displayError}
                         </p>
                     )}
 
-                    {loading && !customers ? (
+                    <ListFilterBar
+                        dateValue={dateValue}
+                        onDateChange={applyDateChange}
+                        search={{
+                            value: searchInput,
+                            placeholder: 'Search name or mobile…',
+                            onChange: setSearchInput,
+                            onSubmit: () => applySearch(searchInput),
+                        }}
+                        filterSummary={filterSummary}
+                        hasActiveFilters={hasActiveFilters}
+                        onClear={() => {
+                            setSearchInput('');
+                            clearFilters();
+                        }}
+                    />
+
+                    {loading && !data ? (
                         <p className="text-center text-sm text-gray-500">Loading customers…</p>
                     ) : (
                         <div className="overflow-hidden rounded-lg bg-white shadow">
@@ -76,14 +125,16 @@ export default function CustomersIndex() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {(customers ?? []).length === 0 ? (
+                                    {customers.length === 0 ? (
                                         <tr>
                                             <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
-                                                No customers yet.
+                                                {hasActiveFilters
+                                                    ? 'No customers match your filters.'
+                                                    : 'No customers yet.'}
                                             </td>
                                         </tr>
                                     ) : (
-                                        (customers ?? []).map((c) => (
+                                        customers.map((c) => (
                                             <tr key={c.id}>
                                                 <td className="px-6 py-3 font-medium">{c.name}</td>
                                                 <td className="px-6 py-3">{c.mobile}</td>

@@ -1,13 +1,28 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import { invalidateAppQuery, useAppQuery } from '@/hooks/useAppQuery';
+import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import type { RouteLocation } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { FormEventHandler, useMemo, useState } from 'react';
+
+type RouteFilters = ListFilters;
+
+type RoutesListData = {
+    routes: { data: RouteLocation[] };
+    filters: RouteFilters;
+    filterSummary: string;
+};
+
+const defaultFilters: RouteFilters = {
+    search: '',
+    ...defaultDateFilters,
+};
 
 function useInvoiceReturn() {
     return useMemo(() => {
@@ -44,6 +59,7 @@ export default function RoutesIndex() {
     const [processing, setProcessing] = useState(false);
     const [actionError, setActionError] = useState<string | null>(null);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+    const [searchInput, setSearchInput] = useState('');
 
     const backHref =
         return_route && route().has(return_route)
@@ -68,20 +84,36 @@ export default function RoutesIndex() {
         </div>,
     );
 
-    const { data: routes, loading, error, refresh } = useAppQuery(
-        'routes-list',
-        async () => {
-            const res = await appApiPost<
-                ApiEnvelope<{ routes: { data: RouteLocation[] } }>
-            >('/routes/routes-list', {});
+    const {
+        data,
+        filterSummary,
+        dateValue,
+        loading,
+        error,
+        hasActiveFilters,
+        applyDateChange,
+        applySearch,
+        clearFilters,
+        fetchList,
+    } = useFilteredList<RoutesListData, RouteFilters>({
+        defaultFilters,
+        load: async (activeFilters) => {
+            const res = await appApiPost<ApiEnvelope<RoutesListData>>(
+                '/routes/routes-list',
+                buildListFilterParams(activeFilters),
+            );
 
-            if (!res.success || !res.data?.routes) {
-                throw new Error(res.message || 'Could not load routes.');
-            }
-
-            return res.data.routes.data;
+            return {
+                success: res.success,
+                data: res.data,
+                message: res.message,
+                filters: res.data?.filters,
+                filterSummary: res.data?.filterSummary,
+            };
         },
-    );
+    });
+
+    const routes = data?.routes.data ?? [];
 
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
@@ -103,8 +135,7 @@ export default function RoutesIndex() {
             }
 
             setName('');
-            invalidateAppQuery('routes-list');
-            await refresh();
+            await fetchList();
         } catch {
             setActionError('Could not add route.');
         } finally {
@@ -124,8 +155,7 @@ export default function RoutesIndex() {
             return;
         }
 
-        invalidateAppQuery('routes-list');
-        await refresh();
+        await fetchList();
     };
 
     const displayError = actionError ?? error;
@@ -135,7 +165,7 @@ export default function RoutesIndex() {
             <Head title="Routes" />
 
             <div className="py-8">
-                <div className="mx-auto max-w-3xl space-y-6 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-3xl space-y-4 sm:px-6 lg:px-8">
                     <p className="text-sm text-gray-600">
                         Add route / location names here (e.g. J N P T / SARIGAM / 1X20). They
                         appear in the invoice &quot;From&quot; dropdown after saving.
@@ -165,7 +195,24 @@ export default function RoutesIndex() {
                         </PrimaryButton>
                     </form>
 
-                    {loading && !routes ? (
+                    <ListFilterBar
+                        dateValue={dateValue}
+                        onDateChange={applyDateChange}
+                        search={{
+                            value: searchInput,
+                            placeholder: 'Search route name…',
+                            onChange: setSearchInput,
+                            onSubmit: () => applySearch(searchInput),
+                        }}
+                        filterSummary={filterSummary}
+                        hasActiveFilters={hasActiveFilters}
+                        onClear={() => {
+                            setSearchInput('');
+                            clearFilters();
+                        }}
+                    />
+
+                    {loading && !data ? (
                         <p className="text-center text-sm text-gray-500">Loading routes…</p>
                     ) : (
                         <div className="overflow-hidden rounded-lg bg-white shadow">
@@ -181,17 +228,19 @@ export default function RoutesIndex() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {(routes ?? []).length === 0 ? (
+                                    {routes.length === 0 ? (
                                         <tr>
                                             <td
                                                 colSpan={2}
                                                 className="px-6 py-8 text-center text-gray-500"
                                             >
-                                                No routes yet.
+                                                {hasActiveFilters
+                                                    ? 'No routes match your filters.'
+                                                    : 'No routes yet.'}
                                             </td>
                                         </tr>
                                     ) : (
-                                        (routes ?? []).map((r) => (
+                                        routes.map((r) => (
                                             <tr key={r.id}>
                                                 <td className="px-6 py-3">{r.name}</td>
                                                 <td className="px-6 py-3 text-right">

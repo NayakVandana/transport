@@ -11,6 +11,7 @@ use App\Models\Vehicle;
 use App\Support\AmountInWords;
 use App\Support\EntryNumberGenerator;
 use App\Support\FreightInvoiceCalculator;
+use App\Support\ListFilter;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -23,18 +24,54 @@ class FreightInvoiceApiController extends Controller
     public function postInvoicesList(Request $request)
     {
         try {
+            $userId = (int) $request->user()->id;
             $perPage = (int) ($request->input('per_page') ?: 15);
             $currentPage = (int) ($request->input('current_page') ?: 1);
+            $dateFilters = ListFilter::dateFromRequest($request);
+            $search = ListFilter::searchFromRequest($request);
+            $customerId = ListFilter::optionalIdFromRequest($request, 'customer_id');
+            $status = ListFilter::statusFromRequest($request, ['draft', 'finalized']);
 
-            $invoices = FreightInvoice::query()
-                ->where('user_id', $request->user()->id)
-                ->with(['customer:id,name', 'company:id,name'])
-                ->orderByDesc('invoice_date')
-                ->orderByDesc('id')
-                ->paginate($perPage, ['*'], 'page', $currentPage);
+            $query = FreightInvoice::query()
+                ->where('user_id', $userId)
+                ->with(['customer:id,name', 'company:id,name']);
+            ListFilter::applyDate($query, $dateFilters, 'invoice_date');
+            ListFilter::applySearch($query, $search, ['bill_number']);
+            if ($customerId !== '') {
+                $query->where('customer_id', $customerId);
+            }
+            if ($status !== '') {
+                $query->where('status', $status);
+            }
+            $query->orderByDesc('invoice_date')->orderByDesc('id');
+
+            $invoices = $query->paginate($perPage, ['*'], 'page', $currentPage);
+            $customers = Customer::query()
+                ->where('user_id', $userId)
+                ->orderBy('name')
+                ->get(['id', 'name']);
+
+            $customerName = $customerId !== ''
+                ? $customers->firstWhere('id', (int) $customerId)?->name
+                : null;
+
+            $filterSummary = ListFilter::summary([
+                $search !== '' ? 'Search: '.$search : null,
+                $status !== '' ? 'Status: '.ucfirst($status) : null,
+                $customerName ? 'Customer: '.$customerName : null,
+                ListFilter::dateSummary($dateFilters),
+            ], 'All invoices');
 
             return $this->sendJsonResponse(true, 'Invoices loaded.', [
                 'invoices' => $invoices,
+                'customers' => $customers,
+                'filters' => [
+                    'search' => $search,
+                    'status' => $status,
+                    'customer_id' => $customerId,
+                    ...$dateFilters,
+                ],
+                'filterSummary' => $filterSummary,
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);

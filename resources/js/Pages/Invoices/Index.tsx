@@ -1,12 +1,36 @@
+import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import { useAppQuery } from '@/hooks/useAppQuery';
+import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import { formatMoney } from '@/lib/freightCalculator';
-import type { FreightInvoice } from '@/types/transport';
+import type { Customer, FreightInvoice } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
+import { useState } from 'react';
+
+type InvoiceFilters = ListFilters & {
+    status?: string;
+    customer_id?: string;
+};
+
+type InvoicesListData = {
+    invoices: { data: (FreightInvoice & { customer?: { name: string } })[] };
+    customers: Pick<Customer, 'id' | 'name'>[];
+    filters: InvoiceFilters;
+    filterSummary: string;
+};
+
+const defaultFilters: InvoiceFilters = {
+    search: '',
+    status: '',
+    customer_id: '',
+    ...defaultDateFilters,
+};
 
 export default function InvoicesIndex() {
+    const [searchInput, setSearchInput] = useState('');
+
     usePageHeader(
         <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-800">Tax Invoices</h2>
@@ -16,36 +40,92 @@ export default function InvoicesIndex() {
         </div>,
     );
 
-    const { data: invoices, loading, error } = useAppQuery(
-        'invoices-list',
-        async () => {
-            const res = await appApiPost<
-                ApiEnvelope<{
-                    invoices: { data: (FreightInvoice & { customer?: { name: string } })[] };
-                }>
-            >('/invoices/invoices-list', {});
+    const {
+        data,
+        filters,
+        filterSummary,
+        dateValue,
+        loading,
+        error,
+        hasActiveFilters,
+        applyDateChange,
+        applySearch,
+        updateField,
+        clearFilters,
+    } = useFilteredList<InvoicesListData, InvoiceFilters>({
+        defaultFilters,
+        extraFilterKeys: ['status', 'customer_id'],
+        load: async (activeFilters) => {
+            const res = await appApiPost<ApiEnvelope<InvoicesListData>>(
+                '/invoices/invoices-list',
+                buildListFilterParams(activeFilters),
+            );
 
-            if (!res.success || !res.data?.invoices) {
-                throw new Error(res.message || 'Could not load invoices.');
-            }
-
-            return res.data.invoices.data;
+            return {
+                success: res.success,
+                data: res.data,
+                message: res.message,
+                filters: res.data?.filters,
+                filterSummary: res.data?.filterSummary,
+            };
         },
-    );
+    });
+
+    const invoices = data?.invoices.data ?? [];
 
     return (
         <>
             <Head title="Invoices" />
 
             <div className="py-8">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
                     {error && (
-                        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {error}
                         </p>
                     )}
 
-                    {loading && !invoices ? (
+                    <ListFilterBar
+                        dateValue={dateValue}
+                        onDateChange={applyDateChange}
+                        search={{
+                            value: searchInput,
+                            placeholder: 'Search bill number…',
+                            onChange: setSearchInput,
+                            onSubmit: () => applySearch(searchInput),
+                        }}
+                        selects={[
+                            {
+                                name: 'status',
+                                label: 'Status',
+                                value: filters.status ?? '',
+                                options: [
+                                    { value: 'draft', label: 'Draft' },
+                                    { value: 'finalized', label: 'Finalized' },
+                                ],
+                                onChange: (value) => updateField('status', value),
+                            },
+                            {
+                                name: 'customer_id',
+                                label: 'Customer',
+                                value: filters.customer_id ?? '',
+                                widthClass: 'w-[10rem]',
+                                options: (data?.customers ?? []).map((c) => ({
+                                    value: String(c.id),
+                                    label: c.name,
+                                })),
+                                onChange: (value) => updateField('customer_id', value),
+                            },
+                        ]}
+                        filterSummary={filterSummary}
+                        hasActiveFilters={hasActiveFilters}
+                        onClear={() => {
+                            setSearchInput('');
+                            clearFilters();
+                        }}
+                    />
+
+                    {loading && !data ? (
                         <p className="text-center text-sm text-gray-500">Loading invoices…</p>
                     ) : (
                         <div className="overflow-hidden rounded-lg bg-white shadow">
@@ -60,14 +140,16 @@ export default function InvoicesIndex() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {(invoices ?? []).length === 0 ? (
+                                    {invoices.length === 0 ? (
                                         <tr>
                                             <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                                                No invoices yet.
+                                                {hasActiveFilters
+                                                    ? 'No invoices match your filters.'
+                                                    : 'No invoices yet.'}
                                             </td>
                                         </tr>
                                     ) : (
-                                        (invoices ?? []).map((inv) => (
+                                        invoices.map((inv) => (
                                             <tr key={inv.id}>
                                                 <td className="px-6 py-3 font-medium">{inv.bill_number}</td>
                                                 <td className="px-6 py-3">{inv.customer?.name}</td>

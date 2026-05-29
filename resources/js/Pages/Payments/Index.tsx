@@ -1,11 +1,38 @@
+import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import { invalidateAppQuery, useAppQuery } from '@/hooks/useAppQuery';
+import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import { formatMoney } from '@/lib/freightCalculator';
-import type { ExpenseOption, Payment } from '@/types/transport';
+import type { Customer, ExpenseOption, Payment } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
+
+type PaymentFilters = ListFilters & {
+    direction?: string;
+    customer_id?: string;
+    payment_method?: string;
+};
+
+type PaymentsListData = {
+    payments: { data: Payment[] };
+    total_receipts: number;
+    total_payouts: number;
+    customers: Pick<Customer, 'id' | 'name'>[];
+    directions: ExpenseOption[];
+    payment_methods: ExpenseOption[];
+    filters: PaymentFilters;
+    filterSummary: string;
+};
+
+const defaultFilters: PaymentFilters = {
+    search: '',
+    direction: '',
+    customer_id: '',
+    payment_method: '',
+    ...defaultDateFilters,
+};
 
 function formatDate(value?: string | null): string {
     if (!value) {
@@ -25,6 +52,7 @@ function formatMethod(method?: string | null): string {
 
 export default function PaymentsIndex() {
     const [actionError, setActionError] = useState<string | null>(null);
+    const [searchInput, setSearchInput] = useState('');
 
     usePageHeader(
         <div className="flex items-center justify-between">
@@ -35,60 +63,57 @@ export default function PaymentsIndex() {
         </div>,
     );
 
-    const { data, loading, error, refresh } = useAppQuery(
-        'payments-list',
-        async () => {
-            const res = await appApiPost<
-                ApiEnvelope<{
-                    payments: { data: Payment[] };
-                    total_receipts: number;
-                    total_payouts: number;
-                }>
-            >('/payments/payments-list', {});
+    const {
+        data,
+        filters,
+        filterSummary,
+        dateValue,
+        loading,
+        error,
+        hasActiveFilters,
+        applyDateChange,
+        applySearch,
+        updateField,
+        clearFilters,
+        fetchList,
+    } = useFilteredList<PaymentsListData, PaymentFilters>({
+        defaultFilters,
+        extraFilterKeys: ['direction', 'customer_id', 'payment_method'],
+        load: async (activeFilters) => {
+            const res = await appApiPost<ApiEnvelope<PaymentsListData>>(
+                '/payments/payments-list',
+                buildListFilterParams(activeFilters),
+            );
 
-            if (!res.success || !res.data?.payments) {
-                throw new Error(res.message || 'Could not load payments.');
-            }
-
-            return res.data;
-        },
-    );
-
-    const { data: meta } = useAppQuery('payments-meta-labels', async () => {
-        const res = await appApiPost<
-            ApiEnvelope<{ directions: ExpenseOption[]; payment_methods: ExpenseOption[] }>
-        >('/payments/payment-meta', {});
-
-        if (!res.success || !res.data) {
             return {
-                directions: [] as ExpenseOption[],
-                payment_methods: [] as ExpenseOption[],
+                success: res.success,
+                data: res.data,
+                message: res.message,
+                filters: res.data?.filters,
+                filterSummary: res.data?.filterSummary,
             };
-        }
-
-        return {
-            directions: res.data.directions ?? [],
-            payment_methods: res.data.payment_methods ?? [],
-        };
+        },
     });
 
     const directionLabels = useMemo(() => {
         const map: Record<string, string> = {};
-        for (const item of meta?.directions ?? []) {
+        for (const item of data?.directions ?? []) {
             map[item.value] = item.label;
         }
 
         return map;
-    }, [meta?.directions]);
+    }, [data?.directions]);
 
     const methodLabels = useMemo(() => {
         const map: Record<string, string> = {};
-        for (const item of meta?.payment_methods ?? []) {
+        for (const item of data?.payment_methods ?? []) {
             map[item.value] = item.label;
         }
 
         return map;
-    }, [meta?.payment_methods]);
+    }, [data?.payment_methods]);
+
+    const payments = data?.payments.data ?? [];
 
     const destroy = async (id: number) => {
         if (!confirm('Delete this payment?')) {
@@ -102,12 +127,10 @@ export default function PaymentsIndex() {
             return;
         }
 
-        invalidateAppQuery('payments-list');
-        await refresh();
+        await fetchList();
     };
 
     const displayError = actionError ?? error;
-    const payments = data?.payments.data ?? [];
 
     return (
         <>
@@ -120,6 +143,56 @@ export default function PaymentsIndex() {
                             {displayError}
                         </p>
                     )}
+
+                    <ListFilterBar
+                        dateValue={dateValue}
+                        onDateChange={applyDateChange}
+                        search={{
+                            value: searchInput,
+                            placeholder: 'Search reference, notes…',
+                            onChange: setSearchInput,
+                            onSubmit: () => applySearch(searchInput),
+                        }}
+                        selects={[
+                            {
+                                name: 'direction',
+                                label: 'Type',
+                                value: filters.direction ?? '',
+                                options: (data?.directions ?? []).map((d) => ({
+                                    value: d.value,
+                                    label: d.label,
+                                })),
+                                onChange: (value) => updateField('direction', value),
+                            },
+                            {
+                                name: 'customer_id',
+                                label: 'Customer',
+                                value: filters.customer_id ?? '',
+                                widthClass: 'w-[10rem]',
+                                options: (data?.customers ?? []).map((c) => ({
+                                    value: String(c.id),
+                                    label: c.name,
+                                })),
+                                onChange: (value) => updateField('customer_id', value),
+                            },
+                            {
+                                name: 'payment_method',
+                                label: 'Method',
+                                value: filters.payment_method ?? '',
+                                options: (data?.payment_methods ?? []).map((m) => ({
+                                    value: m.value,
+                                    label: m.label,
+                                })),
+                                onChange: (value) => updateField('payment_method', value),
+                            },
+                        ]}
+                        filterSummary={filterSummary}
+                        hasActiveFilters={hasActiveFilters}
+                        onClear={() => {
+                            setSearchInput('');
+                            clearFilters();
+                        }}
+                    />
 
                     {data && (
                         <div className="grid gap-4 sm:grid-cols-2">
@@ -159,7 +232,9 @@ export default function PaymentsIndex() {
                                     {payments.length === 0 ? (
                                         <tr>
                                             <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                                                No payments recorded yet.
+                                                {hasActiveFilters
+                                                    ? 'No payments match your filters.'
+                                                    : 'No payments recorded yet.'}
                                             </td>
                                         </tr>
                                     ) : (

@@ -14,28 +14,14 @@ class BookingReport
     /** @return array{vehicle_id: string, date_range: string, date_from: string, date_to: string} */
     public static function filtersFromRequest(Request $request, int $userId): array
     {
-        $validated = $request->validate([
-            'vehicle_id' => ['nullable', 'integer'],
-            'date_range' => ['nullable', 'string', 'in:'.implode(',', BookingDateFilter::PRESETS)],
-            'date_from' => ['nullable', 'date'],
-            'date_to' => ['nullable', 'date'],
-        ]);
+        $dateFilters = ListFilter::dateFromRequest($request);
 
-        $dateRange = BookingDateFilter::normalizeRange(
-            $validated['date_range'] ?? null,
-            $validated['date_from'] ?? '',
-            $validated['date_to'] ?? '',
-        );
+        [$dateFrom, $dateTo] = [
+            $dateFilters['date_from'],
+            $dateFilters['date_to'],
+        ];
 
-        [$dateFrom, $dateTo] = BookingDateFilter::resolveDates(
-            $dateRange,
-            $validated['date_from'] ?? '',
-            $validated['date_to'] ?? '',
-        );
-
-        $vehicleId = isset($validated['vehicle_id'])
-            ? (string) $validated['vehicle_id']
-            : '';
+        $vehicleId = ListFilter::optionalIdFromRequest($request, 'vehicle_id');
 
         if ($vehicleId !== '') {
             $ownsVehicle = Vehicle::query()
@@ -50,7 +36,7 @@ class BookingReport
 
         return [
             'vehicle_id' => $vehicleId,
-            'date_range' => $dateRange,
+            'date_range' => $dateFilters['date_range'],
             'date_from' => $dateFrom,
             'date_to' => $dateTo,
         ];
@@ -139,7 +125,7 @@ class BookingReport
             $parts[] = 'Period: '.BookingDateFilter::label($dateRange);
         }
 
-        return $parts === [] ? 'All bookings' : implode(' | ', $parts);
+        return ListFilter::summary($parts, 'All bookings');
     }
 
     public static function formatMoney(float|int|string $amount): string

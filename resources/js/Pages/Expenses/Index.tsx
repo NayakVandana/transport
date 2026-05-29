@@ -1,11 +1,37 @@
+import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import { invalidateAppQuery, useAppQuery } from '@/hooks/useAppQuery';
+import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import { formatMoney } from '@/lib/freightCalculator';
-import type { Expense, ExpenseOption } from '@/types/transport';
+import type { Expense, ExpenseOption, Vehicle } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
+
+type ExpenseFilters = ListFilters & {
+    category?: string;
+    vehicle_id?: string;
+    payment_method?: string;
+};
+
+type ExpensesListData = {
+    expenses: { data: Expense[] };
+    total_amount: number;
+    vehicles: Pick<Vehicle, 'id' | 'vehicle_number'>[];
+    categories: ExpenseOption[];
+    payment_methods: ExpenseOption[];
+    filters: ExpenseFilters;
+    filterSummary: string;
+};
+
+const defaultFilters: ExpenseFilters = {
+    search: '',
+    category: '',
+    vehicle_id: '',
+    payment_method: '',
+    ...defaultDateFilters,
+};
 
 function formatDate(value?: string | null): string {
     if (!value) {
@@ -25,6 +51,7 @@ function formatPayment(method?: string | null): string {
 
 export default function ExpensesIndex() {
     const [actionError, setActionError] = useState<string | null>(null);
+    const [searchInput, setSearchInput] = useState('');
 
     usePageHeader(
         <div className="flex items-center justify-between">
@@ -35,44 +62,48 @@ export default function ExpensesIndex() {
         </div>,
     );
 
-    const { data, loading, error, refresh } = useAppQuery(
-        'expenses-list',
-        async () => {
-            const res = await appApiPost<
-                ApiEnvelope<{
-                    expenses: { data: Expense[] };
-                    total_amount: number;
-                }>
-            >('/expenses/expenses-list', {});
+    const {
+        data,
+        filters,
+        filterSummary,
+        dateValue,
+        loading,
+        error,
+        hasActiveFilters,
+        applyDateChange,
+        applySearch,
+        updateField,
+        clearFilters,
+        fetchList,
+    } = useFilteredList<ExpensesListData, ExpenseFilters>({
+        defaultFilters,
+        extraFilterKeys: ['category', 'vehicle_id', 'payment_method'],
+        load: async (activeFilters) => {
+            const res = await appApiPost<ApiEnvelope<ExpensesListData>>(
+                '/expenses/expenses-list',
+                buildListFilterParams(activeFilters),
+            );
 
-            if (!res.success || !res.data?.expenses) {
-                throw new Error(res.message || 'Could not load expenses.');
-            }
-
-            return res.data;
+            return {
+                success: res.success,
+                data: res.data,
+                message: res.message,
+                filters: res.data?.filters,
+                filterSummary: res.data?.filterSummary,
+            };
         },
-    );
-
-    const { data: meta } = useAppQuery('expenses-meta-labels', async () => {
-        const res = await appApiPost<
-            ApiEnvelope<{ categories: ExpenseOption[] }>
-        >('/expenses/expense-meta', {});
-
-        if (!res.success || !res.data?.categories) {
-            return { categories: [] as ExpenseOption[] };
-        }
-
-        return { categories: res.data.categories };
     });
 
     const categoryLabels = useMemo(() => {
         const map: Record<string, string> = {};
-        for (const item of meta?.categories ?? []) {
+        for (const item of data?.categories ?? []) {
             map[item.value] = item.label;
         }
 
         return map;
-    }, [meta?.categories]);
+    }, [data?.categories]);
+
+    const expenses = data?.expenses.data ?? [];
 
     const destroy = async (id: number) => {
         if (!confirm('Delete this expense?')) {
@@ -86,12 +117,10 @@ export default function ExpensesIndex() {
             return;
         }
 
-        invalidateAppQuery('expenses-list');
-        await refresh();
+        await fetchList();
     };
 
     const displayError = actionError ?? error;
-    const expenses = data?.expenses.data ?? [];
 
     return (
         <>
@@ -104,6 +133,57 @@ export default function ExpensesIndex() {
                             {displayError}
                         </p>
                     )}
+
+                    <ListFilterBar
+                        dateValue={dateValue}
+                        onDateChange={applyDateChange}
+                        search={{
+                            value: searchInput,
+                            placeholder: 'Search description…',
+                            onChange: setSearchInput,
+                            onSubmit: () => applySearch(searchInput),
+                        }}
+                        selects={[
+                            {
+                                name: 'category',
+                                label: 'Category',
+                                value: filters.category ?? '',
+                                widthClass: 'w-[10rem]',
+                                options: (data?.categories ?? []).map((c) => ({
+                                    value: c.value,
+                                    label: c.label,
+                                })),
+                                onChange: (value) => updateField('category', value),
+                            },
+                            {
+                                name: 'vehicle_id',
+                                label: 'Vehicle',
+                                value: filters.vehicle_id ?? '',
+                                widthClass: 'w-[10rem]',
+                                options: (data?.vehicles ?? []).map((v) => ({
+                                    value: String(v.id),
+                                    label: v.vehicle_number,
+                                })),
+                                onChange: (value) => updateField('vehicle_id', value),
+                            },
+                            {
+                                name: 'payment_method',
+                                label: 'Payment',
+                                value: filters.payment_method ?? '',
+                                options: (data?.payment_methods ?? []).map((m) => ({
+                                    value: m.value,
+                                    label: m.label,
+                                })),
+                                onChange: (value) => updateField('payment_method', value),
+                            },
+                        ]}
+                        filterSummary={filterSummary}
+                        hasActiveFilters={hasActiveFilters}
+                        onClear={() => {
+                            setSearchInput('');
+                            clearFilters();
+                        }}
+                    />
 
                     {data && (
                         <div className="rounded-lg bg-white p-4 shadow">
@@ -136,7 +216,9 @@ export default function ExpensesIndex() {
                                     {expenses.length === 0 ? (
                                         <tr>
                                             <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
-                                                No expenses yet.
+                                                {hasActiveFilters
+                                                    ? 'No expenses match your filters.'
+                                                    : 'No expenses yet.'}
                                             </td>
                                         </tr>
                                     ) : (

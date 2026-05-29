@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Expense;
 use App\Support\BookingReport;
 use App\Support\ExpenseValidation;
+use App\Support\ListFilter;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -20,22 +21,91 @@ class ExpenseApiController extends Controller
             $userId = (int) $request->user()->id;
             $perPage = (int) ($request->input('per_page') ?: 20);
             $currentPage = (int) ($request->input('current_page') ?: 1);
+            $dateFilters = ListFilter::dateFromRequest($request);
+            $search = ListFilter::searchFromRequest($request);
+            $vehicleId = ListFilter::optionalIdFromRequest($request, 'vehicle_id');
+            $driverId = ListFilter::optionalIdFromRequest($request, 'driver_id');
+
+            $validated = $request->validate([
+                'category' => ['nullable', 'string', Rule::in(ExpenseValidation::categories())],
+                'payment_method' => ['nullable', 'string', Rule::in(ExpenseValidation::paymentMethods())],
+            ]);
+            $category = $validated['category'] ?? '';
+            $paymentMethod = $validated['payment_method'] ?? '';
+
+            if ($vehicleId !== '') {
+                $ownsVehicle = \App\Models\Vehicle::query()
+                    ->where('user_id', $userId)
+                    ->whereKey($vehicleId)
+                    ->exists();
+                if (! $ownsVehicle) {
+                    $vehicleId = '';
+                }
+            }
+
+            if ($driverId !== '') {
+                $ownsDriver = \App\Models\Driver::query()
+                    ->where('user_id', $userId)
+                    ->whereKey($driverId)
+                    ->exists();
+                if (! $ownsDriver) {
+                    $driverId = '';
+                }
+            }
 
             $query = Expense::query()
                 ->with([
                     'vehicle:id,vehicle_number',
                     'driver:id,name',
                 ])
-                ->where('user_id', $userId)
-                ->orderByDesc('expense_date')
-                ->orderByDesc('id');
+                ->where('user_id', $userId);
+            ListFilter::applyDate($query, $dateFilters, 'expense_date');
+            ListFilter::applySearch($query, $search, ['description', 'category']);
+            if ($vehicleId !== '') {
+                $query->where('vehicle_id', $vehicleId);
+            }
+            if ($driverId !== '') {
+                $query->where('driver_id', $driverId);
+            }
+            if ($category !== '') {
+                $query->where('category', $category);
+            }
+            if ($paymentMethod !== '') {
+                $query->where('payment_method', $paymentMethod);
+            }
+            $query->orderByDesc('expense_date')->orderByDesc('id');
 
             $totalAmount = (float) (clone $query)->toBase()->sum('amount');
             $expenses = $query->paginate($perPage, ['*'], 'page', $currentPage);
 
+            $vehicles = BookingReport::vehiclesForUser($userId);
+            $categoryLabel = $category !== ''
+                ? collect(ExpenseValidation::categoryLabels())->get($category)
+                : null;
+
+            $filterSummary = ListFilter::summary([
+                $search !== '' ? 'Search: '.$search : null,
+                $categoryLabel ? 'Category: '.$categoryLabel : null,
+                $paymentMethod !== '' ? 'Payment: '.strtoupper($paymentMethod) : null,
+                $vehicleId !== '' ? 'Vehicle: '.($vehicles->firstWhere('id', (int) $vehicleId)?->vehicle_number ?? 'All') : null,
+                ListFilter::dateSummary($dateFilters),
+            ], 'All expenses');
+
             return $this->sendJsonResponse(true, 'Expenses loaded.', [
                 'expenses' => $expenses,
                 'total_amount' => round($totalAmount, 2),
+                'vehicles' => $vehicles,
+                'categories' => ExpenseValidation::optionsForFrontend()['categories'],
+                'payment_methods' => ExpenseValidation::optionsForFrontend()['payment_methods'],
+                'filters' => [
+                    'search' => $search,
+                    'category' => $category,
+                    'payment_method' => $paymentMethod,
+                    'vehicle_id' => $vehicleId,
+                    'driver_id' => $driverId,
+                    ...$dateFilters,
+                ],
+                'filterSummary' => $filterSummary,
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);

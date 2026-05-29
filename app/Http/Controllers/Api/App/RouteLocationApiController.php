@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\RouteLocation;
+use App\Support\ListFilter;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -13,17 +14,33 @@ class RouteLocationApiController extends Controller
     public function postRoutesList(Request $request)
     {
         try {
+            $userId = (int) $request->user()->id;
             $perPage = (int) ($request->input('per_page') ?: 20);
             $currentPage = (int) ($request->input('current_page') ?: 1);
+            $dateFilters = ListFilter::dateFromRequest($request);
+            $search = ListFilter::searchFromRequest($request);
 
-            $routes = RouteLocation::query()
-                ->where('user_id', $request->user()->id)
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->paginate($perPage, ['*'], 'page', $currentPage);
+            $query = RouteLocation::query()
+                ->where('user_id', $userId)
+                ->where('is_active', true);
+            ListFilter::applySearch($query, $search, ['name']);
+            ListFilter::applyDate($query, $dateFilters, 'created_at');
+            $query->orderBy('name');
+
+            $routes = $query->paginate($perPage, ['*'], 'page', $currentPage);
+
+            $filterSummary = ListFilter::summary([
+                $search !== '' ? 'Search: '.$search : null,
+                ListFilter::dateSummary($dateFilters),
+            ], 'All routes');
 
             return $this->sendJsonResponse(true, 'Routes loaded.', [
                 'routes' => $routes,
+                'filters' => [
+                    'search' => $search,
+                    ...$dateFilters,
+                ],
+                'filterSummary' => $filterSummary,
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);

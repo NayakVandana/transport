@@ -1,11 +1,29 @@
+import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import { invalidateAppQuery, useAppQuery } from '@/hooks/useAppQuery';
+import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import { formatMoney } from '@/lib/freightCalculator';
 import type { Driver } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
+
+type DriverFilters = ListFilters & {
+    status?: string;
+};
+
+type DriversListData = {
+    drivers: { data: Driver[] };
+    filters: DriverFilters;
+    filterSummary: string;
+};
+
+const defaultFilters: DriverFilters = {
+    search: '',
+    status: '',
+    ...defaultDateFilters,
+};
 
 function formatDate(value?: string | null): string {
     if (!value) {
@@ -17,6 +35,7 @@ function formatDate(value?: string | null): string {
 
 export default function DriversIndex() {
     const [actionError, setActionError] = useState<string | null>(null);
+    const [searchInput, setSearchInput] = useState('');
 
     usePageHeader(
         <div className="flex items-center justify-between">
@@ -27,20 +46,39 @@ export default function DriversIndex() {
         </div>,
     );
 
-    const { data: drivers, loading, error, refresh } = useAppQuery(
-        'drivers-list',
-        async () => {
-            const res = await appApiPost<
-                ApiEnvelope<{ drivers: { data: Driver[] } }>
-            >('/drivers/drivers-list', {});
+    const {
+        data,
+        filters,
+        filterSummary,
+        dateValue,
+        loading,
+        error,
+        hasActiveFilters,
+        applyDateChange,
+        applySearch,
+        updateField,
+        clearFilters,
+        fetchList,
+    } = useFilteredList<DriversListData, DriverFilters>({
+        defaultFilters,
+        extraFilterKeys: ['status'],
+        load: async (activeFilters) => {
+            const res = await appApiPost<ApiEnvelope<DriversListData>>(
+                '/drivers/drivers-list',
+                buildListFilterParams(activeFilters),
+            );
 
-            if (!res.success || !res.data?.drivers) {
-                throw new Error(res.message || 'Could not load drivers.');
-            }
-
-            return res.data.drivers.data;
+            return {
+                success: res.success,
+                data: res.data,
+                message: res.message,
+                filters: res.data?.filters,
+                filterSummary: res.data?.filterSummary,
+            };
         },
-    );
+    });
+
+    const drivers = data?.drivers.data ?? [];
 
     const destroy = async (id: number) => {
         if (!confirm('Delete this driver?')) {
@@ -54,8 +92,7 @@ export default function DriversIndex() {
             return;
         }
 
-        invalidateAppQuery('drivers-list');
-        await refresh();
+        await fetchList();
     };
 
     const displayError = actionError ?? error;
@@ -65,14 +102,43 @@ export default function DriversIndex() {
             <Head title="Drivers" />
 
             <div className="py-8">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
                     {displayError && (
-                        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {displayError}
                         </p>
                     )}
 
-                    {loading && !drivers ? (
+                    <ListFilterBar
+                        dateValue={dateValue}
+                        onDateChange={applyDateChange}
+                        search={{
+                            value: searchInput,
+                            placeholder: 'Search name, mobile, license…',
+                            onChange: setSearchInput,
+                            onSubmit: () => applySearch(searchInput),
+                        }}
+                        selects={[
+                            {
+                                name: 'status',
+                                label: 'Status',
+                                value: filters.status ?? '',
+                                options: [
+                                    { value: 'active', label: 'Active' },
+                                    { value: 'inactive', label: 'Inactive' },
+                                ],
+                                onChange: (value) => updateField('status', value),
+                            },
+                        ]}
+                        filterSummary={filterSummary}
+                        hasActiveFilters={hasActiveFilters}
+                        onClear={() => {
+                            setSearchInput('');
+                            clearFilters();
+                        }}
+                    />
+
+                    {loading && !data ? (
                         <p className="text-center text-sm text-gray-500">Loading drivers…</p>
                     ) : (
                         <div className="overflow-x-auto rounded-lg bg-white shadow">
@@ -90,14 +156,16 @@ export default function DriversIndex() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {(drivers ?? []).length === 0 ? (
+                                    {drivers.length === 0 ? (
                                         <tr>
                                             <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                                                No drivers yet.
+                                                {hasActiveFilters
+                                                    ? 'No drivers match your filters.'
+                                                    : 'No drivers yet.'}
                                             </td>
                                         </tr>
                                     ) : (
-                                        (drivers ?? []).map((driver) => (
+                                        drivers.map((driver) => (
                                             <tr key={driver.id}>
                                                 <td className="px-6 py-3 font-medium">{driver.name}</td>
                                                 <td className="px-6 py-3">{driver.mobile ?? '—'}</td>

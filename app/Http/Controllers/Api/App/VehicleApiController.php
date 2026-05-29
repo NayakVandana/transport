@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\VehicleRequest;
 use App\Models\Vehicle;
 use App\Support\DocumentValidation;
+use App\Support\ListFilter;
 use App\Support\VehicleValidation;
 use Exception;
 use Illuminate\Http\Request;
@@ -16,16 +17,37 @@ class VehicleApiController extends Controller
     public function postVehiclesList(Request $request)
     {
         try {
+            $userId = (int) $request->user()->id;
             $perPage = (int) ($request->input('per_page') ?: 20);
             $currentPage = (int) ($request->input('current_page') ?: 1);
+            $dateFilters = ListFilter::dateFromRequest($request);
+            $search = ListFilter::searchFromRequest($request);
+            $status = ListFilter::statusFromRequest($request, ['active', 'inactive']);
 
-            $vehicles = Vehicle::query()
-                ->where('user_id', $request->user()->id)
-                ->orderBy('vehicle_number')
-                ->paginate($perPage, ['*'], 'page', $currentPage);
+            $query = Vehicle::query()->where('user_id', $userId);
+            ListFilter::applySearch($query, $search, ['vehicle_number', 'vehicle_type', 'brand', 'model']);
+            ListFilter::applyDate($query, $dateFilters, 'created_at');
+            if ($status !== '') {
+                $query->where('status', $status);
+            }
+            $query->orderBy('vehicle_number');
+
+            $vehicles = $query->paginate($perPage, ['*'], 'page', $currentPage);
+
+            $filterSummary = ListFilter::summary([
+                $search !== '' ? 'Search: '.$search : null,
+                $status !== '' ? 'Status: '.ucfirst($status) : null,
+                ListFilter::dateSummary($dateFilters),
+            ], 'All vehicles');
 
             return $this->sendJsonResponse(true, 'Vehicles loaded.', [
                 'vehicles' => $vehicles,
+                'filters' => [
+                    'search' => $search,
+                    'status' => $status,
+                    ...$dateFilters,
+                ],
+                'filterSummary' => $filterSummary,
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Support\ListFilter;
 use App\Support\PaymentValidation;
 use Exception;
 use Illuminate\Http\Request;
@@ -18,6 +19,26 @@ class PaymentApiController extends Controller
             $userId = (int) $request->user()->id;
             $perPage = (int) ($request->input('per_page') ?: 20);
             $currentPage = (int) ($request->input('current_page') ?: 1);
+            $dateFilters = ListFilter::dateFromRequest($request);
+            $search = ListFilter::searchFromRequest($request);
+            $customerId = ListFilter::optionalIdFromRequest($request, 'customer_id');
+
+            $validated = $request->validate([
+                'direction' => ['nullable', 'string', Rule::in(PaymentValidation::directions())],
+                'payment_method' => ['nullable', 'string', Rule::in(PaymentValidation::paymentMethods())],
+            ]);
+            $direction = $validated['direction'] ?? '';
+            $paymentMethod = $validated['payment_method'] ?? '';
+
+            if ($customerId !== '') {
+                $ownsCustomer = \App\Models\Customer::query()
+                    ->where('user_id', $userId)
+                    ->whereKey($customerId)
+                    ->exists();
+                if (! $ownsCustomer) {
+                    $customerId = '';
+                }
+            }
 
             $query = Payment::query()
                 ->with([
@@ -26,18 +47,52 @@ class PaymentApiController extends Controller
                     'booking.vehicle:id,vehicle_number',
                     'freightInvoice:id,bill_number,invoice_date',
                 ])
-                ->where('user_id', $userId)
-                ->orderByDesc('payment_date')
-                ->orderByDesc('id');
+                ->where('user_id', $userId);
+            ListFilter::applyDate($query, $dateFilters, 'payment_date');
+            ListFilter::applySearch($query, $search, ['reference_number', 'notes']);
+            if ($customerId !== '') {
+                $query->where('customer_id', $customerId);
+            }
+            if ($direction !== '') {
+                $query->where('direction', $direction);
+            }
+            if ($paymentMethod !== '') {
+                $query->where('payment_method', $paymentMethod);
+            }
+            $query->orderByDesc('payment_date')->orderByDesc('id');
 
             $totalReceipts = (float) (clone $query)->toBase()->where('direction', 'receipt')->sum('amount');
             $totalPayouts = (float) (clone $query)->toBase()->where('direction', 'payout')->sum('amount');
             $payments = $query->paginate($perPage, ['*'], 'page', $currentPage);
 
+            $customers = PaymentValidation::customersForUser($userId);
+            $customerName = $customerId !== ''
+                ? $customers->firstWhere('id', (int) $customerId)?->name
+                : null;
+
+            $filterSummary = ListFilter::summary([
+                $search !== '' ? 'Search: '.$search : null,
+                $direction !== '' ? 'Type: '.ucfirst($direction) : null,
+                $paymentMethod !== '' ? 'Method: '.strtoupper($paymentMethod) : null,
+                $customerName ? 'Customer: '.$customerName : null,
+                ListFilter::dateSummary($dateFilters),
+            ], 'All payments');
+
             return $this->sendJsonResponse(true, 'Payments loaded.', [
                 'payments' => $payments,
                 'total_receipts' => round($totalReceipts, 2),
                 'total_payouts' => round($totalPayouts, 2),
+                'customers' => $customers,
+                'directions' => PaymentValidation::optionsForFrontend()['directions'],
+                'payment_methods' => PaymentValidation::optionsForFrontend()['payment_methods'],
+                'filters' => [
+                    'search' => $search,
+                    'direction' => $direction,
+                    'payment_method' => $paymentMethod,
+                    'customer_id' => $customerId,
+                    ...$dateFilters,
+                ],
+                'filterSummary' => $filterSummary,
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
