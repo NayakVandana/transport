@@ -1,80 +1,73 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
+import { invalidateAppQuery, useAppQuery } from '@/hooks/useAppQuery';
+import { usePageHeader } from '@/hooks/usePageHeader';
 import { formatMoney } from '@/lib/freightCalculator';
 import type { FreightInvoice } from '@/types/transport';
 import { Head, Link, router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
 
 export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
-    const [invoice, setInvoice] = useState<FreightInvoice | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: invoice, loading, error } = useAppQuery(
+        `invoice-show:${invoiceId}`,
+        async () => {
+            const res = await appApiPost<ApiEnvelope<{ invoice: FreightInvoice }>>(
+                '/invoices/invoice-show',
+                { id: invoiceId },
+            );
 
-    useEffect(() => {
-        setLoading(true);
+            if (!res.success || !res.data?.invoice) {
+                throw new Error(res.message || 'Could not load invoice.');
+            }
 
-        void appApiPost<ApiEnvelope<{ invoice: FreightInvoice }>>('/invoices/invoice-show', {
-            id: invoiceId,
-        })
-            .then((res) => {
-                if (!res.success || !res.data?.invoice) {
-                    setError(res.message || 'Could not load invoice.');
-                    return;
-                }
+            return res.data.invoice;
+        },
+    );
 
-                setInvoice(res.data.invoice);
-            })
-            .catch(() => {
-                setError('Could not load invoice.');
-            })
-            .finally(() => setLoading(false));
-    }, [invoiceId]);
-
-    const destroy = async () => {
+    const destroy = async (id: number) => {
         if (!confirm('Delete this invoice?')) {
             return;
         }
 
-        const res = await appApiPost<ApiEnvelope<null>>('/invoices/invoice-destroy', {
-            id: invoiceId,
-        });
+        const res = await appApiPost<ApiEnvelope<null>>('/invoices/invoice-destroy', { id });
 
         if (!res.success) {
-            setError(res.message || 'Could not delete invoice.');
             return;
         }
 
+        invalidateAppQuery('invoices-list');
         router.visit(route('invoices.index'));
     };
 
-    return (
-        <AuthenticatedLayout
-            header={
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h2 className="text-xl font-semibold text-gray-800">
-                        Invoice {invoice?.bill_number ?? ''}
-                    </h2>
-                    {invoice && (
-                        <div className="flex gap-2">
-                            <Link href={route('invoices.print', invoice.id)} target="_blank">
-                                <PrimaryButton>Print</PrimaryButton>
-                            </Link>
-                            <Link href={route('invoices.edit', invoice.id)}>
-                                <SecondaryButton>Edit</SecondaryButton>
-                            </Link>
-                            <SecondaryButton onClick={() => void destroy()}>Delete</SecondaryButton>
-                        </div>
-                    )}
+    usePageHeader(
+        <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-xl font-semibold text-gray-800">
+                Invoice {invoice?.bill_number ?? ''}
+            </h2>
+            {invoice && (
+                <div className="flex gap-2">
+                    <Link href={route('invoices.print', invoice.id)} target="_blank">
+                        <PrimaryButton>Print</PrimaryButton>
+                    </Link>
+                    <Link href={route('invoices.edit', invoice.id)}>
+                        <SecondaryButton>Edit</SecondaryButton>
+                    </Link>
+                    <SecondaryButton onClick={() => void destroy(invoice.id)}>
+                        Delete
+                    </SecondaryButton>
                 </div>
-            }
-        >
+            )}
+        </div>,
+        [invoice?.id, invoice?.bill_number],
+    );
+
+    return (
+        <>
             <Head title={`Invoice ${invoice?.bill_number ?? ''}`} />
 
             <div className="py-8">
                 <div className="mx-auto max-w-4xl sm:px-6 lg:px-8">
-                    {loading ? (
+                    {loading && !invoice ? (
                         <p className="text-center text-sm text-gray-500">Loading invoice…</p>
                     ) : error ? (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -107,6 +100,6 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                     ) : null}
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }

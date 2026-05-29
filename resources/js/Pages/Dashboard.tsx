@@ -1,9 +1,9 @@
-import { authenticatedPageLayout } from '@/Layouts/authenticatedPageLayout';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { formatMoney } from '@/lib/freightCalculator';
+import { useAppQuery } from '@/hooks/useAppQuery';
+import { usePageHeader } from '@/hooks/usePageHeader';
 import type { FreightInvoice } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
 
 type DashboardData = {
     stats: {
@@ -16,27 +16,24 @@ type DashboardData = {
 };
 
 export default function Dashboard() {
-    const [data, setData] = useState<DashboardData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    usePageHeader(
+        <h2 className="text-xl font-semibold leading-tight text-gray-800">
+            Transport Dashboard
+        </h2>,
+    );
 
-    useEffect(() => {
-        setLoading(true);
-        setError(null);
+    const { data, loading, error } = useAppQuery('dashboard-summary', async () => {
+        const res = await appApiPost<ApiEnvelope<DashboardData>>(
+            '/dashboard/dashboard-summary',
+            {},
+        );
 
-        void appApiPost<ApiEnvelope<DashboardData>>('/dashboard/dashboard-summary', {})
-            .then((res) => {
-                if (res.success && res.data) {
-                    setData(res.data);
-                } else {
-                    setError(res.message || 'Could not load dashboard.');
-                }
-            })
-            .catch(() => {
-                setError('Could not load dashboard.');
-            })
-            .finally(() => setLoading(false));
-    }, []);
+        if (!res.success || !res.data) {
+            throw new Error(res.message || 'Could not load dashboard.');
+        }
+
+        return res.data;
+    });
 
     return (
         <>
@@ -44,7 +41,7 @@ export default function Dashboard() {
 
             <div className="py-8">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    {loading ? (
+                    {loading && !data ? (
                         <p className="text-center text-sm text-gray-500">Loading dashboard…</p>
                     ) : error ? (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -147,12 +144,6 @@ export default function Dashboard() {
         </>
     );
 }
-
-Dashboard.layout = authenticatedPageLayout(
-    <h2 className="text-xl font-semibold leading-tight text-gray-800">
-        Transport Dashboard
-    </h2>,
-);
 
 function StatCard({ label, value }: { label: string; value: string }) {
     return (

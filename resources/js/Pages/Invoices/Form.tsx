@@ -3,7 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import MasterDataSelect from '@/Components/MasterDataSelect';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { balanceInWords } from '@/lib/amountInWords';
 import {
@@ -293,14 +293,15 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
     const vehiclesHref = masterListHref('vehicles.index', isEdit, invoiceId);
     const routesHref = masterListHref('routes.index', isEdit, invoiceId);
 
+    usePageHeader(
+        <h2 className="text-xl font-semibold text-gray-800">
+            {isEdit ? `Edit ${billNumber}` : 'New Tax Invoice'}
+        </h2>,
+        [isEdit, billNumber],
+    );
+
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold text-gray-800">
-                    {isEdit ? `Edit ${billNumber}` : 'New Tax Invoice'}
-                </h2>
-            }
-        >
+        <>
             <Head title="Invoice" />
 
             <div className="py-8">
@@ -539,6 +540,6 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                     )}
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }

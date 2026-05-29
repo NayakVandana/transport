@@ -1,11 +1,12 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
+import { invalidateAppQuery, useAppQuery } from '@/hooks/useAppQuery';
+import { usePageHeader } from '@/hooks/usePageHeader';
 import { invoiceReturnQuery } from '@/lib/invoiceReturn';
 import type { Vehicle } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 function useInvoiceReturn() {
     return useMemo(() => {
@@ -26,50 +27,7 @@ function formatDate(value?: string | null): string {
 
 export default function VehiclesIndex() {
     const { return_route, return_id, return_label } = useInvoiceReturn();
-    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    const loadVehicles = async () => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const res = await appApiPost<
-                ApiEnvelope<{ vehicles: { data: Vehicle[] } }>
-            >('/vehicles/vehicles-list', {});
-
-            if (!res.success || !res.data?.vehicles) {
-                setError(res.message || 'Could not load vehicles.');
-                return;
-            }
-
-            setVehicles(res.data.vehicles.data);
-        } catch {
-            setError('Could not load vehicles.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        void loadVehicles();
-    }, []);
-
-    const destroy = async (id: number) => {
-        if (!confirm('Remove this vehicle from the list?')) {
-            return;
-        }
-
-        const res = await appApiPost<ApiEnvelope<null>>('/vehicles/vehicle-destroy', { id });
-
-        if (!res.success) {
-            setError(res.message || 'Could not remove vehicle.');
-            return;
-        }
-
-        void loadVehicles();
-    };
+    const [actionError, setActionError] = useState<string | null>(null);
 
     const backHref =
         return_route && route().has(return_route)
@@ -88,26 +46,59 @@ export default function VehiclesIndex() {
             : {},
     );
 
-    return (
-        <AuthenticatedLayout
-            header={
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-3">
-                        <h2 className="text-xl font-semibold text-gray-800">Vehicles</h2>
-                        {backHref && (
-                            <Link href={backHref}>
-                                <SecondaryButton type="button">
-                                    {return_label ?? 'Back to invoice'}
-                                </SecondaryButton>
-                            </Link>
-                        )}
-                    </div>
-                    <Link href={createHref}>
-                        <PrimaryButton>Add Vehicle</PrimaryButton>
+    usePageHeader(
+        <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-xl font-semibold text-gray-800">Vehicles</h2>
+                {backHref && (
+                    <Link href={backHref}>
+                        <SecondaryButton type="button">
+                            {return_label ?? 'Back to invoice'}
+                        </SecondaryButton>
                     </Link>
-                </div>
+                )}
+            </div>
+            <Link href={createHref}>
+                <PrimaryButton>Add Vehicle</PrimaryButton>
+            </Link>
+        </div>,
+    );
+
+    const { data: vehicles, loading, error, refresh } = useAppQuery(
+        'vehicles-list',
+        async () => {
+            const res = await appApiPost<
+                ApiEnvelope<{ vehicles: { data: Vehicle[] } }>
+            >('/vehicles/vehicles-list', {});
+
+            if (!res.success || !res.data?.vehicles) {
+                throw new Error(res.message || 'Could not load vehicles.');
             }
-        >
+
+            return res.data.vehicles.data;
+        },
+    );
+
+    const destroy = async (id: number) => {
+        if (!confirm('Remove this vehicle from the list?')) {
+            return;
+        }
+
+        const res = await appApiPost<ApiEnvelope<null>>('/vehicles/vehicle-destroy', { id });
+
+        if (!res.success) {
+            setActionError(res.message || 'Could not remove vehicle.');
+            return;
+        }
+
+        invalidateAppQuery('vehicles-list');
+        await refresh();
+    };
+
+    const displayError = actionError ?? error;
+
+    return (
+        <>
             <Head title="Vehicles" />
 
             <div className="py-8">
@@ -117,13 +108,13 @@ export default function VehiclesIndex() {
                         appear in the invoice dropdown.
                     </p>
 
-                    {error && (
+                    {displayError && (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                            {error}
+                            {displayError}
                         </p>
                     )}
 
-                    {loading ? (
+                    {loading && !vehicles ? (
                         <p className="text-center text-sm text-gray-500">Loading vehicles…</p>
                     ) : (
                         <div className="overflow-x-auto rounded-lg bg-white shadow">
@@ -154,7 +145,7 @@ export default function VehiclesIndex() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {vehicles.length === 0 ? (
+                                    {(vehicles ?? []).length === 0 ? (
                                         <tr>
                                             <td
                                                 colSpan={7}
@@ -164,7 +155,7 @@ export default function VehiclesIndex() {
                                             </td>
                                         </tr>
                                     ) : (
-                                        vehicles.map((v) => (
+                                        (vehicles ?? []).map((v) => (
                                             <tr key={v.id}>
                                                 <td className="px-4 py-3 font-mono font-medium">
                                                     {v.vehicle_number}
@@ -217,6 +208,6 @@ export default function VehiclesIndex() {
                     )}
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }

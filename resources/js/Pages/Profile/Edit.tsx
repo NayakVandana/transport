@@ -1,19 +1,18 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { usePageHeader } from '@/hooks/usePageHeader';
 import { Head } from '@inertiajs/react';
-import { useEffect } from 'react';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 
 export default function Edit() {
+    usePageHeader(
+        <h2 className="text-xl font-semibold leading-tight text-gray-800">
+            Profile
+        </h2>,
+    );
+
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Profile
-                </h2>
-            }
-        >
+        <>
             <Head title="Profile" />
 
             <div className="py-12">
@@ -31,6 +30,6 @@ export default function Edit() {
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }

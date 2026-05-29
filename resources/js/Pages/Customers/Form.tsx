@@ -2,7 +2,8 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { invalidateAppQuery } from '@/hooks/useAppQuery';
+import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import type { Customer } from '@/types/transport';
 import { Head, router } from '@inertiajs/react';
@@ -27,6 +28,13 @@ function apiFieldErrors(data: unknown): Record<string, string> {
 
 export default function CustomerForm({ customerId }: { customerId?: number }) {
     const isEdit = Boolean(customerId);
+
+    usePageHeader(
+        <h2 className="text-xl font-semibold text-gray-800">
+            {isEdit ? 'Edit Customer' : 'New Customer'}
+        </h2>,
+    );
+
     const [loading, setLoading] = useState(Boolean(customerId));
     const [loadError, setLoadError] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
@@ -101,6 +109,7 @@ export default function CustomerForm({ customerId }: { customerId?: number }) {
                 return;
             }
 
+            invalidateAppQuery('customers-list');
             router.visit(route('customers.index'));
         } catch {
             setLoadError('Could not save customer.');
@@ -110,13 +119,7 @@ export default function CustomerForm({ customerId }: { customerId?: number }) {
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold text-gray-800">
-                    {isEdit ? 'Edit Customer' : 'New Customer'}
-                </h2>
-            }
-        >
+        <>
             <Head title={isEdit ? 'Edit Customer' : 'New Customer'} />
 
             <div className="py-8">
@@ -175,6 +178,6 @@ export default function CustomerForm({ customerId }: { customerId?: number }) {
                     )}
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }

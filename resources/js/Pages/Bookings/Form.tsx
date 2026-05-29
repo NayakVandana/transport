@@ -2,7 +2,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import {
     validateBookingForm,
@@ -48,6 +48,13 @@ function apiFieldErrors(data: unknown): Record<string, string> {
 
 export default function BookingForm({ bookingId }: { bookingId?: number }) {
     const isEdit = Boolean(bookingId);
+
+    usePageHeader(
+        <h2 className="text-xl font-semibold text-gray-800">
+            {isEdit ? 'Edit Booking' : 'Add Booking'}
+        </h2>,
+    );
+
     const [vehicles, setVehicles] = useState<Pick<Vehicle, 'id' | 'vehicle_number'>[]>([]);
     const [validationMessages, setValidationMessages] = useState<BookingValidationMessages>({});
     const [loading, setLoading] = useState(true);
@@ -189,13 +196,7 @@ export default function BookingForm({ bookingId }: { bookingId?: number }) {
         : 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500';
 
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold text-gray-800">
-                    {isEdit ? 'Edit Booking' : 'Add Booking'}
-                </h2>
-            }
-        >
+        <>
             <Head title={isEdit ? 'Edit Booking' : 'Add Booking'} />
 
             <div className="py-8">
@@ -300,7 +301,7 @@ export default function BookingForm({ bookingId }: { bookingId?: number }) {
                     )}
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }
 

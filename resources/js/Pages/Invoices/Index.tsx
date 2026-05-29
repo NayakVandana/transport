@@ -1,51 +1,40 @@
 import PrimaryButton from '@/Components/PrimaryButton';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
+import { useAppQuery } from '@/hooks/useAppQuery';
+import { usePageHeader } from '@/hooks/usePageHeader';
 import { formatMoney } from '@/lib/freightCalculator';
 import type { FreightInvoice } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
 
 export default function InvoicesIndex() {
-    const [invoices, setInvoices] = useState<
-        (FreightInvoice & { customer?: { name: string } })[]
-    >([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    usePageHeader(
+        <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-800">Tax Invoices</h2>
+            <Link href={route('invoices.create')}>
+                <PrimaryButton>New Invoice</PrimaryButton>
+            </Link>
+        </div>,
+    );
 
-    useEffect(() => {
-        setLoading(true);
+    const { data: invoices, loading, error } = useAppQuery(
+        'invoices-list',
+        async () => {
+            const res = await appApiPost<
+                ApiEnvelope<{
+                    invoices: { data: (FreightInvoice & { customer?: { name: string } })[] };
+                }>
+            >('/invoices/invoices-list', {});
 
-        void appApiPost<
-            ApiEnvelope<{
-                invoices: { data: (FreightInvoice & { customer?: { name: string } })[] };
-            }>
-        >('/invoices/invoices-list', {})
-            .then((res) => {
-                if (!res.success || !res.data?.invoices) {
-                    setError(res.message || 'Could not load invoices.');
-                    return;
-                }
+            if (!res.success || !res.data?.invoices) {
+                throw new Error(res.message || 'Could not load invoices.');
+            }
 
-                setInvoices(res.data.invoices.data);
-            })
-            .catch(() => {
-                setError('Could not load invoices.');
-            })
-            .finally(() => setLoading(false));
-    }, []);
+            return res.data.invoices.data;
+        },
+    );
 
     return (
-        <AuthenticatedLayout
-            header={
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-800">Tax Invoices</h2>
-                    <Link href={route('invoices.create')}>
-                        <PrimaryButton>New Invoice</PrimaryButton>
-                    </Link>
-                </div>
-            }
-        >
+        <>
             <Head title="Invoices" />
 
             <div className="py-8">
@@ -56,7 +45,7 @@ export default function InvoicesIndex() {
                         </p>
                     )}
 
-                    {loading ? (
+                    {loading && !invoices ? (
                         <p className="text-center text-sm text-gray-500">Loading invoices…</p>
                     ) : (
                         <div className="overflow-hidden rounded-lg bg-white shadow">
@@ -71,14 +60,14 @@ export default function InvoicesIndex() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {invoices.length === 0 ? (
+                                    {(invoices ?? []).length === 0 ? (
                                         <tr>
                                             <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                                                 No invoices yet.
                                             </td>
                                         </tr>
                                     ) : (
-                                        invoices.map((inv) => (
+                                        (invoices ?? []).map((inv) => (
                                             <tr key={inv.id}>
                                                 <td className="px-6 py-3 font-medium">{inv.bill_number}</td>
                                                 <td className="px-6 py-3">{inv.customer?.name}</td>
@@ -110,6 +99,6 @@ export default function InvoicesIndex() {
                     )}
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }

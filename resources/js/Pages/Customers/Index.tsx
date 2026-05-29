@@ -1,40 +1,37 @@
 import PrimaryButton from '@/Components/PrimaryButton';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
+import { invalidateAppQuery, useAppQuery } from '@/hooks/useAppQuery';
+import { usePageHeader } from '@/hooks/usePageHeader';
 import type { Customer } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export default function CustomersIndex() {
-    const [customers, setCustomers] = useState<Customer[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [actionError, setActionError] = useState<string | null>(null);
 
-    const loadCustomers = async () => {
-        setLoading(true);
-        setError(null);
+    usePageHeader(
+        <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-800">Customers</h2>
+            <Link href={route('customers.create')}>
+                <PrimaryButton>Add Customer</PrimaryButton>
+            </Link>
+        </div>,
+    );
 
-        try {
+    const { data: customers, loading, error, refresh } = useAppQuery(
+        'customers-list',
+        async () => {
             const res = await appApiPost<
                 ApiEnvelope<{ customers: { data: Customer[] } }>
             >('/customers/customers-list', {});
 
             if (!res.success || !res.data?.customers) {
-                setError(res.message || 'Could not load customers.');
-                return;
+                throw new Error(res.message || 'Could not load customers.');
             }
 
-            setCustomers(res.data.customers.data);
-        } catch {
-            setError('Could not load customers.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        void loadCustomers();
-    }, []);
+            return res.data.customers.data;
+        },
+    );
 
     const destroy = async (id: number) => {
         if (!confirm('Delete this customer?')) {
@@ -44,35 +41,29 @@ export default function CustomersIndex() {
         const res = await appApiPost<ApiEnvelope<null>>('/customers/customer-destroy', { id });
 
         if (!res.success) {
-            setError(res.message || 'Could not delete customer.');
+            setActionError(res.message || 'Could not delete customer.');
             return;
         }
 
-        void loadCustomers();
+        invalidateAppQuery('customers-list');
+        await refresh();
     };
 
+    const displayError = actionError ?? error;
+
     return (
-        <AuthenticatedLayout
-            header={
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-800">Customers</h2>
-                    <Link href={route('customers.create')}>
-                        <PrimaryButton>Add Customer</PrimaryButton>
-                    </Link>
-                </div>
-            }
-        >
+        <>
             <Head title="Customers" />
 
             <div className="py-8">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    {error && (
+                    {displayError && (
                         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                            {error}
+                            {displayError}
                         </p>
                     )}
 
-                    {loading ? (
+                    {loading && !customers ? (
                         <p className="text-center text-sm text-gray-500">Loading customers…</p>
                     ) : (
                         <div className="overflow-hidden rounded-lg bg-white shadow">
@@ -85,14 +76,14 @@ export default function CustomersIndex() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {customers.length === 0 ? (
+                                    {(customers ?? []).length === 0 ? (
                                         <tr>
                                             <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
                                                 No customers yet.
                                             </td>
                                         </tr>
                                     ) : (
-                                        customers.map((c) => (
+                                        (customers ?? []).map((c) => (
                                             <tr key={c.id}>
                                                 <td className="px-6 py-3 font-medium">{c.name}</td>
                                                 <td className="px-6 py-3">{c.mobile}</td>
@@ -120,6 +111,6 @@ export default function CustomersIndex() {
                     )}
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }

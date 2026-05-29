@@ -3,7 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import {
     validateVehicleForm,
@@ -239,21 +239,21 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
             errors[field] ? ' border-red-500 focus:border-red-500 focus:ring-red-500' : ''
         }`;
 
+    usePageHeader(
+        <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-xl font-semibold text-gray-800">
+                {isEdit ? 'Edit Vehicle' : 'Add Vehicle'}
+            </h2>
+            <Link href={backHref}>
+                <SecondaryButton type="button">
+                    {return_label ?? (isEdit ? 'Back to list' : 'Cancel')}
+                </SecondaryButton>
+            </Link>
+        </div>,
+    );
+
     return (
-        <AuthenticatedLayout
-            header={
-                <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-xl font-semibold text-gray-800">
-                        {isEdit ? 'Edit Vehicle' : 'Add Vehicle'}
-                    </h2>
-                    <Link href={backHref}>
-                        <SecondaryButton type="button">
-                            {return_label ?? (isEdit ? 'Back to list' : 'Cancel')}
-                        </SecondaryButton>
-                    </Link>
-                </div>
-            }
-        >
+        <>
             <Head title={isEdit ? 'Edit Vehicle' : 'Add Vehicle'} />
 
             <div className="py-8">
@@ -426,7 +426,7 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                     )}
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }
 

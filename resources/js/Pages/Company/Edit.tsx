@@ -2,7 +2,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import type { Company } from '@/types/transport';
 import { Head } from '@inertiajs/react';
@@ -45,6 +45,12 @@ const defaultData = {
 };
 
 export default function CompanyEdit() {
+    usePageHeader(
+        <h2 className="text-xl font-semibold leading-tight text-gray-800">
+            Company Profile
+        </h2>,
+    );
+
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
@@ -136,13 +142,7 @@ export default function CompanyEdit() {
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Company Profile
-                </h2>
-            }
-        >
+        <>
             <Head title="Company" />
 
             <div className="py-8">
@@ -319,7 +319,7 @@ export default function CompanyEdit() {
                     )}
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }
 

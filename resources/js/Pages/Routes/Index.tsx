@@ -2,11 +2,12 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
+import { invalidateAppQuery, useAppQuery } from '@/hooks/useAppQuery';
+import { usePageHeader } from '@/hooks/usePageHeader';
 import type { RouteLocation } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
-import { FormEventHandler, useEffect, useMemo, useState } from 'react';
+import { FormEventHandler, useMemo, useState } from 'react';
 
 function useInvoiceReturn() {
     return useMemo(() => {
@@ -39,38 +40,48 @@ function apiFieldErrors(data: unknown): Record<string, string> {
 
 export default function RoutesIndex() {
     const { return_route, return_id, return_label } = useInvoiceReturn();
-    const [routes, setRoutes] = useState<RouteLocation[]>([]);
     const [name, setName] = useState('');
-    const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [actionError, setActionError] = useState<string | null>(null);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-    const loadRoutes = async () => {
-        setLoading(true);
-        setError(null);
+    const backHref =
+        return_route && route().has(return_route)
+            ? route(
+                  return_route,
+                  return_id && return_route === 'invoices.edit'
+                      ? { invoice: return_id }
+                      : {},
+              )
+            : null;
 
-        try {
+    usePageHeader(
+        <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-xl font-semibold text-gray-800">Routes (From)</h2>
+            {backHref && (
+                <Link href={backHref}>
+                    <SecondaryButton type="button">
+                        {return_label ?? 'Back to invoice'}
+                    </SecondaryButton>
+                </Link>
+            )}
+        </div>,
+    );
+
+    const { data: routes, loading, error, refresh } = useAppQuery(
+        'routes-list',
+        async () => {
             const res = await appApiPost<
                 ApiEnvelope<{ routes: { data: RouteLocation[] } }>
             >('/routes/routes-list', {});
 
             if (!res.success || !res.data?.routes) {
-                setError(res.message || 'Could not load routes.');
-                return;
+                throw new Error(res.message || 'Could not load routes.');
             }
 
-            setRoutes(res.data.routes.data);
-        } catch {
-            setError('Could not load routes.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        void loadRoutes();
-    }, []);
+            return res.data.routes.data;
+        },
+    );
 
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
@@ -86,15 +97,16 @@ export default function RoutesIndex() {
             if (!res.success) {
                 setFieldErrors(apiFieldErrors(res.data));
                 if (!res.data) {
-                    setError(res.message || 'Could not add route.');
+                    setActionError(res.message || 'Could not add route.');
                 }
                 return;
             }
 
             setName('');
-            void loadRoutes();
+            invalidateAppQuery('routes-list');
+            await refresh();
         } catch {
-            setError('Could not add route.');
+            setActionError('Could not add route.');
         } finally {
             setProcessing(false);
         }
@@ -108,38 +120,18 @@ export default function RoutesIndex() {
         const res = await appApiPost<ApiEnvelope<null>>('/routes/route-destroy', { id });
 
         if (!res.success) {
-            setError(res.message || 'Could not remove route.');
+            setActionError(res.message || 'Could not remove route.');
             return;
         }
 
-        void loadRoutes();
+        invalidateAppQuery('routes-list');
+        await refresh();
     };
 
-    const backHref =
-        return_route && route().has(return_route)
-            ? route(
-                  return_route,
-                  return_id && return_route === 'invoices.edit'
-                      ? { invoice: return_id }
-                      : {},
-              )
-            : null;
+    const displayError = actionError ?? error;
 
     return (
-        <AuthenticatedLayout
-            header={
-                <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-xl font-semibold text-gray-800">Routes (From)</h2>
-                    {backHref && (
-                        <Link href={backHref}>
-                            <SecondaryButton type="button">
-                                {return_label ?? 'Back to invoice'}
-                            </SecondaryButton>
-                        </Link>
-                    )}
-                </div>
-            }
-        >
+        <>
             <Head title="Routes" />
 
             <div className="py-8">
@@ -149,9 +141,9 @@ export default function RoutesIndex() {
                         appear in the invoice &quot;From&quot; dropdown after saving.
                     </p>
 
-                    {error && (
+                    {displayError && (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                            {error}
+                            {displayError}
                         </p>
                     )}
 
@@ -173,7 +165,7 @@ export default function RoutesIndex() {
                         </PrimaryButton>
                     </form>
 
-                    {loading ? (
+                    {loading && !routes ? (
                         <p className="text-center text-sm text-gray-500">Loading routes…</p>
                     ) : (
                         <div className="overflow-hidden rounded-lg bg-white shadow">
@@ -189,7 +181,7 @@ export default function RoutesIndex() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {routes.length === 0 ? (
+                                    {(routes ?? []).length === 0 ? (
                                         <tr>
                                             <td
                                                 colSpan={2}
@@ -199,7 +191,7 @@ export default function RoutesIndex() {
                                             </td>
                                         </tr>
                                     ) : (
-                                        routes.map((r) => (
+                                        (routes ?? []).map((r) => (
                                             <tr key={r.id}>
                                                 <td className="px-6 py-3">{r.name}</td>
                                                 <td className="px-6 py-3 text-right">
@@ -220,6 +212,6 @@ export default function RoutesIndex() {
                     )}
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </>
     );
 }

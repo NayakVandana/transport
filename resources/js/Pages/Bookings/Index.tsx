@@ -1,8 +1,8 @@
 import FormDatePicker, { type DatePickerRangeValue } from '@/Components/FormDatePicker';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
-import { authenticatedPageLayout } from '@/Layouts/authenticatedPageLayout';
 import { appApiDownload, appApiPost, type ApiEnvelope } from '@/api/appClient';
+import { usePageHeader } from '@/hooks/usePageHeader';
 import { buildBookingFilterParams, type BookingDateRange } from '@/lib/bookingDateFilter';
 import { formatMoney } from '@/lib/freightCalculator';
 import type { Booking, BookingTotals, Vehicle } from '@/types/transport';
@@ -64,6 +64,15 @@ function datesFromFilters(filters: Filters): DatePickerRangeValue {
 }
 
 export default function BookingsIndex() {
+    usePageHeader(
+        <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold text-gray-800">Bookings</h2>
+            <Link href={route('bookings.create')}>
+                <PrimaryButton>Add Booking</PrimaryButton>
+            </Link>
+        </div>,
+    );
+
     const filterFormRef = useRef<HTMLFormElement>(null);
     const [bookings, setBookings] = useState<Paginated | null>(null);
     const [vehicles, setVehicles] = useState<Pick<Vehicle, 'id' | 'vehicle_number'>[]>([]);
@@ -281,7 +290,7 @@ export default function BookingsIndex() {
                         <p className="mt-1.5 text-xs text-gray-500 sm:hidden">{filterSummary}</p>
                     </form>
 
-                    {loading ? (
+                    {loading && !bookings ? (
                         <p className="text-center text-sm text-gray-500">Loading bookings…</p>
                     ) : (
                         <>
@@ -439,15 +448,6 @@ export default function BookingsIndex() {
         </>
     );
 }
-
-BookingsIndex.layout = authenticatedPageLayout(
-    <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-gray-800">Bookings</h2>
-        <Link href={route('bookings.create')}>
-            <PrimaryButton>Add Booking</PrimaryButton>
-        </Link>
-    </div>,
-);
 
 function TotalCard({ label, value }: { label: string; value: string }) {
     return (
