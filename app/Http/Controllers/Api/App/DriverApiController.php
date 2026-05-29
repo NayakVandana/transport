@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\Driver;
+use App\Support\DocumentValidation;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -30,6 +31,17 @@ class DriverApiController extends Controller
         }
     }
 
+    public function postDriverMeta(Request $request)
+    {
+        try {
+            return $this->sendJsonResponse(true, 'Driver form data loaded.', [
+                'document_types' => DocumentValidation::driverOptionsForFrontend(),
+            ], 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
     public function postDriverShow(Request $request)
     {
         try {
@@ -42,11 +54,13 @@ class DriverApiController extends Controller
             }
 
             $driver = Driver::query()
+                ->with(['documents' => fn ($query) => $query->orderByDesc('created_at')])
                 ->where('user_id', $request->user()->id)
                 ->findOrFail($request->input('id'));
 
             return $this->sendJsonResponse(true, 'Driver loaded.', [
                 'driver' => $driver,
+                'document_types' => DocumentValidation::driverOptionsForFrontend(),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);

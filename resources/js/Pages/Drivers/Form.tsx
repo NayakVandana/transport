@@ -1,11 +1,16 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import EntityDocumentsSection, {
+    deleteEntityDocuments,
+    uploadDocumentDrafts,
+    type DocumentDraft,
+} from '@/Components/EntityDocumentsSection';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { invalidateAppQuery } from '@/hooks/useAppQuery';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import type { Driver } from '@/types/transport';
+import type { Driver, EntityDocument, ExpenseOption } from '@/types/transport';
 import { Head, router } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useState } from 'react';
 
@@ -39,10 +44,14 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
         </h2>,
     );
 
-    const [loading, setLoading] = useState(Boolean(driverId));
+    const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [documentTypes, setDocumentTypes] = useState<ExpenseOption[]>([]);
+    const [documents, setDocuments] = useState<EntityDocument[]>([]);
+    const [documentDrafts, setDocumentDrafts] = useState<DocumentDraft[]>([]);
+    const [documentsToDelete, setDocumentsToDelete] = useState<number[]>([]);
     const [data, setData] = useState({
         name: '',
         mobile: '',
@@ -55,37 +64,56 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
     });
 
     useEffect(() => {
-        if (!driverId) {
-            return;
-        }
-
         setLoading(true);
+        setLoadError(null);
 
-        void appApiPost<ApiEnvelope<{ driver: Driver }>>('/drivers/driver-show', {
-            id: driverId,
-        })
-            .then((res) => {
-                if (!res.success || !res.data?.driver) {
-                    setLoadError(res.message || 'Could not load driver.');
-                    return;
+        const load = async () => {
+            try {
+                if (driverId) {
+                    const res = await appApiPost<
+                        ApiEnvelope<{ driver: Driver; document_types: ExpenseOption[] }>
+                    >('/drivers/driver-show', { id: driverId });
+
+                    if (!res.success || !res.data?.driver) {
+                        setLoadError(res.message || 'Could not load driver.');
+                        return;
+                    }
+
+                    const driver = res.data.driver;
+                    setDocumentTypes(res.data.document_types ?? []);
+                    setDocuments(driver.documents ?? []);
+                    setDocumentDrafts([]);
+                    setDocumentsToDelete([]);
+                    setData({
+                        name: driver.name ?? '',
+                        mobile: driver.mobile ?? '',
+                        license_number: driver.license_number ?? '',
+                        license_expiry: dateInputValue(driver.license_expiry),
+                        joining_date: dateInputValue(driver.joining_date),
+                        salary: driver.salary != null ? String(driver.salary) : '',
+                        address: driver.address ?? '',
+                        status: driver.status ?? 'active',
+                    });
+                } else {
+                    const res = await appApiPost<
+                        ApiEnvelope<{ document_types: ExpenseOption[] }>
+                    >('/drivers/driver-meta', {});
+
+                    if (!res.success || !res.data) {
+                        setLoadError(res.message || 'Could not load form data.');
+                        return;
+                    }
+
+                    setDocumentTypes(res.data.document_types ?? []);
                 }
+            } catch {
+                setLoadError('Could not load form data.');
+            } finally {
+                setLoading(false);
+            }
+        };
 
-                const driver = res.data.driver;
-                setData({
-                    name: driver.name ?? '',
-                    mobile: driver.mobile ?? '',
-                    license_number: driver.license_number ?? '',
-                    license_expiry: dateInputValue(driver.license_expiry),
-                    joining_date: dateInputValue(driver.joining_date),
-                    salary: driver.salary != null ? String(driver.salary) : '',
-                    address: driver.address ?? '',
-                    status: driver.status ?? 'active',
-                });
-            })
-            .catch(() => {
-                setLoadError('Could not load driver.');
-            })
-            .finally(() => setLoading(false));
+        void load();
     }, [driverId]);
 
     const setField = <K extends keyof typeof data>(field: K, value: (typeof data)[K]) => {
@@ -100,6 +128,13 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
         setErrors({});
+        setLoadError(null);
+
+        if (documentDrafts.some((draft) => !draft.file)) {
+            setLoadError('Each document row needs a file, or remove empty rows.');
+            return;
+        }
+
         setProcessing(true);
 
         try {
@@ -123,6 +158,41 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
             }
 
             invalidateAppQuery('drivers-list');
+
+            const savedId = res.data?.driver?.id;
+            if (!savedId) {
+                return;
+            }
+
+            if (documentsToDelete.length > 0) {
+                const deleted = await deleteEntityDocuments(
+                    '/drivers/driver-document-destroy',
+                    documentsToDelete,
+                );
+
+                if (!deleted) {
+                    setLoadError('Driver saved, but some documents could not be removed.');
+                    return;
+                }
+            }
+
+            if (documentDrafts.length > 0) {
+                const uploaded = await uploadDocumentDrafts(
+                    savedId,
+                    'driver_id',
+                    '/drivers/driver-document-store',
+                    documentDrafts,
+                );
+
+                if (!uploaded) {
+                    setLoadError('Driver saved, but some documents failed to upload.');
+                    if (!driverId) {
+                        router.visit(route('drivers.edit', savedId), { replace: true });
+                    }
+                    return;
+                }
+            }
+
             router.visit(route('drivers.index'));
         } catch {
             setLoadError('Could not save driver.');
@@ -232,8 +302,20 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                                 </select>
                                 <InputError message={errors.status} className="mt-1" />
                             </div>
+
+                            {documentTypes.length > 0 && (
+                                <EntityDocumentsSection
+                                    documentTypes={documentTypes}
+                                    drafts={documentDrafts}
+                                    onDraftsChange={setDocumentDrafts}
+                                    savedDocuments={documents}
+                                    documentsToDelete={documentsToDelete}
+                                    onDocumentsToDeleteChange={setDocumentsToDelete}
+                                />
+                            )}
+
                             <PrimaryButton disabled={processing}>
-                                {isEdit ? 'Update' : 'Create'}
+                                {processing ? 'Saving…' : 'Save'}
                             </PrimaryButton>
                         </form>
                     )}

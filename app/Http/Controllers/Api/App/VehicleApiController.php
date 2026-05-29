@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\App;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\VehicleRequest;
 use App\Models\Vehicle;
+use App\Support\DocumentValidation;
 use App\Support\VehicleValidation;
 use Exception;
 use Illuminate\Http\Request;
@@ -37,6 +38,7 @@ class VehicleApiController extends Controller
             return $this->sendJsonResponse(true, 'Vehicle form data loaded.', [
                 'validationMessages' => VehicleValidation::forFrontend(),
                 'fuelTypes' => VehicleValidation::fuelTypes(),
+                'document_types' => DocumentValidation::vehicleOptionsForFrontend(),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -55,6 +57,7 @@ class VehicleApiController extends Controller
             }
 
             $vehicle = Vehicle::query()
+                ->with(['documents' => fn ($query) => $query->orderByDesc('created_at')])
                 ->where('user_id', $request->user()->id)
                 ->findOrFail($request->input('id'));
 
@@ -62,6 +65,7 @@ class VehicleApiController extends Controller
                 'vehicle' => $vehicle,
                 'validationMessages' => VehicleValidation::forFrontend(),
                 'fuelTypes' => VehicleValidation::fuelTypes(),
+                'document_types' => DocumentValidation::vehicleOptionsForFrontend(),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);

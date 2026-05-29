@@ -33,6 +33,7 @@ export interface Vehicle {
     pollution_expiry?: string | null;
     fitness_expiry?: string | null;
     status: 'active' | 'inactive';
+    documents?: EntityDocument[];
 }
 
 export interface Driver {
@@ -45,6 +46,7 @@ export interface Driver {
     salary?: string | number | null;
     address?: string | null;
     status: 'active' | 'inactive';
+    documents?: EntityDocument[];
 }
 
 export interface RouteLocation {
@@ -84,6 +86,16 @@ export interface Expense {
 export interface ExpenseOption {
     value: string;
     label: string;
+}
+
+export interface EntityDocument {
+    id: number;
+    document_type: string;
+    title?: string | null;
+    file_path?: string | null;
+    file_url?: string | null;
+    expiry_date?: string | null;
+    notes?: string | null;
 }
 
 export interface Payment {

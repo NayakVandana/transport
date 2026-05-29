@@ -6,12 +6,14 @@ use App\Http\Controllers\Api\App\CompanyApiController;
 use App\Http\Controllers\Api\App\CustomerApiController;
 use App\Http\Controllers\Api\App\DashboardApiController;
 use App\Http\Controllers\Api\App\DriverApiController;
+use App\Http\Controllers\Api\App\DriverDocumentApiController;
 use App\Http\Controllers\Api\App\ExpenseApiController;
 use App\Http\Controllers\Api\App\FreightInvoiceApiController;
 use App\Http\Controllers\Api\App\PaymentApiController;
 use App\Http\Controllers\Api\App\ProfileApiController;
 use App\Http\Controllers\Api\App\RouteLocationApiController;
 use App\Http\Controllers\Api\App\VehicleApiController;
+use App\Http\Controllers\Api\App\VehicleDocumentApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
@@ -40,11 +42,22 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/vehicles/vehicle-update', [VehicleApiController::class, 'postVehicleUpdate']);
     Route::post('/vehicles/vehicle-destroy', [VehicleApiController::class, 'postVehicleDestroy']);
 
+    Route::post('/vehicles/vehicle-documents-list', [VehicleDocumentApiController::class, 'postVehicleDocumentsList']);
+    Route::post('/vehicles/vehicle-document-store', [VehicleDocumentApiController::class, 'postVehicleDocumentStore']);
+    Route::post('/vehicles/vehicle-document-update', [VehicleDocumentApiController::class, 'postVehicleDocumentUpdate']);
+    Route::post('/vehicles/vehicle-document-destroy', [VehicleDocumentApiController::class, 'postVehicleDocumentDestroy']);
+
     Route::post('/drivers/drivers-list', [DriverApiController::class, 'postDriversList']);
+    Route::post('/drivers/driver-meta', [DriverApiController::class, 'postDriverMeta']);
     Route::post('/drivers/driver-show', [DriverApiController::class, 'postDriverShow']);
     Route::post('/drivers/driver-store', [DriverApiController::class, 'postDriverStore']);
     Route::post('/drivers/driver-update', [DriverApiController::class, 'postDriverUpdate']);
     Route::post('/drivers/driver-destroy', [DriverApiController::class, 'postDriverDestroy']);
+
+    Route::post('/drivers/driver-documents-list', [DriverDocumentApiController::class, 'postDriverDocumentsList']);
+    Route::post('/drivers/driver-document-store', [DriverDocumentApiController::class, 'postDriverDocumentStore']);
+    Route::post('/drivers/driver-document-update', [DriverDocumentApiController::class, 'postDriverDocumentUpdate']);
+    Route::post('/drivers/driver-document-destroy', [DriverDocumentApiController::class, 'postDriverDocumentDestroy']);
 
     Route::post('/bookings/bookings-list', [BookingApiController::class, 'postBookingsList']);
     Route::post('/bookings/booking-meta', [BookingApiController::class, 'postBookingMeta']);

@@ -54,4 +54,9 @@ class Vehicle extends Model
     {
         return $this->hasMany(Booking::class);
     }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(VehicleDocument::class);
+    }
 }

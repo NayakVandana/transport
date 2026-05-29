@@ -1,5 +1,10 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import EntityDocumentsSection, {
+    deleteEntityDocuments,
+    uploadDocumentDrafts,
+    type DocumentDraft,
+} from '@/Components/EntityDocumentsSection';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
@@ -10,7 +15,7 @@ import {
     type VehicleFormData,
     type VehicleValidationMessages,
 } from '@/lib/vehicleValidation';
-import type { Vehicle } from '@/types/transport';
+import type { EntityDocument, ExpenseOption, Vehicle } from '@/types/transport';
 import { Head, Link, router } from '@inertiajs/react';
 import { FormEventHandler, ReactNode, useEffect, useMemo, useState } from 'react';
 
@@ -51,11 +56,13 @@ type VehicleShowData = {
     vehicle: Vehicle;
     validationMessages: VehicleValidationMessages;
     fuelTypes: string[];
+    document_types: ExpenseOption[];
 };
 
 type VehicleMetaData = {
     validationMessages: VehicleValidationMessages;
     fuelTypes: string[];
+    document_types: ExpenseOption[];
 };
 
 export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
@@ -63,6 +70,10 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
     const isEdit = Boolean(vehicleId);
     const [validationMessages, setValidationMessages] = useState<VehicleValidationMessages>({});
     const [fuelTypes, setFuelTypes] = useState<string[]>([]);
+    const [documentTypes, setDocumentTypes] = useState<ExpenseOption[]>([]);
+    const [documents, setDocuments] = useState<EntityDocument[]>([]);
+    const [documentDrafts, setDocumentDrafts] = useState<DocumentDraft[]>([]);
+    const [documentsToDelete, setDocumentsToDelete] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
@@ -103,6 +114,10 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                     const vehicle = res.data.vehicle;
                     setValidationMessages(res.data.validationMessages);
                     setFuelTypes(res.data.fuelTypes);
+                    setDocumentTypes(res.data.document_types ?? []);
+                    setDocuments(vehicle.documents ?? []);
+                    setDocumentDrafts([]);
+                    setDocumentsToDelete([]);
                     setData({
                         vehicle_number: vehicle.vehicle_number ?? '',
                         vehicle_type: vehicle.vehicle_type ?? '',
@@ -131,6 +146,7 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
 
                     setValidationMessages(res.data.validationMessages);
                     setFuelTypes(res.data.fuelTypes);
+                    setDocumentTypes(res.data.document_types ?? []);
                 }
             } catch {
                 setLoadError('Could not load form data.');
@@ -166,7 +182,13 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
             return;
         }
 
+        if (documentDrafts.some((draft) => !draft.file)) {
+            setLoadError('Each document row needs a file, or remove empty rows.');
+            return;
+        }
+
         setProcessing(true);
+        setLoadError(null);
 
         try {
             const payload: Record<string, unknown> = {
@@ -197,6 +219,40 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                     setLoadError(res.message || 'Could not save vehicle.');
                 }
                 return;
+            }
+
+            const savedId = res.data?.vehicle?.id;
+            if (!savedId) {
+                return;
+            }
+
+            if (documentsToDelete.length > 0) {
+                const deleted = await deleteEntityDocuments(
+                    '/vehicles/vehicle-document-destroy',
+                    documentsToDelete,
+                );
+
+                if (!deleted) {
+                    setLoadError('Vehicle saved, but some documents could not be removed.');
+                    return;
+                }
+            }
+
+            if (documentDrafts.length > 0) {
+                const uploaded = await uploadDocumentDrafts(
+                    savedId,
+                    'vehicle_id',
+                    '/vehicles/vehicle-document-store',
+                    documentDrafts,
+                );
+
+                if (!uploaded) {
+                    setLoadError('Vehicle saved, but some documents failed to upload.');
+                    if (!vehicleId) {
+                        router.visit(route('vehicles.edit', savedId), { replace: true });
+                    }
+                    return;
+                }
             }
 
             if (return_route && route().has(return_route)) {
@@ -419,8 +475,19 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                                 </div>
                             </div>
 
+                            {documentTypes.length > 0 && (
+                                <EntityDocumentsSection
+                                    documentTypes={documentTypes}
+                                    drafts={documentDrafts}
+                                    onDraftsChange={setDocumentDrafts}
+                                    savedDocuments={documents}
+                                    documentsToDelete={documentsToDelete}
+                                    onDocumentsToDeleteChange={setDocumentsToDelete}
+                                />
+                            )}
+
                             <PrimaryButton disabled={processing}>
-                                {isEdit ? 'Update Vehicle' : 'Add Vehicle'}
+                                {processing ? 'Saving…' : 'Save'}
                             </PrimaryButton>
                         </form>
                     )}
