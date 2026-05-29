@@ -20,8 +20,19 @@ export interface Company {
 
 export interface Vehicle {
     id: number;
-    number: string;
-    description?: string | null;
+    vehicle_number: string;
+    vehicle_type?: string | null;
+    brand?: string | null;
+    model?: string | null;
+    capacity?: string | null;
+    fuel_type?: string | null;
+    insurance_number?: string | null;
+    insurance_expiry?: string | null;
+    permit_number?: string | null;
+    permit_expiry?: string | null;
+    pollution_expiry?: string | null;
+    fitness_expiry?: string | null;
+    status: 'active' | 'inactive';
 }
 
 export interface RouteLocation {

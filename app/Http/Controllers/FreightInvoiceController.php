@@ -10,6 +10,7 @@ use App\Models\Vehicle;
 use App\Support\AmountInWords;
 use App\Support\EntryNumberGenerator;
 use App\Support\FreightInvoiceCalculator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -181,7 +182,7 @@ class FreightInvoiceController extends Controller
         return [
             'company' => $company,
             'customers' => $this->customersForUser($request),
-            'vehicles' => Vehicle::query()->forUser($userId)->orderBy('number')->get(['id', 'number']),
+            'vehicles' => Vehicle::query()->forUser($userId)->orderBy('vehicle_number')->get(['id', 'vehicle_number']),
             'routeLocations' => RouteLocation::query()->forUser($userId)->orderBy('name')->get(['id', 'name']),
             'entrySettings' => [
                 'prefix' => $company->entry_number_prefix,
@@ -190,7 +191,7 @@ class FreightInvoiceController extends Controller
         ];
     }
 
-    /** @return \Illuminate\Database\Eloquent\Collection<int, Customer> */
+    /** @return Collection<int, Customer> */
     private function customersForUser(Request $request)
     {
         return Customer::query()

@@ -145,7 +145,7 @@ export default function InvoiceForm({
     };
 
     const vehicleOptions = useMemo(
-        () => vehicles.map((v) => ({ value: v.number, label: v.number })),
+        () => vehicles.map((v) => ({ value: v.vehicle_number, label: v.vehicle_number })),
         [vehicles],
     );
 

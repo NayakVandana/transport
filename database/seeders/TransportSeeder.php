@@ -8,8 +8,8 @@ use App\Models\FreightInvoice;
 use App\Models\RouteLocation;
 use App\Models\User;
 use App\Models\Vehicle;
-use App\Support\EntryNumberGenerator;
 use App\Support\AmountInWords;
+use App\Support\EntryNumberGenerator;
 use App\Support\FreightInvoiceCalculator;
 use Illuminate\Database\Seeder;
 
@@ -53,10 +53,12 @@ class TransportSeeder extends Seeder
         );
 
         Vehicle::query()->firstOrCreate(
-            ['user_id' => $user->id, 'number' => 'MH04JU9931'],
+            ['user_id' => $user->id, 'vehicle_number' => 'MH04JU9931'],
+            ['status' => 'active'],
         );
         Vehicle::query()->firstOrCreate(
-            ['user_id' => $user->id, 'number' => 'MH04JU9932'],
+            ['user_id' => $user->id, 'vehicle_number' => 'MH04JU9932'],
+            ['status' => 'active'],
         );
 
         RouteLocation::query()->firstOrCreate(

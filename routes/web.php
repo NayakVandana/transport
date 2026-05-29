@@ -28,9 +28,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('customers', CustomerController::class)->except(['show']);
 
-    Route::get('/vehicles', [VehicleController::class, 'index'])->name('vehicles.index');
-    Route::post('/vehicles', [VehicleController::class, 'store'])->name('vehicles.store');
-    Route::delete('/vehicles/{vehicle}', [VehicleController::class, 'destroy'])->name('vehicles.destroy');
+    Route::resource('vehicles', VehicleController::class)->except(['show']);
 
     Route::get('/routes', [RouteLocationController::class, 'index'])->name('routes.index');
     Route::post('/routes', [RouteLocationController::class, 'store'])->name('routes.store');

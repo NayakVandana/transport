@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\RedirectsToInvoiceReturn;
+use App\Http\Requests\VehicleRequest;
 use App\Models\Vehicle;
+use App\Support\VehicleValidation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,8 +20,7 @@ class VehicleController extends Controller
     {
         $vehicles = Vehicle::query()
             ->where('user_id', $request->user()->id)
-            ->where('is_active', true)
-            ->orderBy('number')
+            ->orderBy('vehicle_number')
             ->paginate(20)
             ->withQueryString();
 
@@ -29,29 +30,27 @@ class VehicleController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse|JsonResponse
+    public function create(Request $request): Response
     {
-        $validated = $request->validate([
-            'number' => ['required', 'string', 'max:20'],
-            'description' => ['nullable', 'string', 'max:255'],
-            'return_route' => ['nullable', 'string', 'max:100'],
-            'return_id' => ['nullable', 'integer'],
+        return Inertia::render('Vehicles/Form', [
+            'vehicle' => null,
+            'validationMessages' => VehicleValidation::forFrontend(),
+            'fuelTypes' => VehicleValidation::fuelTypes(),
+            ...$this->returnContext($request),
         ]);
+    }
 
-        $number = strtoupper(trim($validated['number']));
-
-        $vehicle = Vehicle::query()->firstOrCreate(
-            ['user_id' => $request->user()->id, 'number' => $number],
-            [
-                'description' => $validated['description'] ?? null,
-                'is_active' => true,
-            ],
-        );
+    public function store(VehicleRequest $request): RedirectResponse|JsonResponse
+    {
+        $vehicle = Vehicle::query()->create([
+            ...$request->validated(),
+            'user_id' => $request->user()->id,
+        ]);
 
         if ($request->expectsJson()) {
             return response()->json([
                 'id' => $vehicle->id,
-                'number' => $vehicle->number,
+                'vehicle_number' => $vehicle->vehicle_number,
             ]);
         }
 
@@ -62,11 +61,36 @@ class VehicleController extends Controller
         );
     }
 
+    public function edit(Request $request, Vehicle $vehicle): Response
+    {
+        $this->authorizeVehicle($request, $vehicle);
+
+        return Inertia::render('Vehicles/Form', [
+            'vehicle' => $vehicle,
+            'validationMessages' => VehicleValidation::forFrontend(),
+            'fuelTypes' => VehicleValidation::fuelTypes(),
+            ...$this->returnContext($request),
+        ]);
+    }
+
+    public function update(VehicleRequest $request, Vehicle $vehicle): RedirectResponse
+    {
+        $this->authorizeVehicle($request, $vehicle);
+        $vehicle->update($request->validated());
+
+        return redirect()->route('vehicles.index')->with('success', 'Vehicle updated.');
+    }
+
     public function destroy(Request $request, Vehicle $vehicle): RedirectResponse
     {
-        abort_unless($vehicle->user_id === $request->user()->id, 403);
-        $vehicle->update(['is_active' => false]);
+        $this->authorizeVehicle($request, $vehicle);
+        $vehicle->delete();
 
         return redirect()->route('vehicles.index')->with('success', 'Vehicle removed.');
+    }
+
+    private function authorizeVehicle(Request $request, Vehicle $vehicle): void
+    {
+        abort_unless($vehicle->user_id === $request->user()->id, 403);
     }
 }
