@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api\App;
 use App\Http\Controllers\Controller;
 use App\Models\Driver;
 use App\Support\DocumentValidation;
+use App\Support\ListExport;
 use App\Support\ListFilter;
 use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DriverApiController extends Controller
 {
@@ -19,35 +22,69 @@ class DriverApiController extends Controller
             $userId = (int) $request->user()->id;
             $perPage = (int) ($request->input('per_page') ?: 15);
             $currentPage = (int) ($request->input('current_page') ?: 1);
-            $dateFilters = ListFilter::dateFromRequest($request);
-            $search = ListFilter::searchFromRequest($request);
-            $status = ListFilter::statusFromRequest($request, ['active', 'inactive']);
-
-            $query = Driver::query()->where('user_id', $userId);
-            ListFilter::applySearch($query, $search, ['name', 'mobile', 'license_number']);
-            ListFilter::applyDate($query, $dateFilters, 'joining_date');
-            if ($status !== '') {
-                $query->where('status', $status);
-            }
-            $query->orderBy('name');
+            [$query, $filterSummary, $filters] = $this->filteredDriversQuery($request);
 
             $drivers = $query->paginate($perPage, ['*'], 'page', $currentPage);
 
-            $filterSummary = ListFilter::summary([
-                $search !== '' ? 'Search: '.$search : null,
-                $status !== '' ? 'Status: '.ucfirst($status) : null,
-                ListFilter::dateSummary($dateFilters),
-            ], 'All drivers');
-
             return $this->sendJsonResponse(true, 'Drivers loaded.', [
                 'drivers' => $drivers,
-                'filters' => [
-                    'search' => $search,
-                    'status' => $status,
-                    ...$dateFilters,
-                ],
+                'filters' => $filters,
                 'filterSummary' => $filterSummary,
             ], 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postDriversExportCsv(Request $request): StreamedResponse|JsonResponse
+    {
+        try {
+            [$query, $filterSummary] = $this->filteredDriversQuery($request);
+            $drivers = $query->get();
+
+            return ListExport::csv(
+                'drivers',
+                'Drivers Export',
+                $filterSummary,
+                ['Name', 'Mobile', 'License', 'License Expiry', 'Joining Date', 'Salary', 'Status'],
+                $drivers->map(fn ($driver) => [
+                    $driver->name,
+                    $driver->mobile ?? '',
+                    $driver->license_number ?? '',
+                    ListExport::formatDate($driver->license_expiry),
+                    ListExport::formatDate($driver->joining_date),
+                    $driver->salary ?? '',
+                    ucfirst($driver->status),
+                ]),
+                ['TOTAL', $drivers->count().' drivers', '', '', '', '', ''],
+            );
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postDriversExportPdf(Request $request)
+    {
+        try {
+            [$query, $filterSummary] = $this->filteredDriversQuery($request);
+            $drivers = $query->get();
+
+            return ListExport::pdf(
+                'drivers',
+                'Drivers Report',
+                $filterSummary,
+                ['Name', 'Mobile', 'License', 'License Expiry', 'Joining', 'Salary', 'Status'],
+                $drivers->map(fn ($driver) => [
+                    $driver->name,
+                    $driver->mobile ?? '—',
+                    $driver->license_number ?? '—',
+                    ListExport::formatDate($driver->license_expiry) ?: '—',
+                    ListExport::formatDate($driver->joining_date) ?: '—',
+                    $driver->salary !== null ? ListExport::formatMoney($driver->salary) : '—',
+                    ucfirst($driver->status),
+                ]),
+                $drivers->count(),
+            );
         } catch (Exception $e) {
             return $this->sendError($e);
         }
@@ -160,6 +197,35 @@ class DriverApiController extends Controller
         } catch (Exception $e) {
             return $this->sendError($e);
         }
+    }
+
+    /** @return array{0: \Illuminate\Database\Eloquent\Builder, 1: string, 2: array<string, string>} */
+    private function filteredDriversQuery(Request $request): array
+    {
+        $userId = (int) $request->user()->id;
+        $dateFilters = ListFilter::dateFromRequest($request);
+        $search = ListFilter::searchFromRequest($request);
+        $status = ListFilter::statusFromRequest($request, ['active', 'inactive']);
+
+        $query = Driver::query()->where('user_id', $userId);
+        ListFilter::applySearch($query, $search, ['name', 'mobile', 'license_number']);
+        ListFilter::applyDate($query, $dateFilters, 'joining_date');
+        if ($status !== '') {
+            $query->where('status', $status);
+        }
+        $query->orderBy('name');
+
+        $filterSummary = ListFilter::summary([
+            $search !== '' ? 'Search: '.$search : null,
+            $status !== '' ? 'Status: '.ucfirst($status) : null,
+            ListFilter::dateSummary($dateFilters),
+        ], 'All drivers');
+
+        return [$query, $filterSummary, [
+            'search' => $search,
+            'status' => $status,
+            ...$dateFilters,
+        ]];
     }
 
     /** @return array<string, list<mixed>> */

@@ -30,12 +30,16 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/company/company-update', [CompanyApiController::class, 'postCompanyUpdate']);
 
     Route::post('/customers/customers-list', [CustomerApiController::class, 'postCustomersList']);
+    Route::post('/customers/customers-export-csv', [CustomerApiController::class, 'postCustomersExportCsv']);
+    Route::post('/customers/customers-export-pdf', [CustomerApiController::class, 'postCustomersExportPdf']);
     Route::post('/customers/customer-show', [CustomerApiController::class, 'postCustomerShow']);
     Route::post('/customers/customer-store', [CustomerApiController::class, 'postCustomerStore']);
     Route::post('/customers/customer-update', [CustomerApiController::class, 'postCustomerUpdate']);
     Route::post('/customers/customer-destroy', [CustomerApiController::class, 'postCustomerDestroy']);
 
     Route::post('/vehicles/vehicles-list', [VehicleApiController::class, 'postVehiclesList']);
+    Route::post('/vehicles/vehicles-export-csv', [VehicleApiController::class, 'postVehiclesExportCsv']);
+    Route::post('/vehicles/vehicles-export-pdf', [VehicleApiController::class, 'postVehiclesExportPdf']);
     Route::post('/vehicles/vehicle-meta', [VehicleApiController::class, 'postVehicleMeta']);
     Route::post('/vehicles/vehicle-show', [VehicleApiController::class, 'postVehicleShow']);
     Route::post('/vehicles/vehicle-store', [VehicleApiController::class, 'postVehicleStore']);
@@ -48,6 +52,8 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/vehicles/vehicle-document-destroy', [VehicleDocumentApiController::class, 'postVehicleDocumentDestroy']);
 
     Route::post('/drivers/drivers-list', [DriverApiController::class, 'postDriversList']);
+    Route::post('/drivers/drivers-export-csv', [DriverApiController::class, 'postDriversExportCsv']);
+    Route::post('/drivers/drivers-export-pdf', [DriverApiController::class, 'postDriversExportPdf']);
     Route::post('/drivers/driver-meta', [DriverApiController::class, 'postDriverMeta']);
     Route::post('/drivers/driver-show', [DriverApiController::class, 'postDriverShow']);
     Route::post('/drivers/driver-store', [DriverApiController::class, 'postDriverStore']);
@@ -69,6 +75,8 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/bookings/bookings-export-pdf', [BookingApiController::class, 'postBookingsExportPdf']);
 
     Route::post('/expenses/expenses-list', [ExpenseApiController::class, 'postExpensesList']);
+    Route::post('/expenses/expenses-export-csv', [ExpenseApiController::class, 'postExpensesExportCsv']);
+    Route::post('/expenses/expenses-export-pdf', [ExpenseApiController::class, 'postExpensesExportPdf']);
     Route::post('/expenses/expense-meta', [ExpenseApiController::class, 'postExpenseMeta']);
     Route::post('/expenses/expense-show', [ExpenseApiController::class, 'postExpenseShow']);
     Route::post('/expenses/expense-store', [ExpenseApiController::class, 'postExpenseStore']);
@@ -76,6 +84,8 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/expenses/expense-destroy', [ExpenseApiController::class, 'postExpenseDestroy']);
 
     Route::post('/payments/payments-list', [PaymentApiController::class, 'postPaymentsList']);
+    Route::post('/payments/payments-export-csv', [PaymentApiController::class, 'postPaymentsExportCsv']);
+    Route::post('/payments/payments-export-pdf', [PaymentApiController::class, 'postPaymentsExportPdf']);
     Route::post('/payments/payment-meta', [PaymentApiController::class, 'postPaymentMeta']);
     Route::post('/payments/payment-show', [PaymentApiController::class, 'postPaymentShow']);
     Route::post('/payments/payment-store', [PaymentApiController::class, 'postPaymentStore']);
@@ -83,10 +93,14 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/payments/payment-destroy', [PaymentApiController::class, 'postPaymentDestroy']);
 
     Route::post('/routes/routes-list', [RouteLocationApiController::class, 'postRoutesList']);
+    Route::post('/routes/routes-export-csv', [RouteLocationApiController::class, 'postRoutesExportCsv']);
+    Route::post('/routes/routes-export-pdf', [RouteLocationApiController::class, 'postRoutesExportPdf']);
     Route::post('/routes/route-store', [RouteLocationApiController::class, 'postRouteStore']);
     Route::post('/routes/route-destroy', [RouteLocationApiController::class, 'postRouteDestroy']);
 
     Route::post('/invoices/invoices-list', [FreightInvoiceApiController::class, 'postInvoicesList']);
+    Route::post('/invoices/invoices-export-csv', [FreightInvoiceApiController::class, 'postInvoicesExportCsv']);
+    Route::post('/invoices/invoices-export-pdf', [FreightInvoiceApiController::class, 'postInvoicesExportPdf']);
     Route::post('/invoices/invoice-meta', [FreightInvoiceApiController::class, 'postInvoiceMeta']);
     Route::post('/invoices/invoice-show', [FreightInvoiceApiController::class, 'postInvoiceShow']);
     Route::post('/invoices/invoice-store', [FreightInvoiceApiController::class, 'postInvoiceStore']);

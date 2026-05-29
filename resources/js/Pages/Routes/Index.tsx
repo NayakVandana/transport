@@ -1,3 +1,4 @@
+import ListExportButtons from '@/Components/ListExportButtons';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import ListFilterBar from '@/Components/ListFilterBar';
@@ -6,6 +7,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import type { RouteLocation } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
@@ -86,6 +88,7 @@ export default function RoutesIndex() {
 
     const {
         data,
+        filters,
         filterSummary,
         dateValue,
         loading,
@@ -160,6 +163,15 @@ export default function RoutesIndex() {
 
     const displayError = actionError ?? error;
 
+    const exportFiltered = async (type: 'csv' | 'pdf') => {
+        try {
+            setActionError(null);
+            await exportFilteredList('routes', type, { ...filters, search: searchInput });
+        } catch {
+            setActionError(`Could not export ${type.toUpperCase()}.`);
+        }
+    };
+
     return (
         <>
             <Head title="Routes" />
@@ -210,6 +222,9 @@ export default function RoutesIndex() {
                             setSearchInput('');
                             clearFilters();
                         }}
+                        actions={
+                            <ListExportButtons onExport={(type) => void exportFiltered(type)} />
+                        }
                     />
 
                     {loading && !data ? (

@@ -11,6 +11,7 @@ use App\Models\Vehicle;
 use App\Support\AmountInWords;
 use App\Support\EntryNumberGenerator;
 use App\Support\FreightInvoiceCalculator;
+use App\Support\ListExport;
 use App\Support\ListFilter;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
@@ -18,6 +19,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FreightInvoiceApiController extends Controller
 {
@@ -27,23 +29,7 @@ class FreightInvoiceApiController extends Controller
             $userId = (int) $request->user()->id;
             $perPage = (int) ($request->input('per_page') ?: 15);
             $currentPage = (int) ($request->input('current_page') ?: 1);
-            $dateFilters = ListFilter::dateFromRequest($request);
-            $search = ListFilter::searchFromRequest($request);
-            $customerId = ListFilter::optionalIdFromRequest($request, 'customer_id');
-            $status = ListFilter::statusFromRequest($request, ['draft', 'finalized']);
-
-            $query = FreightInvoice::query()
-                ->where('user_id', $userId)
-                ->with(['customer:id,name', 'company:id,name']);
-            ListFilter::applyDate($query, $dateFilters, 'invoice_date');
-            ListFilter::applySearch($query, $search, ['bill_number']);
-            if ($customerId !== '') {
-                $query->where('customer_id', $customerId);
-            }
-            if ($status !== '') {
-                $query->where('status', $status);
-            }
-            $query->orderByDesc('invoice_date')->orderByDesc('id');
+            [$query, $filterSummary, $filters] = $this->filteredInvoicesQuery($request, $userId);
 
             $invoices = $query->paginate($perPage, ['*'], 'page', $currentPage);
             $customers = Customer::query()
@@ -51,28 +37,91 @@ class FreightInvoiceApiController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name']);
 
-            $customerName = $customerId !== ''
-                ? $customers->firstWhere('id', (int) $customerId)?->name
-                : null;
-
-            $filterSummary = ListFilter::summary([
-                $search !== '' ? 'Search: '.$search : null,
-                $status !== '' ? 'Status: '.ucfirst($status) : null,
-                $customerName ? 'Customer: '.$customerName : null,
-                ListFilter::dateSummary($dateFilters),
-            ], 'All invoices');
-
             return $this->sendJsonResponse(true, 'Invoices loaded.', [
                 'invoices' => $invoices,
                 'customers' => $customers,
-                'filters' => [
-                    'search' => $search,
-                    'status' => $status,
-                    'customer_id' => $customerId,
-                    ...$dateFilters,
-                ],
+                'filters' => $filters,
                 'filterSummary' => $filterSummary,
             ], 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postInvoicesExportCsv(Request $request): StreamedResponse|JsonResponse
+    {
+        try {
+            $userId = (int) $request->user()->id;
+            [$query, $filterSummary] = $this->filteredInvoicesQuery($request, $userId);
+            $invoices = $query->get();
+            $totals = $this->invoiceExportTotals($invoices);
+
+            return ListExport::csv(
+                'invoices',
+                'Invoices Export',
+                $filterSummary,
+                ['Date', 'Bill No.', 'Customer', 'Status', 'Net Value', 'IGST', 'Balance'],
+                $invoices->map(fn ($invoice) => [
+                    ListExport::formatDate($invoice->invoice_date),
+                    $invoice->bill_number,
+                    $invoice->customer?->name ?? '',
+                    ucfirst($invoice->status),
+                    $invoice->net_value,
+                    $invoice->igst_amount,
+                    $invoice->balance_amount,
+                ]),
+                [
+                    'TOTAL',
+                    $invoices->count().' invoices',
+                    '',
+                    '',
+                    ListExport::formatMoney($totals['net_value']),
+                    ListExport::formatMoney($totals['igst_amount']),
+                    ListExport::formatMoney($totals['balance_amount']),
+                ],
+            );
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postInvoicesExportPdf(Request $request)
+    {
+        try {
+            $userId = (int) $request->user()->id;
+            [$query, $filterSummary] = $this->filteredInvoicesQuery($request, $userId);
+            $invoices = $query->get();
+            $totals = $this->invoiceExportTotals($invoices);
+
+            return ListExport::pdf(
+                'invoices',
+                'Invoices Report',
+                $filterSummary,
+                ['Date', 'Bill No.', 'Customer', 'Status', 'Net Value', 'IGST', 'Balance'],
+                $invoices->map(fn ($invoice) => [
+                    ListExport::formatDate($invoice->invoice_date),
+                    $invoice->bill_number,
+                    $invoice->customer?->name ?? '—',
+                    ucfirst($invoice->status),
+                    ListExport::formatMoney($invoice->net_value),
+                    ListExport::formatMoney($invoice->igst_amount),
+                    ListExport::formatMoney($invoice->balance_amount),
+                ]),
+                $invoices->count(),
+                [
+                    'TOTAL',
+                    $invoices->count().' invoices',
+                    '',
+                    '',
+                    ListExport::formatMoney($totals['net_value']),
+                    ListExport::formatMoney($totals['igst_amount']),
+                    ListExport::formatMoney($totals['balance_amount']),
+                ],
+                [
+                    ['label' => 'Total Net Value', 'value' => '₹ '.ListExport::formatMoney($totals['net_value'])],
+                    ['label' => 'Total Balance', 'value' => '₹ '.ListExport::formatMoney($totals['balance_amount'])],
+                ],
+            );
         } catch (Exception $e) {
             return $this->sendError($e);
         }
@@ -356,5 +405,62 @@ class FreightInvoiceApiController extends Controller
         }
 
         return $validated;
+    }
+
+    /**
+     * @return array{0: \Illuminate\Database\Eloquent\Builder, 1: string, 2: array<string, string>}
+     */
+    private function filteredInvoicesQuery(Request $request, int $userId): array
+    {
+        $dateFilters = ListFilter::dateFromRequest($request);
+        $search = ListFilter::searchFromRequest($request);
+        $customerId = ListFilter::optionalIdFromRequest($request, 'customer_id');
+        $status = ListFilter::statusFromRequest($request, ['draft', 'finalized']);
+
+        $query = FreightInvoice::query()
+            ->where('user_id', $userId)
+            ->with(['customer:id,name', 'company:id,name']);
+        ListFilter::applyDate($query, $dateFilters, 'invoice_date');
+        ListFilter::applySearch($query, $search, ['bill_number']);
+        if ($customerId !== '') {
+            $query->where('customer_id', $customerId);
+        }
+        if ($status !== '') {
+            $query->where('status', $status);
+        }
+        $query->orderByDesc('invoice_date')->orderByDesc('id');
+
+        $customers = Customer::query()
+            ->where('user_id', $userId)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $customerName = $customerId !== ''
+            ? $customers->firstWhere('id', (int) $customerId)?->name
+            : null;
+
+        $filterSummary = ListFilter::summary([
+            $search !== '' ? 'Search: '.$search : null,
+            $status !== '' ? 'Status: '.ucfirst($status) : null,
+            $customerName ? 'Customer: '.$customerName : null,
+            ListFilter::dateSummary($dateFilters),
+        ], 'All invoices');
+
+        return [$query, $filterSummary, [
+            'search' => $search,
+            'status' => $status,
+            'customer_id' => $customerId,
+            ...$dateFilters,
+        ]];
+    }
+
+    /** @param  Collection<int, FreightInvoice>  $invoices */
+    private function invoiceExportTotals(Collection $invoices): array
+    {
+        return [
+            'net_value' => round((float) $invoices->sum('net_value'), 2),
+            'igst_amount' => round((float) $invoices->sum('igst_amount'), 2),
+            'balance_amount' => round((float) $invoices->sum('balance_amount'), 2),
+        ];
     }
 }

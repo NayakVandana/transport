@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Api\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Support\ListExport;
 use App\Support\ListFilter;
 use App\Support\PaymentValidation;
 use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PaymentApiController extends Controller
 {
@@ -19,81 +22,95 @@ class PaymentApiController extends Controller
             $userId = (int) $request->user()->id;
             $perPage = (int) ($request->input('per_page') ?: 20);
             $currentPage = (int) ($request->input('current_page') ?: 1);
-            $dateFilters = ListFilter::dateFromRequest($request);
-            $search = ListFilter::searchFromRequest($request);
-            $customerId = ListFilter::optionalIdFromRequest($request, 'customer_id');
+            [$query, $filterSummary, $filters, $totals] = $this->filteredPaymentsQuery($request, $userId);
 
-            $validated = $request->validate([
-                'direction' => ['nullable', 'string', Rule::in(PaymentValidation::directions())],
-                'payment_method' => ['nullable', 'string', Rule::in(PaymentValidation::paymentMethods())],
-            ]);
-            $direction = $validated['direction'] ?? '';
-            $paymentMethod = $validated['payment_method'] ?? '';
-
-            if ($customerId !== '') {
-                $ownsCustomer = \App\Models\Customer::query()
-                    ->where('user_id', $userId)
-                    ->whereKey($customerId)
-                    ->exists();
-                if (! $ownsCustomer) {
-                    $customerId = '';
-                }
-            }
-
-            $query = Payment::query()
-                ->with([
-                    'customer:id,name',
-                    'booking:id,booking_date,vehicle_id',
-                    'booking.vehicle:id,vehicle_number',
-                    'freightInvoice:id,bill_number,invoice_date',
-                ])
-                ->where('user_id', $userId);
-            ListFilter::applyDate($query, $dateFilters, 'payment_date');
-            ListFilter::applySearch($query, $search, ['reference_number', 'notes']);
-            if ($customerId !== '') {
-                $query->where('customer_id', $customerId);
-            }
-            if ($direction !== '') {
-                $query->where('direction', $direction);
-            }
-            if ($paymentMethod !== '') {
-                $query->where('payment_method', $paymentMethod);
-            }
-            $query->orderByDesc('payment_date')->orderByDesc('id');
-
-            $totalReceipts = (float) (clone $query)->toBase()->where('direction', 'receipt')->sum('amount');
-            $totalPayouts = (float) (clone $query)->toBase()->where('direction', 'payout')->sum('amount');
             $payments = $query->paginate($perPage, ['*'], 'page', $currentPage);
-
             $customers = PaymentValidation::customersForUser($userId);
-            $customerName = $customerId !== ''
-                ? $customers->firstWhere('id', (int) $customerId)?->name
-                : null;
-
-            $filterSummary = ListFilter::summary([
-                $search !== '' ? 'Search: '.$search : null,
-                $direction !== '' ? 'Type: '.ucfirst($direction) : null,
-                $paymentMethod !== '' ? 'Method: '.strtoupper($paymentMethod) : null,
-                $customerName ? 'Customer: '.$customerName : null,
-                ListFilter::dateSummary($dateFilters),
-            ], 'All payments');
 
             return $this->sendJsonResponse(true, 'Payments loaded.', [
                 'payments' => $payments,
-                'total_receipts' => round($totalReceipts, 2),
-                'total_payouts' => round($totalPayouts, 2),
+                'total_receipts' => $totals['receipts'],
+                'total_payouts' => $totals['payouts'],
                 'customers' => $customers,
                 'directions' => PaymentValidation::optionsForFrontend()['directions'],
                 'payment_methods' => PaymentValidation::optionsForFrontend()['payment_methods'],
-                'filters' => [
-                    'search' => $search,
-                    'direction' => $direction,
-                    'payment_method' => $paymentMethod,
-                    'customer_id' => $customerId,
-                    ...$dateFilters,
-                ],
+                'filters' => $filters,
                 'filterSummary' => $filterSummary,
             ], 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postPaymentsExportCsv(Request $request): StreamedResponse|JsonResponse
+    {
+        try {
+            $userId = (int) $request->user()->id;
+            [$query, $filterSummary, , $totals] = $this->filteredPaymentsQuery($request, $userId);
+            $payments = $query->get();
+
+            return ListExport::csv(
+                'payments',
+                'Payments Export',
+                $filterSummary,
+                ['Date', 'Type', 'Amount', 'Method', 'Reference', 'Customer', 'Booking', 'Invoice', 'Notes'],
+                $payments->map(fn ($payment) => [
+                    ListExport::formatDate($payment->payment_date),
+                    ucfirst($payment->direction),
+                    $payment->amount,
+                    strtoupper($payment->payment_method),
+                    $payment->reference_number ?? '',
+                    $payment->customer?->name ?? '',
+                    $payment->booking?->vehicle?->vehicle_number ?? '',
+                    $payment->freightInvoice?->bill_number ?? '',
+                    $payment->notes ?? '',
+                ]),
+                [
+                    'TOTAL',
+                    $payments->count().' payments',
+                    '',
+                    '',
+                    '',
+                    'Receipts: '.ListExport::formatMoney($totals['receipts']),
+                    'Payouts: '.ListExport::formatMoney($totals['payouts']),
+                    '',
+                    '',
+                ],
+            );
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postPaymentsExportPdf(Request $request)
+    {
+        try {
+            $userId = (int) $request->user()->id;
+            [$query, $filterSummary, , $totals] = $this->filteredPaymentsQuery($request, $userId);
+            $payments = $query->get();
+
+            return ListExport::pdf(
+                'payments',
+                'Payments Report',
+                $filterSummary,
+                ['Date', 'Type', 'Amount', 'Method', 'Reference', 'Customer', 'Booking', 'Invoice'],
+                $payments->map(fn ($payment) => [
+                    ListExport::formatDate($payment->payment_date),
+                    ucfirst($payment->direction),
+                    ListExport::formatMoney($payment->amount),
+                    strtoupper($payment->payment_method),
+                    $payment->reference_number ?? '—',
+                    $payment->customer?->name ?? '—',
+                    $payment->booking?->vehicle?->vehicle_number ?? '—',
+                    $payment->freightInvoice?->bill_number ?? '—',
+                ]),
+                $payments->count(),
+                null,
+                [
+                    ['label' => 'Total Receipts', 'value' => '₹ '.ListExport::formatMoney($totals['receipts'])],
+                    ['label' => 'Total Payouts', 'value' => '₹ '.ListExport::formatMoney($totals['payouts'])],
+                ],
+            );
         } catch (Exception $e) {
             return $this->sendError($e);
         }
@@ -279,5 +296,80 @@ class PaymentApiController extends Controller
             'reference_number' => $request->input('reference_number') ?: null,
             'notes' => $request->input('notes') ?: null,
         ]);
+    }
+
+    /**
+     * @return array{0: \Illuminate\Database\Eloquent\Builder, 1: string, 2: array<string, string>, 3: array{receipts: float, payouts: float}}
+     */
+    private function filteredPaymentsQuery(Request $request, int $userId): array
+    {
+        $dateFilters = ListFilter::dateFromRequest($request);
+        $search = ListFilter::searchFromRequest($request);
+        $customerId = ListFilter::optionalIdFromRequest($request, 'customer_id');
+
+        $validated = $request->validate([
+            'direction' => ['nullable', 'string', Rule::in(PaymentValidation::directions())],
+            'payment_method' => ['nullable', 'string', Rule::in(PaymentValidation::paymentMethods())],
+        ]);
+        $direction = $validated['direction'] ?? '';
+        $paymentMethod = $validated['payment_method'] ?? '';
+
+        if ($customerId !== '') {
+            $ownsCustomer = \App\Models\Customer::query()
+                ->where('user_id', $userId)
+                ->whereKey($customerId)
+                ->exists();
+            if (! $ownsCustomer) {
+                $customerId = '';
+            }
+        }
+
+        $query = Payment::query()
+            ->with([
+                'customer:id,name',
+                'booking:id,booking_date,vehicle_id',
+                'booking.vehicle:id,vehicle_number',
+                'freightInvoice:id,bill_number,invoice_date',
+            ])
+            ->where('user_id', $userId);
+        ListFilter::applyDate($query, $dateFilters, 'payment_date');
+        ListFilter::applySearch($query, $search, ['reference_number', 'notes']);
+        if ($customerId !== '') {
+            $query->where('customer_id', $customerId);
+        }
+        if ($direction !== '') {
+            $query->where('direction', $direction);
+        }
+        if ($paymentMethod !== '') {
+            $query->where('payment_method', $paymentMethod);
+        }
+        $query->orderByDesc('payment_date')->orderByDesc('id');
+
+        $totalReceipts = round((float) (clone $query)->toBase()->where('direction', 'receipt')->sum('amount'), 2);
+        $totalPayouts = round((float) (clone $query)->toBase()->where('direction', 'payout')->sum('amount'), 2);
+
+        $customers = PaymentValidation::customersForUser($userId);
+        $customerName = $customerId !== ''
+            ? $customers->firstWhere('id', (int) $customerId)?->name
+            : null;
+
+        $filterSummary = ListFilter::summary([
+            $search !== '' ? 'Search: '.$search : null,
+            $direction !== '' ? 'Type: '.ucfirst($direction) : null,
+            $paymentMethod !== '' ? 'Method: '.strtoupper($paymentMethod) : null,
+            $customerName ? 'Customer: '.$customerName : null,
+            ListFilter::dateSummary($dateFilters),
+        ], 'All payments');
+
+        return [$query, $filterSummary, [
+            'search' => $search,
+            'direction' => $direction,
+            'payment_method' => $paymentMethod,
+            'customer_id' => $customerId,
+            ...$dateFilters,
+        ], [
+            'receipts' => $totalReceipts,
+            'payouts' => $totalPayouts,
+        ]];
     }
 }

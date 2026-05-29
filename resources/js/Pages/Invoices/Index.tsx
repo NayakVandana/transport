@@ -1,8 +1,10 @@
+import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import { formatMoney } from '@/lib/freightCalculator';
 import type { Customer, FreightInvoice } from '@/types/transport';
@@ -29,6 +31,7 @@ const defaultFilters: InvoiceFilters = {
 };
 
 export default function InvoicesIndex() {
+    const [actionError, setActionError] = useState<string | null>(null);
     const [searchInput, setSearchInput] = useState('');
 
     usePageHeader(
@@ -72,6 +75,16 @@ export default function InvoicesIndex() {
     });
 
     const invoices = data?.invoices.data ?? [];
+    const displayError = actionError ?? error;
+
+    const exportFiltered = async (type: 'csv' | 'pdf') => {
+        try {
+            setActionError(null);
+            await exportFilteredList('invoices', type, { ...filters, search: searchInput });
+        } catch {
+            setActionError(`Could not export ${type.toUpperCase()}.`);
+        }
+    };
 
     return (
         <>
@@ -79,9 +92,9 @@ export default function InvoicesIndex() {
 
             <div className="py-8">
                 <div className="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
-                    {error && (
+                    {displayError && (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                            {error}
+                            {displayError}
                         </p>
                     )}
 
@@ -123,6 +136,9 @@ export default function InvoicesIndex() {
                             setSearchInput('');
                             clearFilters();
                         }}
+                        actions={
+                            <ListExportButtons onExport={(type) => void exportFiltered(type)} />
+                        }
                     />
 
                     {loading && !data ? (

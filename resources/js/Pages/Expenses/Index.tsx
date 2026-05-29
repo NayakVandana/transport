@@ -1,8 +1,10 @@
+import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import { formatMoney } from '@/lib/freightCalculator';
 import type { Expense, ExpenseOption, Vehicle } from '@/types/transport';
@@ -122,6 +124,15 @@ export default function ExpensesIndex() {
 
     const displayError = actionError ?? error;
 
+    const exportFiltered = async (type: 'csv' | 'pdf') => {
+        try {
+            setActionError(null);
+            await exportFilteredList('expenses', type, { ...filters, search: searchInput });
+        } catch {
+            setActionError(`Could not export ${type.toUpperCase()}.`);
+        }
+    };
+
     return (
         <>
             <Head title="Expenses" />
@@ -183,6 +194,9 @@ export default function ExpensesIndex() {
                             setSearchInput('');
                             clearFilters();
                         }}
+                        actions={
+                            <ListExportButtons onExport={(type) => void exportFiltered(type)} />
+                        }
                     />
 
                     {data && (

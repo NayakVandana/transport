@@ -1,9 +1,11 @@
+import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import { invoiceReturnQuery } from '@/lib/invoiceReturn';
 import type { Vehicle } from '@/types/transport';
@@ -134,6 +136,15 @@ export default function VehiclesIndex() {
 
     const displayError = actionError ?? error;
 
+    const exportFiltered = async (type: 'csv' | 'pdf') => {
+        try {
+            setActionError(null);
+            await exportFilteredList('vehicles', type, { ...filters, search: searchInput });
+        } catch {
+            setActionError(`Could not export ${type.toUpperCase()}.`);
+        }
+    };
+
     return (
         <>
             <Head title="Vehicles" />
@@ -178,6 +189,9 @@ export default function VehiclesIndex() {
                             setSearchInput('');
                             clearFilters();
                         }}
+                        actions={
+                            <ListExportButtons onExport={(type) => void exportFiltered(type)} />
+                        }
                     />
 
                     {loading && !data ? (
