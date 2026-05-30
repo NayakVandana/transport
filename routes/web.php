@@ -32,9 +32,9 @@ Route::get('/dashboard', fn () => Inertia::render('Dashboard'))->name('dashboard
 
 Route::get('/company', fn () => Inertia::render('Company/Edit'))->name('company.edit');
 
-Route::get('/customers', fn () => Inertia::render('Customers/Index'))->name('customers.index');
-Route::get('/customers/create', fn () => Inertia::render('Customers/Form'))->name('customers.create');
-Route::get('/customers/{id}/edit', fn (int $id) => Inertia::render('Customers/Form', ['customerId' => $id]))->name('customers.edit');
+Route::get('/parties', fn () => Inertia::render('Parties/Index'))->name('parties.index');
+Route::get('/parties/create', fn () => Inertia::render('Parties/Form'))->name('parties.create');
+Route::get('/parties/{id}/edit', fn (int $id) => Inertia::render('Parties/Form', ['partyId' => $id]))->name('parties.edit');
 
 Route::get('/vehicles', fn () => Inertia::render('Vehicles/Index'))->name('vehicles.index');
 Route::get('/vehicles/create', fn () => Inertia::render('Vehicles/Form'))->name('vehicles.create');

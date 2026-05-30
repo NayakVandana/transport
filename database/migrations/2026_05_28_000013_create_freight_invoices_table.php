@@ -14,7 +14,7 @@ return new class extends Migration
             // Relations
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('company_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('party_id')->constrained()->cascadeOnDelete();
 
             // Invoice header
             $table->string('bill_number')->unique();

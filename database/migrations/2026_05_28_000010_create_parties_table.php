@@ -8,13 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('customers', function (Blueprint $table) {
+        Schema::create('parties', function (Blueprint $table) {
             $table->id();
 
-            // Owner
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
 
-            // Customer details
             $table->string('name');
             $table->string('mobile', 15)->nullable();
             $table->text('address')->nullable();
@@ -26,6 +24,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('customers');
+        Schema::dropIfExists('parties');
     }
 };

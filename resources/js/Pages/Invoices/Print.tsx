@@ -46,7 +46,7 @@ export default function InvoicePrint({ invoiceId }: { invoiceId: number }) {
     }
 
     const company = invoice.company!;
-    const customer = invoice.customer!;
+    const party = invoice.party!;
     const lines = invoice.lines ?? [];
 
     return (
@@ -82,17 +82,17 @@ export default function InvoicePrint({ invoiceId }: { invoiceId: number }) {
                 {'To,'.padEnd(40)}
                 {`Bill No. : ${invoice.bill_number}`}
                 {'\n'}
-                {customer.name.padEnd(40)}
+                {party.name.padEnd(40)}
                 {`Date     : ${formatDate(invoice.invoice_date)}`}
                 {'\n'}
-                {(customer.address ?? '').split('\n').map((addrLine, i) => (
+                {(party.address ?? '').split('\n').map((addrLine, i) => (
                     <span key={i}>
                         {i === 0 ? addrLine.padEnd(40) : addrLine}
                         {i === 0 ? `SAC Code : ${invoice.sac_code}` : ''}
                         {'\n'}
                     </span>
                 ))}
-                {customer.mobile ? `Mob: ${customer.mobile}` : ''}
+                {party.mobile ? `Mob: ${party.mobile}` : ''}
                 {'\n\n'}
                 {line('-', 80)}
                 {'\n'}

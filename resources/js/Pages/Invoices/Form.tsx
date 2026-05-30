@@ -14,7 +14,7 @@ import { invoiceReturnQuery, masterListHref } from '@/lib/invoiceReturn';
 import { todayDate } from '@/lib/quickAdd';
 import type {
     Company,
-    Customer,
+    Party,
     Entrybook,
     FreightInvoice,
     FreightInvoiceLine,
@@ -31,7 +31,7 @@ interface EntrySettings {
 
 type InvoiceMetaData = {
     company: Company;
-    customers: Customer[];
+    parties: Party[];
     vehicles: Vehicle[];
     routeLocations: RouteLocation[];
     entrybooks: Entrybook[];
@@ -99,7 +99,7 @@ function apiFieldErrors(data: unknown): Record<string, string> {
 export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
     const isEdit = Boolean(invoiceId);
     const [company, setCompany] = useState<Company | null>(null);
-    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [parties, setParties] = useState<Party[]>([]);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [routes, setRoutes] = useState<RouteLocation[]>([]);
     const [entrybooks, setEntrybooks] = useState<Entrybook[]>([]);
@@ -109,7 +109,7 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [data, setData] = useState({
-        customer_id: '',
+        party_id: '',
         bill_number: '',
         invoice_date: todayDate(),
         sac_code: '996791',
@@ -148,14 +148,14 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                     const meta = metaRes.data;
 
                     setCompany(invoice.company ?? meta.company);
-                    setCustomers(meta.customers);
+                    setParties(meta.parties);
                     setVehicles(meta.vehicles);
                     setRoutes(meta.routeLocations);
                     setEntrybooks(meta.entrybooks ?? []);
                     setBillNumber(invoice.bill_number);
 
                     setData({
-                        customer_id: String(invoice.customer_id),
+                        party_id: String(invoice.party_id),
                         bill_number: invoice.bill_number,
                         invoice_date: invoice.invoice_date?.slice(0, 10) ?? todayDate(),
                         sac_code: invoice.sac_code ?? meta.company.sac_code,
@@ -183,14 +183,14 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                     const meta = metaRes.data;
 
                     setCompany(meta.company);
-                    setCustomers(meta.customers);
+                    setParties(meta.parties);
                     setVehicles(meta.vehicles);
                     setRoutes(meta.routeLocations);
                     setEntrybooks(meta.entrybooks ?? []);
                     setBillNumber(meta.nextBillNumber ?? '');
 
                     setData({
-                        customer_id: String(meta.customers[0]?.id ?? ''),
+                        party_id: String(meta.parties[0]?.id ?? ''),
                         bill_number: meta.nextBillNumber ?? '',
                         invoice_date: todayDate(),
                         sac_code: meta.company.sac_code,
@@ -232,7 +232,7 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
 
         try {
             const payload = {
-                customer_id: Number(data.customer_id),
+                party_id: Number(data.party_id),
                 bill_number: data.bill_number,
                 invoice_date: data.invoice_date,
                 sac_code: data.sac_code,
@@ -361,20 +361,20 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                         <form onSubmit={submit} className="space-y-6">
                             <div className="grid gap-4 rounded-lg bg-white p-6 shadow sm:grid-cols-2 lg:grid-cols-4">
                                 <div>
-                                    <InputLabel value="Customer" />
+                                    <InputLabel value="Party" />
                                     <select
                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                        value={data.customer_id}
-                                        onChange={(e) => setField('customer_id', e.target.value)}
+                                        value={data.party_id}
+                                        onChange={(e) => setField('party_id', e.target.value)}
                                         required
                                     >
-                                        {customers.map((c) => (
-                                            <option key={c.id} value={c.id}>
-                                                {c.name}
+                                        {parties.map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.name}
                                             </option>
                                         ))}
                                     </select>
-                                    <InputError message={errors.customer_id} />
+                                    <InputError message={errors.party_id} />
                                 </div>
                                 <div>
                                     <InputLabel value="Bill Number" />

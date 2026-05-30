@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
-use App\Models\Customer;
+use App\Models\Party;
 use App\Models\Entrybook;
 use App\Models\FreightInvoice;
 use App\Models\RouteLocation;
@@ -33,14 +33,14 @@ class FreightInvoiceApiController extends Controller
             [$query, $filterSummary, $filters] = $this->filteredInvoicesQuery($request, $userId);
 
             $invoices = $query->paginate($perPage, ['*'], 'page', $currentPage);
-            $customers = Customer::query()
+            $parties = Party::query()
                 ->where('user_id', $userId)
                 ->orderBy('name')
                 ->get(['id', 'name']);
 
             return $this->sendJsonResponse(true, 'Invoices loaded.', [
                 'invoices' => $invoices,
-                'customers' => $customers,
+                'parties' => $parties,
                 'filters' => $filters,
                 'filterSummary' => $filterSummary,
             ], 200);
@@ -61,11 +61,11 @@ class FreightInvoiceApiController extends Controller
                 'invoices',
                 'Invoices Export',
                 $filterSummary,
-                ['Date', 'Bill No.', 'Customer', 'Status', 'Net Value', 'IGST', 'Balance'],
+                ['Date', 'Bill No.', 'Party', 'Status', 'Net Value', 'IGST', 'Balance'],
                 $invoices->map(fn ($invoice) => [
                     ListExport::formatDate($invoice->invoice_date),
                     $invoice->bill_number,
-                    $invoice->customer?->name ?? '',
+                    $invoice->party?->name ?? '',
                     ucfirst($invoice->status),
                     $invoice->net_value,
                     $invoice->igst_amount,
@@ -98,11 +98,11 @@ class FreightInvoiceApiController extends Controller
                 'invoices',
                 'Invoices Report',
                 $filterSummary,
-                ['Date', 'Bill No.', 'Customer', 'Status', 'Net Value', 'IGST', 'Balance'],
+                ['Date', 'Bill No.', 'Party', 'Status', 'Net Value', 'IGST', 'Balance'],
                 $invoices->map(fn ($invoice) => [
                     ListExport::formatDate($invoice->invoice_date),
                     $invoice->bill_number,
-                    $invoice->customer?->name ?? '—',
+                    $invoice->party?->name ?? '—',
                     ucfirst($invoice->status),
                     ListExport::formatMoney($invoice->net_value),
                     ListExport::formatMoney($invoice->igst_amount),
@@ -159,7 +159,7 @@ class FreightInvoiceApiController extends Controller
 
             $invoice = FreightInvoice::query()
                 ->where('user_id', $request->user()->id)
-                ->with(['company', 'customer', 'lines'])
+                ->with(['company', 'party', 'lines'])
                 ->findOrFail($request->input('id'));
 
             return $this->sendJsonResponse(true, 'Invoice loaded.', [
@@ -213,7 +213,7 @@ class FreightInvoiceApiController extends Controller
             );
 
             return $this->sendJsonResponse(true, 'Invoice created.', [
-                'invoice' => $invoice->load(['company', 'customer', 'lines']),
+                'invoice' => $invoice->load(['company', 'party', 'lines']),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -266,7 +266,7 @@ class FreightInvoiceApiController extends Controller
             );
 
             return $this->sendJsonResponse(true, 'Invoice updated.', [
-                'invoice' => $invoice->fresh()->load(['company', 'customer', 'lines']),
+                'invoice' => $invoice->fresh()->load(['company', 'party', 'lines']),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -304,7 +304,7 @@ class FreightInvoiceApiController extends Controller
 
         return [
             'company' => $company,
-            'customers' => $this->customersForUser($request),
+            'parties' => $this->partiesForUser($request),
             'vehicles' => Vehicle::query()->forUser($userId)->orderBy('vehicle_number')->get(['id', 'vehicle_number']),
             'routeLocations' => RouteLocation::query()->forUser($userId)->orderBy('name')->get(['id', 'name']),
             'entrybooks' => Entrybook::query()
@@ -320,10 +320,10 @@ class FreightInvoiceApiController extends Controller
         ];
     }
 
-    /** @return Collection<int, Customer> */
-    private function customersForUser(Request $request)
+    /** @return Collection<int, Party> */
+    private function partiesForUser(Request $request)
     {
-        return Customer::query()
+        return Party::query()
             ->where('user_id', $request->user()->id)
             ->orderBy('name')
             ->get(['id', 'name', 'mobile', 'address', 'state_code']);
@@ -380,7 +380,7 @@ class FreightInvoiceApiController extends Controller
         }
 
         $rules = [
-            'customer_id' => ['required', 'exists:customers,id'],
+            'party_id' => ['required', 'exists:parties,id'],
             'bill_number' => ['required', 'string', 'max:50', $billUnique],
             'invoice_date' => ['required', 'date'],
             'sac_code' => ['nullable', 'string', 'max:10'],
@@ -408,9 +408,9 @@ class FreightInvoiceApiController extends Controller
 
         $validated = $validation->validated();
 
-        $customer = Customer::query()->find($validated['customer_id']);
-        if (! $customer || $customer->user_id !== $request->user()->id) {
-            return $this->sendJsonResponse(false, 'Invalid customer.', null, 200);
+        $party = Party::query()->find($validated['party_id']);
+        if (! $party || $party->user_id !== $request->user()->id) {
+            return $this->sendJsonResponse(false, 'Invalid party.', null, 200);
         }
 
         foreach ($validated['lines'] as $line) {
@@ -434,42 +434,42 @@ class FreightInvoiceApiController extends Controller
     {
         $dateFilters = ListFilter::dateFromRequest($request);
         $search = ListFilter::searchFromRequest($request);
-        $customerId = ListFilter::optionalIdFromRequest($request, 'customer_id');
+        $partyId = ListFilter::optionalIdFromRequest($request, 'party_id');
         $status = ListFilter::statusFromRequest($request, ['draft', 'finalized']);
 
         $query = FreightInvoice::query()
             ->where('user_id', $userId)
-            ->with(['customer:id,name', 'company:id,name']);
+            ->with(['party:id,name', 'company:id,name']);
         ListFilter::applyDate($query, $dateFilters, 'invoice_date');
         ListFilter::applySearch($query, $search, ['bill_number']);
-        if ($customerId !== '') {
-            $query->where('customer_id', $customerId);
+        if ($partyId !== '') {
+            $query->where('party_id', $partyId);
         }
         if ($status !== '') {
             $query->where('status', $status);
         }
         $query->orderByDesc('invoice_date')->orderByDesc('id');
 
-        $customers = Customer::query()
+        $parties = Party::query()
             ->where('user_id', $userId)
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        $customerName = $customerId !== ''
-            ? $customers->firstWhere('id', (int) $customerId)?->name
+        $partyName = $partyId !== ''
+            ? $parties->firstWhere('id', (int) $partyId)?->name
             : null;
 
         $filterSummary = ListFilter::summary([
             $search !== '' ? 'Search: '.$search : null,
             $status !== '' ? 'Status: '.ucfirst($status) : null,
-            $customerName ? 'Customer: '.$customerName : null,
+            $partyName ? 'Party: '.$partyName : null,
             ListFilter::dateSummary($dateFilters),
         ], 'All invoices');
 
         return [$query, $filterSummary, [
             'search' => $search,
             'status' => $status,
-            'customer_id' => $customerId,
+            'party_id' => $partyId,
             ...$dateFilters,
         ]];
     }

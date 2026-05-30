@@ -111,7 +111,7 @@ export interface EntityDocument {
     notes?: string | null;
 }
 
-export interface Customer {
+export interface Party {
     id: number;
     name: string;
     mobile?: string | null;
@@ -153,9 +153,9 @@ export interface FreightInvoice {
     balance_in_words?: string | null;
     prepared_by?: string | null;
     checked_by?: string | null;
-    customer_id: number;
+    party_id: number;
     company_id: number;
-    customer?: Customer;
+    party?: Party;
     company?: Company;
     lines?: FreightInvoiceLine[];
 }

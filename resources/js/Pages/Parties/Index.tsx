@@ -6,32 +6,32 @@ import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
-import type { Customer } from '@/types/transport';
+import type { Party } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 
-type CustomerFilters = ListFilters;
+type PartyFilters = ListFilters;
 
-type CustomersListData = {
-    customers: { data: Customer[] };
-    filters: CustomerFilters;
+type PartiesListData = {
+    parties: { data: Party[] };
+    filters: PartyFilters;
     filterSummary: string;
 };
 
-const defaultFilters: CustomerFilters = {
+const defaultFilters: PartyFilters = {
     search: '',
     ...defaultDateFilters,
 };
 
-export default function CustomersIndex() {
+export default function PartiesIndex() {
     const [actionError, setActionError] = useState<string | null>(null);
     const [searchInput, setSearchInput] = useState('');
 
     usePageHeader(
         <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-800">Customers</h2>
-            <Link href={route('customers.create')}>
-                <PrimaryButton>Add Customer</PrimaryButton>
+            <h2 className="text-xl font-semibold text-gray-800">Party</h2>
+            <Link href={route('parties.create')}>
+                <PrimaryButton>Add Party</PrimaryButton>
             </Link>
         </div>,
     );
@@ -48,11 +48,11 @@ export default function CustomersIndex() {
         applySearch,
         clearFilters,
         fetchList,
-    } = useFilteredList<CustomersListData, CustomerFilters>({
+    } = useFilteredList<PartiesListData, PartyFilters>({
         defaultFilters,
         load: async (activeFilters) => {
-            const res = await appApiPost<ApiEnvelope<CustomersListData>>(
-                '/customers/customers-list',
+            const res = await appApiPost<ApiEnvelope<PartiesListData>>(
+                '/parties/parties-list',
                 buildListFilterParams(activeFilters),
             );
 
@@ -66,17 +66,17 @@ export default function CustomersIndex() {
         },
     });
 
-    const customers = data?.customers.data ?? [];
+    const parties = data?.parties.data ?? [];
 
     const destroy = async (id: number) => {
-        if (!confirm('Delete this customer?')) {
+        if (!confirm('Delete this party?')) {
             return;
         }
 
-        const res = await appApiPost<ApiEnvelope<null>>('/customers/customer-destroy', { id });
+        const res = await appApiPost<ApiEnvelope<null>>('/parties/party-destroy', { id });
 
         if (!res.success) {
-            setActionError(res.message || 'Could not delete customer.');
+            setActionError(res.message || 'Could not delete party.');
             return;
         }
 
@@ -88,7 +88,7 @@ export default function CustomersIndex() {
     const exportFiltered = async (type: 'csv' | 'pdf') => {
         try {
             setActionError(null);
-            await exportFilteredList('customers', type, { ...filters, search: searchInput });
+            await exportFilteredList('parties', type, { ...filters, search: searchInput });
         } catch {
             setActionError(`Could not export ${type.toUpperCase()}.`);
         }
@@ -96,7 +96,7 @@ export default function CustomersIndex() {
 
     return (
         <>
-            <Head title="Customers" />
+            <Head title="Party" />
 
             <div className="py-8">
                 <div className="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
@@ -127,7 +127,7 @@ export default function CustomersIndex() {
                     />
 
                     {loading && !data ? (
-                        <p className="text-center text-sm text-gray-500">Loading customers…</p>
+                        <p className="text-center text-sm text-gray-500">Loading party…</p>
                     ) : (
                         <div className="overflow-hidden rounded-lg bg-white shadow">
                             <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -139,29 +139,29 @@ export default function CustomersIndex() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {customers.length === 0 ? (
+                                    {parties.length === 0 ? (
                                         <tr>
                                             <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
                                                 {hasActiveFilters
-                                                    ? 'No customers match your filters.'
-                                                    : 'No customers yet.'}
+                                                    ? 'No party match your filters.'
+                                                    : 'No party yet.'}
                                             </td>
                                         </tr>
                                     ) : (
-                                        customers.map((c) => (
-                                            <tr key={c.id}>
-                                                <td className="px-6 py-3 font-medium">{c.name}</td>
-                                                <td className="px-6 py-3">{c.mobile}</td>
+                                        parties.map((party) => (
+                                            <tr key={party.id}>
+                                                <td className="px-6 py-3 font-medium">{party.name}</td>
+                                                <td className="px-6 py-3">{party.mobile}</td>
                                                 <td className="space-x-3 px-6 py-3 text-right">
                                                     <Link
-                                                        href={route('customers.edit', c.id)}
+                                                        href={route('parties.edit', party.id)}
                                                         className="text-indigo-600 hover:underline"
                                                     >
                                                         Edit
                                                     </Link>
                                                     <button
                                                         type="button"
-                                                        onClick={() => void destroy(c.id)}
+                                                        onClick={() => void destroy(party.id)}
                                                         className="text-red-600 hover:underline"
                                                     >
                                                         Delete

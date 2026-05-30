@@ -11,7 +11,7 @@ class FreightInvoice extends Model
     protected $fillable = [
         'user_id',
         'company_id',
-        'customer_id',
+        'party_id',
         'bill_number',
         'invoice_date',
         'sac_code',
@@ -56,9 +56,9 @@ class FreightInvoice extends Model
         return $this->belongsTo(Company::class);
     }
 
-    public function customer(): BelongsTo
+    public function party(): BelongsTo
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(Party::class);
     }
 
     public function lines(): HasMany

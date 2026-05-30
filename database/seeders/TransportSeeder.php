@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Company;
-use App\Models\Customer;
+use App\Models\Party;
 use App\Models\Driver;
 use App\Models\DriverDocument;
 use App\Models\Entrybook;
@@ -32,12 +32,12 @@ class TransportSeeder extends Seeder
         $userId = (int) $user->id;
 
         $company = $this->seedCompany($userId);
-        $customers = $this->seedCustomers($userId);
+        $parties = $this->seedParties($userId);
         $vehicles = $this->seedVehicles($userId);
         $drivers = $this->seedDrivers($userId);
         $this->seedRoutes($userId);
         $entrybooks = $this->seedEntrybooks($userId, $vehicles);
-        $this->seedInvoices($userId, $company, $customers, $vehicles, $entrybooks);
+        $this->seedInvoices($userId, $company, $parties, $vehicles, $entrybooks);
         $this->seedVehicleExpenses($userId, $vehicles);
         $this->seedVehicleDocuments($userId, $vehicles);
         $this->seedDriverDocuments($userId, $drivers);
@@ -68,10 +68,10 @@ class TransportSeeder extends Seeder
         );
     }
 
-    /** @return list<Customer> */
-    private function seedCustomers(int $userId): array
+    /** @return list<Party> */
+    private function seedParties(int $userId): array
     {
-        $customers = [
+        $parties = [
             [
                 'name' => 'A/C. VAISHNAVI TRANSPORT VP',
                 'mobile' => '9821596969',
@@ -87,11 +87,11 @@ class TransportSeeder extends Seeder
         ];
 
         return array_map(
-            fn (array $data) => Customer::query()->updateOrCreate(
+            fn (array $data) => Party::query()->updateOrCreate(
                 ['user_id' => $userId, 'name' => $data['name']],
                 $data,
             ),
-            $customers,
+            $parties,
         );
     }
 
@@ -221,21 +221,21 @@ class TransportSeeder extends Seeder
     }
 
     /**
-     * @param  list<Customer>  $customers
+     * @param  list<Party>  $parties
      * @param  array<string, Vehicle>  $vehicles
      * @param  array<string, Entrybook>  $entrybooks
      */
     private function seedInvoices(
         int $userId,
         Company $company,
-        array $customers,
+        array $parties,
         array $vehicles,
         array $entrybooks,
     ): void {
         $invoices = [
             [
                 'bill_number' => 'R2526-0608',
-                'customer_index' => 0,
+                'party_index' => 0,
                 'invoice_date' => '2025-09-08',
                 'status' => 'finalized',
                 'prepared_by' => 'Admin',
@@ -267,7 +267,7 @@ class TransportSeeder extends Seeder
             ],
             [
                 'bill_number' => 'R2526-0609',
-                'customer_index' => 1,
+                'party_index' => 1,
                 'invoice_date' => '2025-09-10',
                 'status' => 'draft',
                 'prepared_by' => 'Admin',
@@ -288,7 +288,7 @@ class TransportSeeder extends Seeder
             ],
             [
                 'bill_number' => 'R2526-0610',
-                'customer_index' => 0,
+                'party_index' => 0,
                 'invoice_date' => '2025-09-15',
                 'status' => 'finalized',
                 'prepared_by' => 'Admin',
@@ -322,7 +322,7 @@ class TransportSeeder extends Seeder
                 [
                     'user_id' => $userId,
                     'company_id' => $company->id,
-                    'customer_id' => $customers[$invoiceData['customer_index']]->id,
+                    'party_id' => $parties[$invoiceData['party_index']]->id,
                     'invoice_date' => $invoiceData['invoice_date'],
                     'sac_code' => $company->sac_code,
                     'status' => $invoiceData['status'],

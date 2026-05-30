@@ -77,8 +77,8 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                         <div className="rounded-lg bg-white p-6 shadow">
                             <dl className="grid gap-4 text-sm sm:grid-cols-2">
                                 <div>
-                                    <dt className="text-gray-500">Customer</dt>
-                                    <dd className="font-medium">{invoice.customer?.name}</dd>
+                                    <dt className="text-gray-500">Party</dt>
+                                    <dd className="font-medium">{invoice.party?.name}</dd>
                                 </div>
                                 <div>
                                     <dt className="text-gray-500">Date</dt>

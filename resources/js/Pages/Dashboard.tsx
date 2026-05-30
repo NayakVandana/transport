@@ -7,12 +7,12 @@ import { Head, Link } from '@inertiajs/react';
 
 type DashboardData = {
     stats: {
-        customers: number;
+        parties: number;
         invoices: number;
         outstanding: number;
         has_company: boolean;
     };
-    recentInvoices: (FreightInvoice & { customer?: { name: string } })[];
+    recentInvoices: (FreightInvoice & { party?: { name: string } })[];
 };
 
 export default function Dashboard() {
@@ -63,7 +63,7 @@ export default function Dashboard() {
                             )}
 
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                <StatCard label="Customers" value={String(data.stats.customers)} />
+                                <StatCard label="Party" value={String(data.stats.parties)} />
                                 <StatCard label="Invoices" value={String(data.stats.invoices)} />
                                 <StatCard
                                     label="Outstanding Balance"
@@ -90,7 +90,7 @@ export default function Dashboard() {
                                                 Bill No
                                             </th>
                                             <th className="px-6 py-3 text-left font-medium text-gray-500">
-                                                Customer
+                                                Party
                                             </th>
                                             <th className="px-6 py-3 text-left font-medium text-gray-500">
                                                 Date
@@ -122,7 +122,7 @@ export default function Dashboard() {
                                                         </Link>
                                                     </td>
                                                     <td className="px-6 py-3">
-                                                        {inv.customer?.name}
+                                                        {inv.party?.name}
                                                     </td>
                                                     <td className="px-6 py-3">{inv.invoice_date}</td>
                                                     <td className="px-6 py-3 text-right">

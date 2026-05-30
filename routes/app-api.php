@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\Api\App\AuthApiController;
 use App\Http\Controllers\Api\App\CompanyApiController;
-use App\Http\Controllers\Api\App\CustomerApiController;
+use App\Http\Controllers\Api\App\PartyApiController;
 use App\Http\Controllers\Api\App\DashboardApiController;
 use App\Http\Controllers\Api\App\DriverApiController;
 use App\Http\Controllers\Api\App\DriverDocumentApiController;
@@ -28,13 +28,13 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/company/company-show', [CompanyApiController::class, 'postCompanyShow']);
     Route::post('/company/company-update', [CompanyApiController::class, 'postCompanyUpdate']);
 
-    Route::post('/customers/customers-list', [CustomerApiController::class, 'postCustomersList']);
-    Route::post('/customers/customers-export-csv', [CustomerApiController::class, 'postCustomersExportCsv']);
-    Route::post('/customers/customers-export-pdf', [CustomerApiController::class, 'postCustomersExportPdf']);
-    Route::post('/customers/customer-show', [CustomerApiController::class, 'postCustomerShow']);
-    Route::post('/customers/customer-store', [CustomerApiController::class, 'postCustomerStore']);
-    Route::post('/customers/customer-update', [CustomerApiController::class, 'postCustomerUpdate']);
-    Route::post('/customers/customer-destroy', [CustomerApiController::class, 'postCustomerDestroy']);
+    Route::post('/parties/parties-list', [PartyApiController::class, 'postPartiesList']);
+    Route::post('/parties/parties-export-csv', [PartyApiController::class, 'postPartiesExportCsv']);
+    Route::post('/parties/parties-export-pdf', [PartyApiController::class, 'postPartiesExportPdf']);
+    Route::post('/parties/party-show', [PartyApiController::class, 'postPartyShow']);
+    Route::post('/parties/party-store', [PartyApiController::class, 'postPartyStore']);
+    Route::post('/parties/party-update', [PartyApiController::class, 'postPartyUpdate']);
+    Route::post('/parties/party-destroy', [PartyApiController::class, 'postPartyDestroy']);
 
     Route::post('/vehicles/vehicles-list', [VehicleApiController::class, 'postVehiclesList']);
     Route::post('/vehicles/vehicles-export-csv', [VehicleApiController::class, 'postVehiclesExportCsv']);

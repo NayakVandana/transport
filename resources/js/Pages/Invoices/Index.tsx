@@ -7,18 +7,18 @@ import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import { formatMoney } from '@/lib/freightCalculator';
-import type { Customer, FreightInvoice } from '@/types/transport';
+import type { FreightInvoice, Party } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 
 type InvoiceFilters = ListFilters & {
     status?: string;
-    customer_id?: string;
+    party_id?: string;
 };
 
 type InvoicesListData = {
-    invoices: { data: (FreightInvoice & { customer?: { name: string } })[] };
-    customers: Pick<Customer, 'id' | 'name'>[];
+    invoices: { data: (FreightInvoice & { party?: { name: string } })[] };
+    parties: Pick<Party, 'id' | 'name'>[];
     filters: InvoiceFilters;
     filterSummary: string;
 };
@@ -26,7 +26,7 @@ type InvoicesListData = {
 const defaultFilters: InvoiceFilters = {
     search: '',
     status: '',
-    customer_id: '',
+    party_id: '',
     ...defaultDateFilters,
 };
 
@@ -57,7 +57,7 @@ export default function InvoicesIndex() {
         clearFilters,
     } = useFilteredList<InvoicesListData, InvoiceFilters>({
         defaultFilters,
-        extraFilterKeys: ['status', 'customer_id'],
+        extraFilterKeys: ['status', 'party_id'],
         load: async (activeFilters) => {
             const res = await appApiPost<ApiEnvelope<InvoicesListData>>(
                 '/invoices/invoices-list',
@@ -119,15 +119,15 @@ export default function InvoicesIndex() {
                                 onChange: (value) => updateField('status', value),
                             },
                             {
-                                name: 'customer_id',
-                                label: 'Customer',
-                                value: filters.customer_id ?? '',
+                                name: 'party_id',
+                                label: 'Party',
+                                value: filters.party_id ?? '',
                                 widthClass: 'w-[10rem]',
-                                options: (data?.customers ?? []).map((c) => ({
-                                    value: String(c.id),
-                                    label: c.name,
+                                options: (data?.parties ?? []).map((p) => ({
+                                    value: String(p.id),
+                                    label: p.name,
                                 })),
-                                onChange: (value) => updateField('customer_id', value),
+                                onChange: (value) => updateField('party_id', value),
                             },
                         ]}
                         filterSummary={filterSummary}
@@ -149,7 +149,7 @@ export default function InvoicesIndex() {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="px-6 py-3 text-left font-medium text-gray-500">Bill No</th>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Customer</th>
+                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Party</th>
                                         <th className="px-6 py-3 text-left font-medium text-gray-500">Date</th>
                                         <th className="px-6 py-3 text-right font-medium text-gray-500">Balance</th>
                                         <th className="px-6 py-3 text-right font-medium text-gray-500">Actions</th>
@@ -168,7 +168,7 @@ export default function InvoicesIndex() {
                                         invoices.map((inv) => (
                                             <tr key={inv.id}>
                                                 <td className="px-6 py-3 font-medium">{inv.bill_number}</td>
-                                                <td className="px-6 py-3">{inv.customer?.name}</td>
+                                                <td className="px-6 py-3">{inv.party?.name}</td>
                                                 <td className="px-6 py-3">{inv.invoice_date}</td>
                                                 <td className="px-6 py-3 text-right">
                                                     ₹ {formatMoney(inv.balance_amount)}

@@ -5,7 +5,7 @@ import TextInput from '@/Components/TextInput';
 import { invalidateAppQuery } from '@/hooks/useAppQuery';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import type { Customer } from '@/types/transport';
+import type { Party } from '@/types/transport';
 import { Head, router } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useState } from 'react';
 
@@ -26,16 +26,16 @@ function apiFieldErrors(data: unknown): Record<string, string> {
     return errors;
 }
 
-export default function CustomerForm({ customerId }: { customerId?: number }) {
-    const isEdit = Boolean(customerId);
+export default function PartyForm({ partyId }: { partyId?: number }) {
+    const isEdit = Boolean(partyId);
 
     usePageHeader(
         <h2 className="text-xl font-semibold text-gray-800">
-            {isEdit ? 'Edit Customer' : 'New Customer'}
+            {isEdit ? 'Edit Party' : 'New Party'}
         </h2>,
     );
 
-    const [loading, setLoading] = useState(Boolean(customerId));
+    const [loading, setLoading] = useState(Boolean(partyId));
     const [loadError, setLoadError] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -47,34 +47,34 @@ export default function CustomerForm({ customerId }: { customerId?: number }) {
     });
 
     useEffect(() => {
-        if (!customerId) {
+        if (!partyId) {
             return;
         }
 
         setLoading(true);
 
-        void appApiPost<ApiEnvelope<{ customer: Customer }>>('/customers/customer-show', {
-            id: customerId,
+        void appApiPost<ApiEnvelope<{ party: Party }>>('/parties/party-show', {
+            id: partyId,
         })
             .then((res) => {
-                if (!res.success || !res.data?.customer) {
-                    setLoadError(res.message || 'Could not load customer.');
+                if (!res.success || !res.data?.party) {
+                    setLoadError(res.message || 'Could not load party.');
                     return;
                 }
 
-                const customer = res.data.customer;
+                const party = res.data.party;
                 setData({
-                    name: customer.name ?? '',
-                    mobile: customer.mobile ?? '',
-                    address: customer.address ?? '',
-                    state_code: customer.state_code ?? '',
+                    name: party.name ?? '',
+                    mobile: party.mobile ?? '',
+                    address: party.address ?? '',
+                    state_code: party.state_code ?? '',
                 });
             })
             .catch(() => {
-                setLoadError('Could not load customer.');
+                setLoadError('Could not load party.');
             })
             .finally(() => setLoading(false));
-    }, [customerId]);
+    }, [partyId]);
 
     const setField = (field: keyof typeof data, value: string) => {
         setData((prev) => ({ ...prev, [field]: value }));
@@ -93,26 +93,26 @@ export default function CustomerForm({ customerId }: { customerId?: number }) {
         try {
             const payload = {
                 ...data,
-                ...(customerId ? { id: customerId } : {}),
+                ...(partyId ? { id: partyId } : {}),
             };
 
-            const res = await appApiPost<ApiEnvelope<{ customer: Customer }>>(
-                customerId ? '/customers/customer-update' : '/customers/customer-store',
+            const res = await appApiPost<ApiEnvelope<{ party: Party }>>(
+                partyId ? '/parties/party-update' : '/parties/party-store',
                 payload,
             );
 
             if (!res.success) {
                 setErrors(apiFieldErrors(res.data));
                 if (!res.data) {
-                    setLoadError(res.message || 'Could not save customer.');
+                    setLoadError(res.message || 'Could not save party.');
                 }
                 return;
             }
 
-            invalidateAppQuery('customers-list');
-            router.visit(route('customers.index'));
+            invalidateAppQuery('parties-list');
+            router.visit(route('parties.index'));
         } catch {
-            setLoadError('Could not save customer.');
+            setLoadError('Could not save party.');
         } finally {
             setProcessing(false);
         }
@@ -120,7 +120,7 @@ export default function CustomerForm({ customerId }: { customerId?: number }) {
 
     return (
         <>
-            <Head title={isEdit ? 'Edit Customer' : 'New Customer'} />
+            <Head title={isEdit ? 'Edit Party' : 'New Party'} />
 
             <div className="py-8">
                 <div className="mx-auto max-w-xl sm:px-6 lg:px-8">

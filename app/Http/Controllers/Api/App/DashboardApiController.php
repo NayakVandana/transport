@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
-use App\Models\Customer;
 use App\Models\FreightInvoice;
+use App\Models\Party;
 use Exception;
 use Illuminate\Http\Request;
 
@@ -17,7 +17,7 @@ class DashboardApiController extends Controller
             $userId = $request->user()->id;
 
             $stats = [
-                'customers' => Customer::query()->where('user_id', $userId)->count(),
+                'parties' => Party::query()->where('user_id', $userId)->count(),
                 'invoices' => FreightInvoice::query()->where('user_id', $userId)->count(),
                 'outstanding' => (float) FreightInvoice::query()
                     ->where('user_id', $userId)
@@ -27,10 +27,10 @@ class DashboardApiController extends Controller
 
             $recentInvoices = FreightInvoice::query()
                 ->where('user_id', $userId)
-                ->with('customer:id,name')
+                ->with('party:id,name')
                 ->orderByDesc('invoice_date')
                 ->limit(5)
-                ->get(['id', 'bill_number', 'invoice_date', 'customer_id', 'balance_amount', 'status']);
+                ->get(['id', 'bill_number', 'invoice_date', 'party_id', 'balance_amount', 'status']);
 
             return $this->sendJsonResponse(true, 'Dashboard loaded.', [
                 'stats' => $stats,

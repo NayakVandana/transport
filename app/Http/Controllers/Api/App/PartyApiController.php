@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\App;
 
 use App\Http\Controllers\Controller;
-use App\Models\Customer;
+use App\Models\Party;
 use App\Support\ListExport;
 use App\Support\ListFilter;
 use Exception;
@@ -12,20 +12,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-class CustomerApiController extends Controller
+class PartyApiController extends Controller
 {
-    public function postCustomersList(Request $request)
+    public function postPartiesList(Request $request)
     {
         try {
-            $userId = (int) $request->user()->id;
             $perPage = (int) ($request->input('per_page') ?: 15);
             $currentPage = (int) ($request->input('current_page') ?: 1);
-            [$query, $filterSummary, $filters] = $this->filteredCustomersQuery($request);
+            [$query, $filterSummary, $filters] = $this->filteredPartiesQuery($request);
 
-            $customers = $query->paginate($perPage, ['*'], 'page', $currentPage);
+            $parties = $query->paginate($perPage, ['*'], 'page', $currentPage);
 
-            return $this->sendJsonResponse(true, 'Customers loaded.', [
-                'customers' => $customers,
+            return $this->sendJsonResponse(true, 'Party list loaded.', [
+                'parties' => $parties,
                 'filters' => $filters,
                 'filterSummary' => $filterSummary,
             ], 200);
@@ -34,57 +33,57 @@ class CustomerApiController extends Controller
         }
     }
 
-    public function postCustomersExportCsv(Request $request): StreamedResponse|JsonResponse
+    public function postPartiesExportCsv(Request $request): StreamedResponse|JsonResponse
     {
         try {
-            [$query, $filterSummary] = $this->filteredCustomersQuery($request);
-            $customers = $query->get();
+            [$query, $filterSummary] = $this->filteredPartiesQuery($request);
+            $parties = $query->get();
 
             return ListExport::csv(
-                'customers',
-                'Customers Export',
+                'parties',
+                'Party Export',
                 $filterSummary,
                 ['Name', 'Mobile', 'Address', 'State', 'Created'],
-                $customers->map(fn ($customer) => [
-                    $customer->name,
-                    $customer->mobile ?? '',
-                    $customer->address ?? '',
-                    $customer->state_code ?? '',
-                    ListExport::formatDate($customer->created_at),
+                $parties->map(fn ($party) => [
+                    $party->name,
+                    $party->mobile ?? '',
+                    $party->address ?? '',
+                    $party->state_code ?? '',
+                    ListExport::formatDate($party->created_at),
                 ]),
-                ['TOTAL', $customers->count().' customers', '', '', ''],
+                ['TOTAL', $parties->count().' party', '', '', ''],
             );
         } catch (Exception $e) {
             return $this->sendError($e);
         }
     }
 
-    public function postCustomersExportPdf(Request $request)
+    public function postPartiesExportPdf(Request $request)
     {
         try {
-            [$query, $filterSummary] = $this->filteredCustomersQuery($request);
-            $customers = $query->get();
+            [$query, $filterSummary] = $this->filteredPartiesQuery($request);
+            $parties = $query->get();
 
             return ListExport::pdf(
-                'customers',
-                'Customers Report',
+                'parties',
+                'Party Report',
                 $filterSummary,
                 ['Name', 'Mobile', 'Address', 'State', 'Created'],
-                $customers->map(fn ($customer) => [
-                    $customer->name,
-                    $customer->mobile ?? '—',
-                    $customer->address ?? '—',
-                    $customer->state_code ?? '—',
-                    ListExport::formatDate($customer->created_at),
+                $parties->map(fn ($party) => [
+                    $party->name,
+                    $party->mobile ?? '—',
+                    $party->address ?? '—',
+                    $party->state_code ?? '—',
+                    ListExport::formatDate($party->created_at),
                 ]),
-                $customers->count(),
+                $parties->count(),
             );
         } catch (Exception $e) {
             return $this->sendError($e);
         }
     }
 
-    public function postCustomerShow(Request $request)
+    public function postPartyShow(Request $request)
     {
         try {
             $validation = Validator::make($request->all(), [
@@ -95,19 +94,19 @@ class CustomerApiController extends Controller
                 return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
             }
 
-            $customer = Customer::query()
+            $party = Party::query()
                 ->where('user_id', $request->user()->id)
                 ->findOrFail($request->input('id'));
 
-            return $this->sendJsonResponse(true, 'Customer loaded.', [
-                'customer' => $customer,
+            return $this->sendJsonResponse(true, 'Party loaded.', [
+                'party' => $party,
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
         }
     }
 
-    public function postCustomerStore(Request $request)
+    public function postPartyStore(Request $request)
     {
         try {
             $validation = Validator::make($request->all(), $this->rules());
@@ -116,20 +115,20 @@ class CustomerApiController extends Controller
                 return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
             }
 
-            $customer = Customer::query()->create([
+            $party = Party::query()->create([
                 ...$validation->validated(),
                 'user_id' => $request->user()->id,
             ]);
 
-            return $this->sendJsonResponse(true, 'Customer created.', [
-                'customer' => $customer,
+            return $this->sendJsonResponse(true, 'Party created.', [
+                'party' => $party,
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
         }
     }
 
-    public function postCustomerUpdate(Request $request)
+    public function postPartyUpdate(Request $request)
     {
         try {
             $validation = Validator::make($request->all(), [
@@ -141,23 +140,23 @@ class CustomerApiController extends Controller
                 return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
             }
 
-            $customer = Customer::query()
+            $party = Party::query()
                 ->where('user_id', $request->user()->id)
                 ->findOrFail($request->input('id'));
 
             $data = $validation->validated();
             unset($data['id']);
-            $customer->update($data);
+            $party->update($data);
 
-            return $this->sendJsonResponse(true, 'Customer updated.', [
-                'customer' => $customer->fresh(),
+            return $this->sendJsonResponse(true, 'Party updated.', [
+                'party' => $party->fresh(),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
         }
     }
 
-    public function postCustomerDestroy(Request $request)
+    public function postPartyDestroy(Request $request)
     {
         try {
             $validation = Validator::make($request->all(), [
@@ -168,26 +167,26 @@ class CustomerApiController extends Controller
                 return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
             }
 
-            $customer = Customer::query()
+            $party = Party::query()
                 ->where('user_id', $request->user()->id)
                 ->findOrFail($request->input('id'));
 
-            $customer->delete();
+            $party->delete();
 
-            return $this->sendJsonResponse(true, 'Customer deleted.', null, 200);
+            return $this->sendJsonResponse(true, 'Party deleted.', null, 200);
         } catch (Exception $e) {
             return $this->sendError($e);
         }
     }
 
     /** @return array{0: \Illuminate\Database\Eloquent\Builder, 1: string, 2: array<string, string>} */
-    private function filteredCustomersQuery(Request $request): array
+    private function filteredPartiesQuery(Request $request): array
     {
         $userId = (int) $request->user()->id;
         $dateFilters = ListFilter::dateFromRequest($request);
         $search = ListFilter::searchFromRequest($request);
 
-        $query = Customer::query()->where('user_id', $userId);
+        $query = Party::query()->where('user_id', $userId);
         ListFilter::applySearch($query, $search, ['name', 'mobile', 'address']);
         ListFilter::applyDate($query, $dateFilters, 'created_at');
         $query->orderBy('name');
@@ -195,7 +194,7 @@ class CustomerApiController extends Controller
         $filterSummary = ListFilter::summary([
             $search !== '' ? 'Search: '.$search : null,
             ListFilter::dateSummary($dateFilters),
-        ], 'All customers');
+        ], 'All party');
 
         return [$query, $filterSummary, [
             'search' => $search,

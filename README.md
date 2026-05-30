@@ -5,7 +5,7 @@ Laravel 12 + Inertia + React application for freight tax invoicing, modeled on I
 ## Features
 
 - **Company profile** — PAN, GST, Udyam, bank details, SAC code, IGST rate
-- **Customers** — billing party with address and mobile
+- **Party** — billing party with address and mobile
 - **Tax invoices** — multi-line consignments with auto-calculated freight, totals, balance, amount in words
 - **Print view** — monospace layout matching legacy ERP-style tax invoices
 
@@ -36,7 +36,7 @@ composer run dev
 | Table | Purpose |
 |-------|---------|
 | `companies` | Issuer (transport company) legal & bank details |
-| `customers` | Invoice recipients |
+| `parties` | Invoice party (bill-to) |
 | `freight_invoices` | Tax invoice header & totals |
 | `freight_invoice_lines` | Consignment rows (vehicle, route, weight × rate, advance, empty container) |
 
