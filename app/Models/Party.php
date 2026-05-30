@@ -25,4 +25,9 @@ class Party extends Model
     {
         return $this->hasMany(FreightInvoice::class);
     }
+
+    public function invoicePayments(): HasMany
+    {
+        return $this->hasMany(InvoicePayment::class);
+    }
 }

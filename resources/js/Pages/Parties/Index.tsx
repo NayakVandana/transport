@@ -6,6 +6,7 @@ import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
+import { formatMoney } from '@/lib/freightCalculator';
 import type { Party } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
@@ -135,13 +136,15 @@ export default function PartiesIndex() {
                                     <tr>
                                         <th className="px-6 py-3 text-left font-medium text-gray-500">Name</th>
                                         <th className="px-6 py-3 text-left font-medium text-gray-500">Mobile</th>
+                                        <th className="px-6 py-3 text-right font-medium text-gray-500">Invoices</th>
+                                        <th className="px-6 py-3 text-right font-medium text-gray-500">Outstanding</th>
                                         <th className="px-6 py-3 text-right font-medium text-gray-500">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {parties.length === 0 ? (
                                         <tr>
-                                            <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
+                                            <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                                                 {hasActiveFilters
                                                     ? 'No party match your filters.'
                                                     : 'No party yet.'}
@@ -149,16 +152,37 @@ export default function PartiesIndex() {
                                         </tr>
                                     ) : (
                                         parties.map((party) => (
-                                            <tr key={party.id}>
-                                                <td className="px-6 py-3 font-medium">{party.name}</td>
-                                                <td className="px-6 py-3">{party.mobile}</td>
-                                                <td className="space-x-3 px-6 py-3 text-right">
+                                            <tr key={party.id} className="hover:bg-gray-50">
+                                                <td className="px-6 py-3 font-medium">
+                                                    <Link
+                                                        href={route('parties.overview', party.id)}
+                                                        className="text-indigo-600 hover:underline"
+                                                    >
+                                                        {party.name}
+                                                    </Link>
+                                                </td>
+                                                <td className="px-6 py-3">{party.mobile ?? '—'}</td>
+                                                <td className="px-6 py-3 text-right">
+                                                    {party.invoice_count ?? 0}
+                                                </td>
+                                                <td className="px-6 py-3 text-right font-medium text-indigo-700">
+                                                    ₹ {formatMoney(party.outstanding ?? 0)}
+                                                </td>
+                                                <td className="whitespace-nowrap px-6 py-3 text-right">
+                                                    <Link
+                                                        href={route('parties.overview', party.id)}
+                                                        className="text-indigo-600 hover:underline"
+                                                    >
+                                                        Manage
+                                                    </Link>
+                                                    <span className="mx-2 text-gray-300">|</span>
                                                     <Link
                                                         href={route('parties.edit', party.id)}
-                                                        className="text-indigo-600 hover:underline"
+                                                        className="text-gray-600 hover:underline"
                                                     >
                                                         Edit
                                                     </Link>
+                                                    <span className="mx-2 text-gray-300">|</span>
                                                     <button
                                                         type="button"
                                                         onClick={() => void destroy(party.id)}

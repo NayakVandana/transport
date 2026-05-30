@@ -1,4 +1,7 @@
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
+import InvoicePaymentStatusBadge, {
+    invoicePaymentStatusFromAmounts,
+} from '@/Components/InvoicePaymentStatusBadge';
 import { formatMoney } from '@/lib/freightCalculator';
 import { useAppQuery } from '@/hooks/useAppQuery';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -96,10 +99,10 @@ export default function Dashboard() {
                                                 Date
                                             </th>
                                             <th className="px-6 py-3 text-right font-medium text-gray-500">
-                                                Balance
+                                                Outstanding
                                             </th>
-                                            <th className="px-6 py-3 text-right font-medium text-gray-500">
-                                                Status
+                                            <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                                Payment
                                             </th>
                                         </tr>
                                     </thead>
@@ -126,10 +129,18 @@ export default function Dashboard() {
                                                     </td>
                                                     <td className="px-6 py-3">{inv.invoice_date}</td>
                                                     <td className="px-6 py-3 text-right">
-                                                        ₹ {formatMoney(inv.balance_amount)}
+                                                        ₹ {formatMoney(inv.outstanding ?? inv.balance_amount)}
                                                     </td>
-                                                    <td className="px-6 py-3 text-right capitalize">
-                                                        {inv.status}
+                                                    <td className="px-6 py-3">
+                                                        <InvoicePaymentStatusBadge
+                                                            status={
+                                                                inv.payment_status ??
+                                                                invoicePaymentStatusFromAmounts(
+                                                                    inv.received ?? 0,
+                                                                    inv.outstanding ?? inv.balance_amount,
+                                                                )
+                                                            }
+                                                        />
                                                     </td>
                                                 </tr>
                                             ))

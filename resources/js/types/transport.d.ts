@@ -117,7 +117,67 @@ export interface Party {
     mobile?: string | null;
     address?: string | null;
     state_code?: string | null;
+    invoice_count?: number;
+    balance_due?: number | string;
+    received?: number | string;
+    outstanding?: number | string;
 }
+
+export interface PartyOverview {
+    invoice_count: number;
+    balance_due: number;
+    received: number;
+    outstanding: number;
+    last_invoice_date?: string | null;
+    last_payment_date?: string | null;
+}
+
+export interface PartyInvoiceRow {
+    id: number;
+    bill_number: string;
+    invoice_date: string;
+    status: string;
+    net_value: number;
+    balance_amount: number;
+    received: number;
+    outstanding: number;
+    payment_status: InvoicePaymentStatus;
+}
+
+export interface PartyPaymentRow {
+    id: number;
+    payment_date: string;
+    amount: number;
+    payment_mode?: string | null;
+    reference_no?: string | null;
+    notes?: string | null;
+    freight_invoice_id: number;
+    bill_number: string;
+}
+
+export interface PartyLedgerEntry {
+    date: string;
+    type: 'invoice' | 'payment';
+    reference: string;
+    particulars: string;
+    debit: number;
+    credit: number;
+    balance: number;
+    invoice_id?: number | null;
+    payment_id?: number | null;
+}
+
+export interface PartyAccountData {
+    party: Party;
+    overview: PartyOverview;
+    invoices: PartyInvoiceRow[];
+    payments: PartyPaymentRow[];
+    ledger: PartyLedgerEntry[];
+    filters: { date_from?: string; date_to?: string };
+    filterSummary: string;
+}
+
+export type InvoicePaymentStatus = 'paid' | 'partial' | 'pending';
 
 export interface FreightInvoiceLine {
     id?: number;
@@ -158,6 +218,53 @@ export interface FreightInvoice {
     party?: Party;
     company?: Company;
     lines?: FreightInvoiceLine[];
+    payments?: InvoicePayment[];
+    received?: string | number;
+    outstanding?: string | number;
+    payment_status?: InvoicePaymentStatus;
+}
+
+export interface InvoicePayment {
+    id: number;
+    freight_invoice_id: number;
+    party_id: number;
+    payment_date: string;
+    amount: string | number;
+    payment_mode?: string | null;
+    reference_no?: string | null;
+    notes?: string | null;
+    party?: Pick<Party, 'id' | 'name'>;
+    freight_invoice?: Pick<FreightInvoice, 'id' | 'bill_number' | 'balance_amount'>;
+}
+
+export interface OpenInvoiceOption {
+    id: number;
+    bill_number: string;
+    party_id: number;
+    party_name: string;
+    balance_amount: number;
+    received: number;
+    outstanding: number;
+}
+
+export interface PartyOutstanding {
+    party_id: number;
+    party_name: string;
+    invoice_count: number;
+    balance_due: number;
+    received: number;
+    outstanding: number;
+}
+
+export interface InvoicePaymentTotals {
+    count: number;
+    amount: number;
+}
+
+export interface InvoicePaymentSummary {
+    received: number;
+    outstanding: number;
+    payment_status: InvoicePaymentStatus;
 }
 
 export interface InvoiceTotals {

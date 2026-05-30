@@ -1,6 +1,11 @@
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
+import Modal from '@/Components/Modal';
 import PrimaryButton from '@/Components/PrimaryButton';
+import InvoicePaymentStatusBadge, {
+    invoicePaymentStatusFromAmounts,
+} from '@/Components/InvoicePaymentStatusBadge';
+import RecordPaymentForm, { type LockedPaymentInvoice } from '@/Components/RecordPaymentForm';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -13,6 +18,7 @@ import { useState } from 'react';
 
 type InvoiceFilters = ListFilters & {
     status?: string;
+    payment_status?: string;
     party_id?: string;
 };
 
@@ -26,6 +32,7 @@ type InvoicesListData = {
 const defaultFilters: InvoiceFilters = {
     search: '',
     status: '',
+    payment_status: '',
     party_id: '',
     ...defaultDateFilters,
 };
@@ -33,6 +40,7 @@ const defaultFilters: InvoiceFilters = {
 export default function InvoicesIndex() {
     const [actionError, setActionError] = useState<string | null>(null);
     const [searchInput, setSearchInput] = useState('');
+    const [paymentInvoice, setPaymentInvoice] = useState<LockedPaymentInvoice | null>(null);
 
     usePageHeader(
         <div className="flex items-center justify-between">
@@ -55,9 +63,10 @@ export default function InvoicesIndex() {
         applySearch,
         updateField,
         clearFilters,
+        fetchList,
     } = useFilteredList<InvoicesListData, InvoiceFilters>({
         defaultFilters,
-        extraFilterKeys: ['status', 'party_id'],
+        extraFilterKeys: ['status', 'payment_status', 'party_id'],
         load: async (activeFilters) => {
             const res = await appApiPost<ApiEnvelope<InvoicesListData>>(
                 '/invoices/invoices-list',
@@ -86,6 +95,26 @@ export default function InvoicesIndex() {
         }
     };
 
+    const openPaymentModal = (inv: FreightInvoice & { party?: { name: string } }) => {
+        setPaymentInvoice({
+            id: inv.id,
+            bill_number: inv.bill_number,
+            party_name: inv.party?.name,
+            balance_amount: inv.balance_amount,
+            received: inv.received ?? 0,
+            outstanding: inv.outstanding ?? inv.balance_amount,
+        });
+    };
+
+    const closePaymentModal = () => {
+        setPaymentInvoice(null);
+    };
+
+    const onPaymentSaved = async () => {
+        closePaymentModal();
+        await fetchList();
+    };
+
     return (
         <>
             <Head title="Invoices" />
@@ -110,13 +139,24 @@ export default function InvoicesIndex() {
                         selects={[
                             {
                                 name: 'status',
-                                label: 'Status',
+                                label: 'Invoice Status',
                                 value: filters.status ?? '',
                                 options: [
                                     { value: 'draft', label: 'Draft' },
                                     { value: 'finalized', label: 'Finalized' },
                                 ],
                                 onChange: (value) => updateField('status', value),
+                            },
+                            {
+                                name: 'payment_status',
+                                label: 'Payment Status',
+                                value: filters.payment_status ?? '',
+                                options: [
+                                    { value: 'paid', label: 'Paid' },
+                                    { value: 'partial', label: 'Partial' },
+                                    { value: 'pending', label: 'Pending' },
+                                ],
+                                onChange: (value) => updateField('payment_status', value),
                             },
                             {
                                 name: 'party_id',
@@ -151,14 +191,17 @@ export default function InvoicesIndex() {
                                         <th className="px-6 py-3 text-left font-medium text-gray-500">Bill No</th>
                                         <th className="px-6 py-3 text-left font-medium text-gray-500">Party</th>
                                         <th className="px-6 py-3 text-left font-medium text-gray-500">Date</th>
-                                        <th className="px-6 py-3 text-right font-medium text-gray-500">Balance</th>
+                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Payment</th>
+                                        <th className="px-6 py-3 text-right font-medium text-gray-500">Balance Due</th>
+                                        <th className="px-6 py-3 text-right font-medium text-gray-500">Received</th>
+                                        <th className="px-6 py-3 text-right font-medium text-gray-500">Outstanding</th>
                                         <th className="px-6 py-3 text-right font-medium text-gray-500">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {invoices.length === 0 ? (
                                         <tr>
-                                            <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                                            <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                                                 {hasActiveFilters
                                                     ? 'No invoices match your filters.'
                                                     : 'No invoices yet.'}
@@ -166,20 +209,45 @@ export default function InvoicesIndex() {
                                         </tr>
                                     ) : (
                                         invoices.map((inv) => (
-                                            <tr key={inv.id}>
-                                                <td className="px-6 py-3 font-medium">{inv.bill_number}</td>
+                                            <tr key={inv.id} className="hover:bg-gray-50">
+                                                <td className="px-6 py-3 font-medium">
+                                                    <Link
+                                                        href={route('invoices.show', inv.id)}
+                                                        className="text-indigo-600 hover:underline"
+                                                    >
+                                                        {inv.bill_number}
+                                                    </Link>
+                                                </td>
                                                 <td className="px-6 py-3">{inv.party?.name}</td>
                                                 <td className="px-6 py-3">{inv.invoice_date}</td>
+                                                <td className="px-6 py-3">
+                                                    <InvoicePaymentStatusBadge
+                                                        status={
+                                                            inv.payment_status ??
+                                                            invoicePaymentStatusFromAmounts(
+                                                                inv.received ?? 0,
+                                                                inv.outstanding ?? inv.balance_amount,
+                                                            )
+                                                        }
+                                                    />
+                                                </td>
                                                 <td className="px-6 py-3 text-right">
                                                     ₹ {formatMoney(inv.balance_amount)}
                                                 </td>
-                                                <td className="space-x-2 px-6 py-3 text-right">
+                                                <td className="px-6 py-3 text-right text-green-700">
+                                                    ₹ {formatMoney(inv.received ?? 0)}
+                                                </td>
+                                                <td className="px-6 py-3 text-right font-medium text-indigo-700">
+                                                    ₹ {formatMoney(inv.outstanding ?? inv.balance_amount)}
+                                                </td>
+                                                <td className="whitespace-nowrap px-6 py-3 text-right">
                                                     <Link
                                                         href={route('invoices.show', inv.id)}
                                                         className="text-indigo-600 hover:underline"
                                                     >
                                                         View
                                                     </Link>
+                                                    <span className="mx-2 text-gray-300">|</span>
                                                     <Link
                                                         href={route('invoices.print', inv.id)}
                                                         className="text-gray-600 hover:underline"
@@ -187,6 +255,18 @@ export default function InvoicesIndex() {
                                                     >
                                                         Print
                                                     </Link>
+                                                    {Number(inv.outstanding ?? inv.balance_amount) > 0 && (
+                                                        <>
+                                                            <span className="mx-2 text-gray-300">|</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openPaymentModal(inv)}
+                                                                className="text-green-700 hover:underline"
+                                                            >
+                                                                Record Payment
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))
@@ -197,6 +277,23 @@ export default function InvoicesIndex() {
                     )}
                 </div>
             </div>
+
+            <Modal show={paymentInvoice !== null} onClose={closePaymentModal} maxWidth="2xl">
+                <div className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900">Record Payment</h3>
+                    {paymentInvoice && (
+                        <div className="mt-4">
+                            <RecordPaymentForm
+                                key={paymentInvoice.id}
+                                invoiceId={paymentInvoice.id}
+                                lockedInvoice={paymentInvoice}
+                                onSuccess={() => void onPaymentSaved()}
+                                onCancel={closePaymentModal}
+                            />
+                        </div>
+                    )}
+                </div>
+            </Modal>
         </>
     );
 }

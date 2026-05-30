@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\App\DriverApiController;
 use App\Http\Controllers\Api\App\DriverDocumentApiController;
 use App\Http\Controllers\Api\App\EntrybookApiController;
 use App\Http\Controllers\Api\App\FreightInvoiceApiController;
+use App\Http\Controllers\Api\App\InvoicePaymentApiController;
 use App\Http\Controllers\Api\App\ProfileApiController;
 use App\Http\Controllers\Api\App\RouteLocationApiController;
 use App\Http\Controllers\Api\App\VehicleApiController;
@@ -32,6 +33,7 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/parties/parties-export-csv', [PartyApiController::class, 'postPartiesExportCsv']);
     Route::post('/parties/parties-export-pdf', [PartyApiController::class, 'postPartiesExportPdf']);
     Route::post('/parties/party-show', [PartyApiController::class, 'postPartyShow']);
+    Route::post('/parties/party-account', [PartyApiController::class, 'postPartyAccount']);
     Route::post('/parties/party-store', [PartyApiController::class, 'postPartyStore']);
     Route::post('/parties/party-update', [PartyApiController::class, 'postPartyUpdate']);
     Route::post('/parties/party-destroy', [PartyApiController::class, 'postPartyDestroy']);
@@ -96,4 +98,13 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/invoices/invoice-store', [FreightInvoiceApiController::class, 'postInvoiceStore']);
     Route::post('/invoices/invoice-update', [FreightInvoiceApiController::class, 'postInvoiceUpdate']);
     Route::post('/invoices/invoice-destroy', [FreightInvoiceApiController::class, 'postInvoiceDestroy']);
+
+    Route::post('/invoice-payments/invoice-payments-list', [InvoicePaymentApiController::class, 'postInvoicePaymentsList']);
+    Route::post('/invoice-payments/invoice-payment-meta', [InvoicePaymentApiController::class, 'postInvoicePaymentMeta']);
+    Route::post('/invoice-payments/invoice-payment-show', [InvoicePaymentApiController::class, 'postInvoicePaymentShow']);
+    Route::post('/invoice-payments/invoice-payment-store', [InvoicePaymentApiController::class, 'postInvoicePaymentStore']);
+    Route::post('/invoice-payments/invoice-payment-update', [InvoicePaymentApiController::class, 'postInvoicePaymentUpdate']);
+    Route::post('/invoice-payments/invoice-payment-destroy', [InvoicePaymentApiController::class, 'postInvoicePaymentDestroy']);
+    Route::post('/invoice-payments/invoice-payments-export-csv', [InvoicePaymentApiController::class, 'postInvoicePaymentsExportCsv']);
+    Route::post('/invoice-payments/invoice-payments-export-pdf', [InvoicePaymentApiController::class, 'postInvoicePaymentsExportPdf']);
 });

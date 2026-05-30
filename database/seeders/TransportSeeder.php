@@ -8,6 +8,7 @@ use App\Models\Driver;
 use App\Models\DriverDocument;
 use App\Models\Entrybook;
 use App\Models\FreightInvoice;
+use App\Models\InvoicePayment;
 use App\Models\RouteLocation;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -38,6 +39,7 @@ class TransportSeeder extends Seeder
         $this->seedRoutes($userId);
         $entrybooks = $this->seedEntrybooks($userId, $vehicles);
         $this->seedInvoices($userId, $company, $parties, $vehicles, $entrybooks);
+        $this->seedInvoicePayments($userId);
         $this->seedVehicleExpenses($userId, $vehicles);
         $this->seedVehicleDocuments($userId, $vehicles);
         $this->seedDriverDocuments($userId, $drivers);
@@ -358,6 +360,54 @@ class TransportSeeder extends Seeder
         }
 
         EntryNumberGenerator::syncCompanySequence($company->fresh(), $entryNumbersForSequence);
+    }
+
+    private function seedInvoicePayments(int $userId): void
+    {
+        $payments = [
+            [
+                'bill_number' => 'R2526-0608',
+                'payment_date' => '2025-09-10',
+                'amount' => 15000,
+                'payment_mode' => 'neft',
+                'reference_no' => 'UTR9827364510',
+                'notes' => 'Partial payment against first invoice',
+            ],
+            [
+                'bill_number' => 'R2526-0609',
+                'payment_date' => '2025-09-12',
+                'amount' => 5000,
+                'payment_mode' => 'upi',
+                'reference_no' => 'UPI-445566',
+                'notes' => null,
+            ],
+        ];
+
+        foreach ($payments as $paymentData) {
+            $invoice = FreightInvoice::query()
+                ->where('user_id', $userId)
+                ->where('bill_number', $paymentData['bill_number'])
+                ->first();
+
+            if (! $invoice) {
+                continue;
+            }
+
+            InvoicePayment::query()->updateOrCreate(
+                [
+                    'user_id' => $userId,
+                    'freight_invoice_id' => $invoice->id,
+                    'reference_no' => $paymentData['reference_no'],
+                ],
+                [
+                    'party_id' => $invoice->party_id,
+                    'payment_date' => $paymentData['payment_date'],
+                    'amount' => $paymentData['amount'],
+                    'payment_mode' => $paymentData['payment_mode'],
+                    'notes' => $paymentData['notes'],
+                ],
+            );
+        }
     }
 
     /** @param  array<string, Vehicle>  $vehicles

@@ -12,12 +12,14 @@ use App\Models\Vehicle;
 use App\Support\AmountInWords;
 use App\Support\EntryNumberGenerator;
 use App\Support\FreightInvoiceCalculator;
+use App\Support\InvoicePaymentCalculator;
 use App\Support\ListExport;
 use App\Support\ListFilter;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -33,6 +35,7 @@ class FreightInvoiceApiController extends Controller
             [$query, $filterSummary, $filters] = $this->filteredInvoicesQuery($request, $userId);
 
             $invoices = $query->paginate($perPage, ['*'], 'page', $currentPage);
+            InvoicePaymentCalculator::attachSummariesToInvoices($invoices->getCollection());
             $parties = Party::query()
                 ->where('user_id', $userId)
                 ->orderBy('name')
@@ -159,11 +162,15 @@ class FreightInvoiceApiController extends Controller
 
             $invoice = FreightInvoice::query()
                 ->where('user_id', $request->user()->id)
-                ->with(['company', 'party', 'lines'])
+                ->with(['company', 'party', 'lines', 'payments'])
                 ->findOrFail($request->input('id'));
+
+            InvoicePaymentCalculator::attachSummariesToInvoices(collect([$invoice]));
+            $paymentSummary = InvoicePaymentCalculator::invoiceSummary($invoice);
 
             return $this->sendJsonResponse(true, 'Invoice loaded.', [
                 'invoice' => $invoice,
+                'paymentSummary' => $paymentSummary,
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -436,6 +443,10 @@ class FreightInvoiceApiController extends Controller
         $search = ListFilter::searchFromRequest($request);
         $partyId = ListFilter::optionalIdFromRequest($request, 'party_id');
         $status = ListFilter::statusFromRequest($request, ['draft', 'finalized']);
+        $paymentValidated = $request->validate([
+            'payment_status' => ['nullable', 'string', Rule::in(['paid', 'partial', 'pending'])],
+        ]);
+        $paymentStatus = $paymentValidated['payment_status'] ?? '';
 
         $query = FreightInvoice::query()
             ->where('user_id', $userId)
@@ -448,6 +459,7 @@ class FreightInvoiceApiController extends Controller
         if ($status !== '') {
             $query->where('status', $status);
         }
+        InvoicePaymentCalculator::applyPaymentStatusFilter($query, $paymentStatus);
         $query->orderByDesc('invoice_date')->orderByDesc('id');
 
         $parties = Party::query()
@@ -461,7 +473,8 @@ class FreightInvoiceApiController extends Controller
 
         $filterSummary = ListFilter::summary([
             $search !== '' ? 'Search: '.$search : null,
-            $status !== '' ? 'Status: '.ucfirst($status) : null,
+            $status !== '' ? 'Invoice status: '.ucfirst($status) : null,
+            $paymentStatus !== '' ? 'Payment: '.ucfirst($paymentStatus) : null,
             $partyName ? 'Party: '.$partyName : null,
             ListFilter::dateSummary($dateFilters),
         ], 'All invoices');
@@ -469,6 +482,7 @@ class FreightInvoiceApiController extends Controller
         return [$query, $filterSummary, [
             'search' => $search,
             'status' => $status,
+            'payment_status' => $paymentStatus,
             'party_id' => $partyId,
             ...$dateFilters,
         ]];

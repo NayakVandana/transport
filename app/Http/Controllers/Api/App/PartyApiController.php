@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Party;
 use App\Support\ListExport;
 use App\Support\ListFilter;
+use App\Support\InvoicePaymentCalculator;
+use App\Support\PartyAccountReport;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,11 +19,25 @@ class PartyApiController extends Controller
     public function postPartiesList(Request $request)
     {
         try {
+            $userId = (int) $request->user()->id;
             $perPage = (int) ($request->input('per_page') ?: 15);
             $currentPage = (int) ($request->input('current_page') ?: 1);
             [$query, $filterSummary, $filters] = $this->filteredPartiesQuery($request);
 
             $parties = $query->paginate($perPage, ['*'], 'page', $currentPage);
+
+            $outstandingByParty = InvoicePaymentCalculator::partyOutstandingRows($userId)
+                ->keyBy('party_id');
+
+            $parties->getCollection()->transform(function (Party $party) use ($outstandingByParty) {
+                $row = $outstandingByParty->get($party->id);
+                $party->setAttribute('invoice_count', $row['invoice_count'] ?? 0);
+                $party->setAttribute('balance_due', $row['balance_due'] ?? 0);
+                $party->setAttribute('received', $row['received'] ?? 0);
+                $party->setAttribute('outstanding', $row['outstanding'] ?? 0);
+
+                return $party;
+            });
 
             return $this->sendJsonResponse(true, 'Party list loaded.', [
                 'parties' => $parties,
@@ -101,6 +117,28 @@ class PartyApiController extends Controller
             return $this->sendJsonResponse(true, 'Party loaded.', [
                 'party' => $party,
             ], 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postPartyAccount(Request $request)
+    {
+        try {
+            $validation = Validator::make($request->all(), [
+                'id' => ['required', 'integer'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
+            $userId = (int) $request->user()->id;
+            $partyId = (int) $request->input('id');
+
+            $account = PartyAccountReport::build($userId, $partyId, $request);
+
+            return $this->sendJsonResponse(true, 'Party account loaded.', $account, 200);
         } catch (Exception $e) {
             return $this->sendError($e);
         }

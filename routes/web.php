@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -34,6 +35,12 @@ Route::get('/company', fn () => Inertia::render('Company/Edit'))->name('company.
 
 Route::get('/parties', fn () => Inertia::render('Parties/Index'))->name('parties.index');
 Route::get('/parties/create', fn () => Inertia::render('Parties/Form'))->name('parties.create');
+Route::get('/parties/{id}', fn (int $id) => redirect()->route('parties.overview', $id))->name('parties.show');
+Route::get('/parties/{id}/overview', fn (int $id) => Inertia::render('Parties/Show', ['partyId' => $id, 'activeTab' => 'overview']))->name('parties.overview');
+Route::get('/parties/{id}/ledger', fn (int $id) => Inertia::render('Parties/Show', ['partyId' => $id, 'activeTab' => 'ledger']))->name('parties.ledger');
+Route::get('/parties/{id}/invoices', fn (int $id) => Inertia::render('Parties/Show', ['partyId' => $id, 'activeTab' => 'invoices']))->name('parties.invoices');
+Route::get('/parties/{id}/payments', fn (int $id) => Inertia::render('Parties/Show', ['partyId' => $id, 'activeTab' => 'payments']))->name('parties.payments');
+Route::get('/parties/{id}/profile', fn (int $id) => Inertia::render('Parties/Show', ['partyId' => $id, 'activeTab' => 'profile']))->name('parties.profile');
 Route::get('/parties/{id}/edit', fn (int $id) => Inertia::render('Parties/Form', ['partyId' => $id]))->name('parties.edit');
 
 Route::get('/vehicles', fn () => Inertia::render('Vehicles/Index'))->name('vehicles.index');
@@ -59,5 +66,15 @@ Route::get('/invoices/create', fn () => Inertia::render('Invoices/Form'))->name(
 Route::get('/invoices/{id}', fn (int $id) => Inertia::render('Invoices/Show', ['invoiceId' => $id]))->name('invoices.show');
 Route::get('/invoices/{id}/edit', fn (int $id) => Inertia::render('Invoices/Form', ['invoiceId' => $id]))->name('invoices.edit');
 Route::get('/invoices/{id}/print', fn (int $id) => Inertia::render('Invoices/Print', ['invoiceId' => $id]))->name('invoices.print');
+
+Route::get('/invoice-payments', fn () => Inertia::render('InvoicePayments/Index'))->name('invoice-payments.index');
+Route::get('/invoice-payments/create', function (Request $request) {
+    $invoice = $request->query('invoice');
+
+    return Inertia::render('InvoicePayments/Form', [
+        'invoiceId' => is_numeric($invoice) ? (int) $invoice : null,
+    ]);
+})->name('invoice-payments.create');
+Route::get('/invoice-payments/{id}/edit', fn (int $id) => Inertia::render('InvoicePayments/Form', ['invoicePaymentId' => $id]))->name('invoice-payments.edit');
 
 Route::get('/profile', fn () => Inertia::render('Profile/Edit'))->name('profile.edit');

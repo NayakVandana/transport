@@ -65,4 +65,9 @@ class FreightInvoice extends Model
     {
         return $this->hasMany(FreightInvoiceLine::class)->orderBy('serial_number');
     }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(InvoicePayment::class)->orderByDesc('payment_date');
+    }
 }

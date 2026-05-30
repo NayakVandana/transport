@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\FreightInvoice;
 use App\Models\Party;
+use App\Support\InvoicePaymentCalculator;
 use Exception;
 use Illuminate\Http\Request;
 
@@ -19,9 +20,7 @@ class DashboardApiController extends Controller
             $stats = [
                 'parties' => Party::query()->where('user_id', $userId)->count(),
                 'invoices' => FreightInvoice::query()->where('user_id', $userId)->count(),
-                'outstanding' => (float) FreightInvoice::query()
-                    ->where('user_id', $userId)
-                    ->sum('balance_amount'),
+                'outstanding' => \App\Support\InvoicePaymentCalculator::totalOutstanding($userId),
                 'has_company' => Company::query()->where('user_id', $userId)->exists(),
             ];
 
@@ -31,6 +30,8 @@ class DashboardApiController extends Controller
                 ->orderByDesc('invoice_date')
                 ->limit(5)
                 ->get(['id', 'bill_number', 'invoice_date', 'party_id', 'balance_amount', 'status']);
+
+            InvoicePaymentCalculator::attachSummariesToInvoices($recentInvoices);
 
             return $this->sendJsonResponse(true, 'Dashboard loaded.', [
                 'stats' => $stats,
