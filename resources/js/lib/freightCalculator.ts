@@ -66,6 +66,13 @@ export function calculateBookingBalance(
     return Math.round(total * 100) / 100;
 }
 
+export function calculateEntrybookBalance(
+    freight: number | string,
+    advance: number | string,
+): number {
+    return Math.round(((Number(freight) || 0) - (Number(advance) || 0)) * 100) / 100;
+}
+
 export function formatDate(d: string | null | undefined, short = false): string {
     if (!d) return '';
     const date = new Date(d);

@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Company;
+use App\Models\Entrybook;
 use App\Models\FreightInvoiceLine;
 
 class EntryNumberGenerator
@@ -10,6 +11,36 @@ class EntryNumberGenerator
     public static function format(Company $company, int $sequence): string
     {
         return sprintf('%s-%d', $company->entry_number_prefix, $sequence);
+    }
+
+    public static function formatEntrybookNumber(int $sequence): string
+    {
+        return sprintf('%03d', $sequence);
+    }
+
+    public static function resolveEntrybookSequence(int $userId): int
+    {
+        $max = Entrybook::query()
+            ->where('user_id', $userId)
+            ->pluck('entry_number')
+            ->map(fn (string $no) => self::sequenceFromEntrybookNumber($no))
+            ->filter()
+            ->max();
+
+        return ($max ?? 0) + 1;
+    }
+
+    public static function sequenceFromEntrybookNumber(string $entryNumber): ?int
+    {
+        if (preg_match('/^\d+$/', $entryNumber)) {
+            return (int) $entryNumber;
+        }
+
+        if (preg_match('/-(\d+)$/', $entryNumber, $matches)) {
+            return (int) $matches[1];
+        }
+
+        return null;
     }
 
     /** @return list<string> */

@@ -9,6 +9,7 @@ import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
+import { resolveReturnHref } from '@/lib/invoiceReturn';
 import type { RouteLocation } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { FormEventHandler, useMemo, useState } from 'react';
@@ -63,15 +64,7 @@ export default function RoutesIndex() {
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [searchInput, setSearchInput] = useState('');
 
-    const backHref =
-        return_route && route().has(return_route)
-            ? route(
-                  return_route,
-                  return_id && return_route === 'invoices.edit'
-                      ? { invoice: return_id }
-                      : {},
-              )
-            : null;
+    const backHref = resolveReturnHref(return_route, return_id);
 
     usePageHeader(
         <div className="flex flex-wrap items-center gap-3">
@@ -79,7 +72,7 @@ export default function RoutesIndex() {
             {backHref && (
                 <Link href={backHref}>
                     <SecondaryButton type="button">
-                        {return_label ?? 'Back to invoice'}
+                        {return_label ?? (return_route?.startsWith('entrybooks.') ? 'Back to entry' : 'Back to invoice')}
                     </SecondaryButton>
                 </Link>
             )}

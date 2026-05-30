@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\Customer;
 use App\Models\Driver;
 use App\Models\DriverDocument;
+use App\Models\Entrybook;
 use App\Models\FreightInvoice;
 use App\Models\RouteLocation;
 use App\Models\User;
@@ -37,6 +38,7 @@ class TransportSeeder extends Seeder
         $routes = $this->seedRoutes($userId);
         $invoice = $this->seedInvoice($userId, $company, $customers[0], $vehicles);
         $this->seedBookings($userId, $vehicles, $drivers);
+        $this->seedEntrybooks($userId, $vehicles);
         $this->seedVehicleDocuments($userId, $vehicles);
         $this->seedDriverDocuments($userId, $drivers);
     }
@@ -339,6 +341,57 @@ class TransportSeeder extends Seeder
         }
 
         return $bookings;
+    }
+
+    /** @param  array<string, Vehicle>  $vehicles */
+    private function seedEntrybooks(int $userId, array $vehicles): void
+    {
+        $entries = [
+            [
+                'entry_number' => '001',
+                'entry_date' => '2025-08-13',
+                'vehicle_number' => 'MH04JU9931',
+                'route_from' => 'J N P T / SARIGAM / 1X20',
+                'freight' => 24000,
+                'advance' => 12000,
+            ],
+            [
+                'entry_number' => '002',
+                'entry_date' => '2025-08-14',
+                'vehicle_number' => 'MH04JU9932',
+                'route_from' => 'J N P T / SARIGAM / 1X20',
+                'freight' => 24000,
+                'advance' => 15000,
+            ],
+            [
+                'entry_number' => '003',
+                'entry_date' => '2025-08-20',
+                'vehicle_number' => 'MH04JU9931',
+                'route_from' => 'NHAVA SHEVA / VAPI',
+                'freight' => 18500,
+                'advance' => 10000,
+            ],
+        ];
+
+        foreach ($entries as $row) {
+            $freight = (float) $row['freight'];
+            $advance = (float) $row['advance'];
+
+            Entrybook::query()->updateOrCreate(
+                [
+                    'user_id' => $userId,
+                    'entry_number' => $row['entry_number'],
+                ],
+                [
+                    'entry_date' => $row['entry_date'],
+                    'vehicle_id' => $vehicles[$row['vehicle_number']]->id,
+                    'route_from' => $row['route_from'],
+                    'freight' => $freight,
+                    'advance' => $advance,
+                    'balance' => round($freight - $advance, 2),
+                ],
+            );
+        }
     }
 
     /** @param  array<string, Vehicle>  $vehicles */

@@ -48,6 +48,10 @@ Route::get('/bookings', fn () => Inertia::render('Bookings/Index'))->name('booki
 Route::get('/bookings/create', fn () => Inertia::render('Bookings/Form'))->name('bookings.create');
 Route::get('/bookings/{id}/edit', fn (int $id) => Inertia::render('Bookings/Form', ['bookingId' => $id]))->name('bookings.edit');
 
+Route::get('/entrybooks', fn () => Inertia::render('Entrybooks/Index'))->name('entrybooks.index');
+Route::get('/entrybooks/create', fn () => Inertia::render('Entrybooks/Form'))->name('entrybooks.create');
+Route::get('/entrybooks/{id}/edit', fn (int $id) => Inertia::render('Entrybooks/Form', ['entrybookId' => $id]))->name('entrybooks.edit');
+
 Route::get('/routes', fn () => Inertia::render('Routes/Index'))->name('routes.index');
 
 Route::get('/invoices', fn () => Inertia::render('Invoices/Index'))->name('invoices.index');

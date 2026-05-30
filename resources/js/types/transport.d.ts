@@ -68,6 +68,25 @@ export interface Booking {
     driver?: Pick<Driver, 'id' | 'name' | 'mobile'>;
 }
 
+export interface Entrybook {
+    id: number;
+    entry_number: string;
+    entry_date: string;
+    vehicle_id: number;
+    route_from?: string | null;
+    freight: string | number;
+    advance: string | number;
+    balance: string | number;
+    vehicle?: Pick<Vehicle, 'id' | 'vehicle_number'>;
+}
+
+export interface EntrybookTotals {
+    count: number;
+    freight: number;
+    advance: number;
+    balance: number;
+}
+
 export interface ExpenseOption {
     value: string;
     label: string;

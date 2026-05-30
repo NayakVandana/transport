@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\App\CustomerApiController;
 use App\Http\Controllers\Api\App\DashboardApiController;
 use App\Http\Controllers\Api\App\DriverApiController;
 use App\Http\Controllers\Api\App\DriverDocumentApiController;
+use App\Http\Controllers\Api\App\EntrybookApiController;
 use App\Http\Controllers\Api\App\FreightInvoiceApiController;
 use App\Http\Controllers\Api\App\ProfileApiController;
 use App\Http\Controllers\Api\App\RouteLocationApiController;
@@ -71,6 +72,15 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/bookings/booking-destroy', [BookingApiController::class, 'postBookingDestroy']);
     Route::post('/bookings/bookings-export-csv', [BookingApiController::class, 'postBookingsExportCsv']);
     Route::post('/bookings/bookings-export-pdf', [BookingApiController::class, 'postBookingsExportPdf']);
+
+    Route::post('/entrybooks/entrybooks-list', [EntrybookApiController::class, 'postEntrybooksList']);
+    Route::post('/entrybooks/entrybooks-export-csv', [EntrybookApiController::class, 'postEntrybooksExportCsv']);
+    Route::post('/entrybooks/entrybooks-export-pdf', [EntrybookApiController::class, 'postEntrybooksExportPdf']);
+    Route::post('/entrybooks/entrybook-meta', [EntrybookApiController::class, 'postEntrybookMeta']);
+    Route::post('/entrybooks/entrybook-show', [EntrybookApiController::class, 'postEntrybookShow']);
+    Route::post('/entrybooks/entrybook-store', [EntrybookApiController::class, 'postEntrybookStore']);
+    Route::post('/entrybooks/entrybook-update', [EntrybookApiController::class, 'postEntrybookUpdate']);
+    Route::post('/entrybooks/entrybook-destroy', [EntrybookApiController::class, 'postEntrybookDestroy']);
 
     Route::post('/routes/routes-list', [RouteLocationApiController::class, 'postRoutesList']);
     Route::post('/routes/routes-export-csv', [RouteLocationApiController::class, 'postRoutesExportCsv']);
