@@ -7,9 +7,7 @@ use App\Models\Company;
 use App\Models\Customer;
 use App\Models\Driver;
 use App\Models\DriverDocument;
-use App\Models\Expense;
 use App\Models\FreightInvoice;
-use App\Models\Payment;
 use App\Models\RouteLocation;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -38,9 +36,7 @@ class TransportSeeder extends Seeder
         $drivers = $this->seedDrivers($userId);
         $routes = $this->seedRoutes($userId);
         $invoice = $this->seedInvoice($userId, $company, $customers[0], $vehicles);
-        $bookings = $this->seedBookings($userId, $vehicles, $drivers);
-        $this->seedExpenses($userId, $vehicles, $drivers);
-        $this->seedPayments($userId, $customers, $bookings, $invoice);
+        $this->seedBookings($userId, $vehicles, $drivers);
         $this->seedVehicleDocuments($userId, $vehicles);
         $this->seedDriverDocuments($userId, $drivers);
     }
@@ -343,161 +339,6 @@ class TransportSeeder extends Seeder
         }
 
         return $bookings;
-    }
-
-    /**
-     * @param  array<string, Vehicle>  $vehicles
-     * @param  array<string, Driver>  $drivers
-     */
-    private function seedExpenses(int $userId, array $vehicles, array $drivers): void
-    {
-        $expenses = [
-            [
-                'expense_date' => '2025-08-10',
-                'category' => 'fuel',
-                'amount' => 8500,
-                'description' => 'Diesel fill — Mumbai–Vapi trip',
-                'vehicle_number' => 'MH04JU9931',
-                'driver_key' => 'rajesh-patel',
-                'payment_method' => 'upi',
-            ],
-            [
-                'expense_date' => '2025-08-12',
-                'category' => 'toll',
-                'amount' => 1450,
-                'description' => 'NH toll — JNPT route',
-                'vehicle_number' => 'MH04JU9932',
-                'driver_key' => null,
-                'payment_method' => 'cash',
-            ],
-            [
-                'expense_date' => '2025-08-15',
-                'category' => 'maintenance',
-                'amount' => 3200,
-                'description' => 'Brake pad replacement',
-                'vehicle_number' => 'MH04JU9931',
-                'driver_key' => null,
-                'payment_method' => 'bank',
-            ],
-            [
-                'expense_date' => '2025-08-01',
-                'category' => 'driver_salary',
-                'amount' => 18000,
-                'description' => 'August salary — Rajesh Patel',
-                'vehicle_number' => null,
-                'driver_key' => 'rajesh-patel',
-                'payment_method' => 'bank',
-            ],
-            [
-                'expense_date' => '2025-08-05',
-                'category' => 'office',
-                'amount' => 2500,
-                'description' => 'Stationery and internet',
-                'vehicle_number' => null,
-                'driver_key' => null,
-                'payment_method' => 'cash',
-            ],
-        ];
-
-        foreach ($expenses as $row) {
-            Expense::query()->updateOrCreate(
-                [
-                    'user_id' => $userId,
-                    'expense_date' => $row['expense_date'],
-                    'category' => $row['category'],
-                    'amount' => $row['amount'],
-                ],
-                [
-                    'description' => $row['description'],
-                    'vehicle_id' => $row['vehicle_number']
-                        ? $vehicles[$row['vehicle_number']]->id
-                        : null,
-                    'driver_id' => $row['driver_key']
-                        ? $drivers[$row['driver_key']]->id
-                        : null,
-                    'payment_method' => $row['payment_method'],
-                ],
-            );
-        }
-    }
-
-    /**
-     * @param  list<Customer>  $customers
-     * @param  array<string, Booking>  $bookings
-     */
-    private function seedPayments(
-        int $userId,
-        array $customers,
-        array $bookings,
-        FreightInvoice $invoice,
-    ): void {
-        $payments = [
-            [
-                'payment_date' => '2025-08-14',
-                'direction' => 'receipt',
-                'amount' => 12000,
-                'payment_method' => 'bank',
-                'reference_number' => 'UTR8829103345',
-                'notes' => 'Advance against trip 13-Aug',
-                'customer_id' => $customers[0]->id,
-                'booking_key' => 'booking-aug-13',
-                'freight_invoice_id' => null,
-            ],
-            [
-                'payment_date' => '2025-09-10',
-                'direction' => 'receipt',
-                'amount' => 15000,
-                'payment_method' => 'upi',
-                'reference_number' => 'UPI-99887766',
-                'notes' => 'Partial payment against invoice R2526-0608',
-                'customer_id' => $customers[0]->id,
-                'booking_key' => null,
-                'freight_invoice_id' => $invoice->id,
-            ],
-            [
-                'payment_date' => '2025-08-18',
-                'direction' => 'receipt',
-                'amount' => 10000,
-                'payment_method' => 'cash',
-                'reference_number' => null,
-                'notes' => 'Cash received on delivery',
-                'customer_id' => $customers[1]->id,
-                'booking_key' => 'booking-aug-20',
-                'freight_invoice_id' => null,
-            ],
-            [
-                'payment_date' => '2025-08-16',
-                'direction' => 'payout',
-                'amount' => 3500,
-                'payment_method' => 'bank',
-                'reference_number' => 'CHQ-445566',
-                'notes' => 'Vendor payout — tyre repair',
-                'customer_id' => null,
-                'booking_key' => null,
-                'freight_invoice_id' => null,
-            ],
-        ];
-
-        foreach ($payments as $row) {
-            Payment::query()->updateOrCreate(
-                [
-                    'user_id' => $userId,
-                    'payment_date' => $row['payment_date'],
-                    'direction' => $row['direction'],
-                    'amount' => $row['amount'],
-                    'reference_number' => $row['reference_number'],
-                ],
-                [
-                    'payment_method' => $row['payment_method'],
-                    'notes' => $row['notes'],
-                    'customer_id' => $row['customer_id'],
-                    'booking_id' => $row['booking_key']
-                        ? $bookings[$row['booking_key']]->id
-                        : null,
-                    'freight_invoice_id' => $row['freight_invoice_id'],
-                ],
-            );
-        }
     }
 
     /** @param  array<string, Vehicle>  $vehicles */

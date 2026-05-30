@@ -7,9 +7,7 @@ use App\Http\Controllers\Api\App\CustomerApiController;
 use App\Http\Controllers\Api\App\DashboardApiController;
 use App\Http\Controllers\Api\App\DriverApiController;
 use App\Http\Controllers\Api\App\DriverDocumentApiController;
-use App\Http\Controllers\Api\App\ExpenseApiController;
 use App\Http\Controllers\Api\App\FreightInvoiceApiController;
-use App\Http\Controllers\Api\App\PaymentApiController;
 use App\Http\Controllers\Api\App\ProfileApiController;
 use App\Http\Controllers\Api\App\RouteLocationApiController;
 use App\Http\Controllers\Api\App\VehicleApiController;
@@ -73,24 +71,6 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/bookings/booking-destroy', [BookingApiController::class, 'postBookingDestroy']);
     Route::post('/bookings/bookings-export-csv', [BookingApiController::class, 'postBookingsExportCsv']);
     Route::post('/bookings/bookings-export-pdf', [BookingApiController::class, 'postBookingsExportPdf']);
-
-    Route::post('/expenses/expenses-list', [ExpenseApiController::class, 'postExpensesList']);
-    Route::post('/expenses/expenses-export-csv', [ExpenseApiController::class, 'postExpensesExportCsv']);
-    Route::post('/expenses/expenses-export-pdf', [ExpenseApiController::class, 'postExpensesExportPdf']);
-    Route::post('/expenses/expense-meta', [ExpenseApiController::class, 'postExpenseMeta']);
-    Route::post('/expenses/expense-show', [ExpenseApiController::class, 'postExpenseShow']);
-    Route::post('/expenses/expense-store', [ExpenseApiController::class, 'postExpenseStore']);
-    Route::post('/expenses/expense-update', [ExpenseApiController::class, 'postExpenseUpdate']);
-    Route::post('/expenses/expense-destroy', [ExpenseApiController::class, 'postExpenseDestroy']);
-
-    Route::post('/payments/payments-list', [PaymentApiController::class, 'postPaymentsList']);
-    Route::post('/payments/payments-export-csv', [PaymentApiController::class, 'postPaymentsExportCsv']);
-    Route::post('/payments/payments-export-pdf', [PaymentApiController::class, 'postPaymentsExportPdf']);
-    Route::post('/payments/payment-meta', [PaymentApiController::class, 'postPaymentMeta']);
-    Route::post('/payments/payment-show', [PaymentApiController::class, 'postPaymentShow']);
-    Route::post('/payments/payment-store', [PaymentApiController::class, 'postPaymentStore']);
-    Route::post('/payments/payment-update', [PaymentApiController::class, 'postPaymentUpdate']);
-    Route::post('/payments/payment-destroy', [PaymentApiController::class, 'postPaymentDestroy']);
 
     Route::post('/routes/routes-list', [RouteLocationApiController::class, 'postRoutesList']);
     Route::post('/routes/routes-export-csv', [RouteLocationApiController::class, 'postRoutesExportCsv']);

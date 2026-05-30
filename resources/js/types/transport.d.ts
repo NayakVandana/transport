@@ -68,21 +68,6 @@ export interface Booking {
     driver?: Pick<Driver, 'id' | 'name' | 'mobile'>;
 }
 
-export interface Expense {
-    id: number;
-    expense_date: string;
-    category: string;
-    amount: string | number;
-    description?: string | null;
-    vehicle_id?: number | null;
-    driver_id?: number | null;
-    payment_method?: string | null;
-    bill_copy?: string | null;
-    bill_copy_url?: string | null;
-    vehicle?: Pick<Vehicle, 'id' | 'vehicle_number'>;
-    driver?: Pick<Driver, 'id' | 'name'>;
-}
-
 export interface ExpenseOption {
     value: string;
     label: string;
@@ -96,24 +81,6 @@ export interface EntityDocument {
     file_url?: string | null;
     expiry_date?: string | null;
     notes?: string | null;
-}
-
-export interface Payment {
-    id: number;
-    payment_date: string;
-    direction: 'receipt' | 'payout';
-    amount: string | number;
-    payment_method: string;
-    reference_number?: string | null;
-    notes?: string | null;
-    customer_id?: number | null;
-    booking_id?: number | null;
-    freight_invoice_id?: number | null;
-    customer?: Pick<Customer, 'id' | 'name'>;
-    booking?: Pick<Booking, 'id' | 'booking_date'> & {
-        vehicle?: Pick<Vehicle, 'id' | 'vehicle_number'>;
-    };
-    freight_invoice?: Pick<FreightInvoice, 'id' | 'bill_number' | 'invoice_date'>;
 }
 
 export interface Customer {
