@@ -12,18 +12,18 @@ class ListFilter
     public static function dateFromRequest(Request $request): array
     {
         $validated = $request->validate([
-            'date_range' => ['nullable', 'string', 'in:'.implode(',', BookingDateFilter::PRESETS)],
+            'date_range' => ['nullable', 'string', 'in:'.implode(',', DateRangeFilter::PRESETS)],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date'],
         ]);
 
-        $dateRange = BookingDateFilter::normalizeRange(
+        $dateRange = DateRangeFilter::normalizeRange(
             $validated['date_range'] ?? null,
             $validated['date_from'] ?? '',
             $validated['date_to'] ?? '',
         );
 
-        [$dateFrom, $dateTo] = BookingDateFilter::resolveDates(
+        [$dateFrom, $dateTo] = DateRangeFilter::resolveDates(
             $dateRange,
             $validated['date_from'] ?? '',
             $validated['date_to'] ?? '',
@@ -104,7 +104,7 @@ class ListFilter
         }
 
         if ($dateRange !== 'all') {
-            return 'Period: '.BookingDateFilter::label($dateRange);
+            return 'Period: '.DateRangeFilter::label($dateRange);
         }
 
         return null;

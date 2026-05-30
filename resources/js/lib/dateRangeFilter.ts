@@ -1,6 +1,6 @@
 import { formatCompactDate, formatDateString } from '@/lib/dateUtils';
 
-export type BookingDateRange =
+export type DateRange =
     | 'today'
     | 'yesterday'
     | 'last_7_days'
@@ -10,7 +10,7 @@ export type BookingDateRange =
     | 'all'
     | 'custom';
 
-export const BOOKING_DATE_PRESETS: { value: BookingDateRange; label: string }[] = [
+export const DATE_RANGE_PRESETS: { value: DateRange; label: string }[] = [
     { value: 'today', label: 'Today' },
     { value: 'yesterday', label: 'Yesterday' },
     { value: 'last_7_days', label: 'Last 7 days' },
@@ -20,8 +20,8 @@ export const BOOKING_DATE_PRESETS: { value: BookingDateRange; label: string }[] 
     { value: 'all', label: 'All' },
 ];
 
-export function resolveBookingDates(
-    dateRange: BookingDateRange,
+export function resolveDateRange(
+    dateRange: DateRange,
     dateFrom = '',
     dateTo = '',
 ): { date_from: string; date_to: string } {
@@ -67,8 +67,8 @@ export function resolveBookingDates(
     }
 }
 
-export function bookingDateFilterLabel(
-    dateRange: BookingDateRange,
+export function dateRangeFilterLabel(
+    dateRange: DateRange,
     dateFrom = '',
     dateTo = '',
 ): string {
@@ -76,28 +76,23 @@ export function bookingDateFilterLabel(
         return 'Select Date';
     }
 
-    const { date_from: from, date_to: to } = resolveBookingDates(dateRange, dateFrom, dateTo);
+    const { date_from: from, date_to: to } = resolveDateRange(dateRange, dateFrom, dateTo);
 
     if (from && to) {
         return `${formatCompactDate(from)} ~ ${formatCompactDate(to)}`;
     }
 
-    return BOOKING_DATE_PRESETS.find((preset) => preset.value === dateRange)?.label ?? 'Select Date';
+    return DATE_RANGE_PRESETS.find((preset) => preset.value === dateRange)?.label ?? 'Select Date';
 }
 
-export function buildBookingFilterParams(filters: {
-    vehicle_id: string;
-    date_range: BookingDateRange;
+export function buildDateFilterParams(filters: {
+    date_range: DateRange;
     date_from?: string;
     date_to?: string;
 }): Record<string, string> {
     const params: Record<string, string> = {
         date_range: filters.date_range,
     };
-
-    if (filters.vehicle_id) {
-        params.vehicle_id = filters.vehicle_id;
-    }
 
     if (filters.date_range === 'custom') {
         if (filters.date_from) {

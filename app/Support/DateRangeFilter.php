@@ -4,7 +4,7 @@ namespace App\Support;
 
 use Carbon\Carbon;
 
-class BookingDateFilter
+class DateRangeFilter
 {
     /** @var list<string> */
     public const PRESETS = [

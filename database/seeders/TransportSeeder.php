@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Booking;
 use App\Models\Company;
 use App\Models\Customer;
 use App\Models\Driver;
@@ -14,7 +13,6 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
 use App\Support\AmountInWords;
-use App\Support\BookingCalculator;
 use App\Support\EntryNumberGenerator;
 use App\Support\FreightInvoiceCalculator;
 use Illuminate\Database\Seeder;
@@ -37,7 +35,6 @@ class TransportSeeder extends Seeder
         $drivers = $this->seedDrivers($userId);
         $routes = $this->seedRoutes($userId);
         $invoice = $this->seedInvoice($userId, $company, $customers[0], $vehicles);
-        $this->seedBookings($userId, $vehicles, $drivers);
         $this->seedEntrybooks($userId, $vehicles);
         $this->seedVehicleDocuments($userId, $vehicles);
         $this->seedDriverDocuments($userId, $drivers);
@@ -270,77 +267,6 @@ class TransportSeeder extends Seeder
         );
 
         return $invoice;
-    }
-
-    /**
-     * @param  array<string, Vehicle>  $vehicles
-     * @param  array<string, Driver>  $drivers
-     * @return list<Booking>
-     */
-    private function seedBookings(int $userId, array $vehicles, array $drivers): array
-    {
-        $rows = [
-            [
-                'key' => 'booking-aug-13',
-                'booking_date' => '2025-08-13',
-                'vehicle_number' => 'MH04JU9931',
-                'driver_key' => 'rajesh-patel',
-                'freight' => 24000,
-                'advance' => 12000,
-                'empty_charge' => 2386,
-                'maintenance' => 500,
-            ],
-            [
-                'key' => 'booking-aug-14',
-                'booking_date' => '2025-08-14',
-                'vehicle_number' => 'MH04JU9932',
-                'driver_key' => 'suresh-sharma',
-                'freight' => 24000,
-                'advance' => 15000,
-                'empty_charge' => 0,
-                'maintenance' => 0,
-            ],
-            [
-                'key' => 'booking-aug-20',
-                'booking_date' => '2025-08-20',
-                'vehicle_number' => 'MH04JU9931',
-                'driver_key' => 'rajesh-patel',
-                'freight' => 18500,
-                'advance' => 10000,
-                'empty_charge' => 1200,
-                'maintenance' => 300,
-            ],
-        ];
-
-        $bookings = [];
-        foreach ($rows as $row) {
-            $balance = BookingCalculator::balance(
-                $row['freight'],
-                $row['advance'],
-                $row['empty_charge'],
-                $row['maintenance'],
-            );
-
-            $booking = Booking::query()->updateOrCreate(
-                [
-                    'user_id' => $userId,
-                    'booking_date' => $row['booking_date'],
-                    'vehicle_id' => $vehicles[$row['vehicle_number']]->id,
-                ],
-                [
-                    'driver_id' => $drivers[$row['driver_key']]->id,
-                    'freight' => $row['freight'],
-                    'advance' => $row['advance'],
-                    'empty_charge' => $row['empty_charge'],
-                    'maintenance' => $row['maintenance'],
-                    'balance' => $balance,
-                ],
-            );
-
-            $bookings[$row['key']] = $booking;
-        }
-
-        return $bookings;
     }
 
     /** @param  array<string, Vehicle>  $vehicles */

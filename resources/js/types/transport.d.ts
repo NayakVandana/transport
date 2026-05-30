@@ -54,20 +54,6 @@ export interface RouteLocation {
     name: string;
 }
 
-export interface Booking {
-    id: number;
-    booking_date: string;
-    vehicle_id: number;
-    driver_id?: number | null;
-    freight: string | number;
-    advance: string | number;
-    empty_charge: string | number;
-    maintenance: string | number;
-    balance: string | number;
-    vehicle?: Pick<Vehicle, 'id' | 'vehicle_number'>;
-    driver?: Pick<Driver, 'id' | 'name' | 'mobile'>;
-}
-
 export interface Entrybook {
     id: number;
     entry_number: string;
@@ -160,13 +146,4 @@ export interface InvoiceTotals {
     balance_amount: number;
     gross_freight: number;
     igst_amount: number;
-}
-
-export interface BookingTotals {
-    count: number;
-    freight: number;
-    advance: number;
-    empty_charge: number;
-    maintenance: number;
-    balance: number;
 }

@@ -44,10 +44,6 @@ Route::get('/drivers', fn () => Inertia::render('Drivers/Index'))->name('drivers
 Route::get('/drivers/create', fn () => Inertia::render('Drivers/Form'))->name('drivers.create');
 Route::get('/drivers/{id}/edit', fn (int $id) => Inertia::render('Drivers/Form', ['driverId' => $id]))->name('drivers.edit');
 
-Route::get('/bookings', fn () => Inertia::render('Bookings/Index'))->name('bookings.index');
-Route::get('/bookings/create', fn () => Inertia::render('Bookings/Form'))->name('bookings.create');
-Route::get('/bookings/{id}/edit', fn (int $id) => Inertia::render('Bookings/Form', ['bookingId' => $id]))->name('bookings.edit');
-
 Route::get('/entrybooks', fn () => Inertia::render('Entrybooks/Index'))->name('entrybooks.index');
 Route::get('/entrybooks/create', fn () => Inertia::render('Entrybooks/Form'))->name('entrybooks.create');
 Route::get('/entrybooks/{id}/edit', fn (int $id) => Inertia::render('Entrybooks/Form', ['entrybookId' => $id]))->name('entrybooks.edit');

@@ -1,12 +1,9 @@
 import type { DatePickerRangeValue } from '@/Components/FormDatePicker';
-import {
-    buildBookingFilterParams,
-    type BookingDateRange,
-} from '@/lib/bookingDateFilter';
+import { buildDateFilterParams, type DateRange } from '@/lib/dateRangeFilter';
 
-export type { BookingDateRange };
+export type { DateRange };
 export type DateFilters = {
-    date_range: BookingDateRange;
+    date_range: DateRange;
     date_from?: string;
     date_to?: string;
 };
@@ -46,8 +43,7 @@ export function dateFiltersFromPicker(dates: DatePickerRangeValue): DateFilters 
 }
 
 export function buildListFilterParams(filters: ListFilters): Record<string, string> {
-    const params = buildBookingFilterParams({
-        vehicle_id: '',
+    const params = buildDateFilterParams({
         date_range: filters.date_range,
         date_from: filters.date_from,
         date_to: filters.date_to,

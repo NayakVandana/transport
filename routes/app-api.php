@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Api\App\AuthApiController;
-use App\Http\Controllers\Api\App\BookingApiController;
 use App\Http\Controllers\Api\App\CompanyApiController;
 use App\Http\Controllers\Api\App\CustomerApiController;
 use App\Http\Controllers\Api\App\DashboardApiController;
@@ -63,15 +62,6 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/drivers/driver-document-store', [DriverDocumentApiController::class, 'postDriverDocumentStore']);
     Route::post('/drivers/driver-document-update', [DriverDocumentApiController::class, 'postDriverDocumentUpdate']);
     Route::post('/drivers/driver-document-destroy', [DriverDocumentApiController::class, 'postDriverDocumentDestroy']);
-
-    Route::post('/bookings/bookings-list', [BookingApiController::class, 'postBookingsList']);
-    Route::post('/bookings/booking-meta', [BookingApiController::class, 'postBookingMeta']);
-    Route::post('/bookings/booking-show', [BookingApiController::class, 'postBookingShow']);
-    Route::post('/bookings/booking-store', [BookingApiController::class, 'postBookingStore']);
-    Route::post('/bookings/booking-update', [BookingApiController::class, 'postBookingUpdate']);
-    Route::post('/bookings/booking-destroy', [BookingApiController::class, 'postBookingDestroy']);
-    Route::post('/bookings/bookings-export-csv', [BookingApiController::class, 'postBookingsExportCsv']);
-    Route::post('/bookings/bookings-export-pdf', [BookingApiController::class, 'postBookingsExportPdf']);
 
     Route::post('/entrybooks/entrybooks-list', [EntrybookApiController::class, 'postEntrybooksList']);
     Route::post('/entrybooks/entrybooks-export-csv', [EntrybookApiController::class, 'postEntrybooksExportCsv']);
