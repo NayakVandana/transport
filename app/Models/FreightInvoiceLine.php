@@ -9,6 +9,7 @@ class FreightInvoiceLine extends Model
 {
     protected $fillable = [
         'freight_invoice_id',
+        'entrybook_id',
         'serial_number',
         'entry_number',
         'entry_date',
@@ -37,5 +38,10 @@ class FreightInvoiceLine extends Model
     public function freightInvoice(): BelongsTo
     {
         return $this->belongsTo(FreightInvoice::class);
+    }
+
+    public function entrybook(): BelongsTo
+    {
+        return $this->belongsTo(Entrybook::class);
     }
 }

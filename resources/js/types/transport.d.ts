@@ -113,6 +113,7 @@ export interface Customer {
 export interface FreightInvoiceLine {
     id?: number;
     serial_number?: number;
+    entrybook_id?: number | null;
     entry_number?: string | null;
     entry_date?: string | null;
     vehicle_number?: string | null;

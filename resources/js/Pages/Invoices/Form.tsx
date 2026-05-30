@@ -10,11 +10,12 @@ import {
     calculateFreightInvoice,
     lineFreight,
 } from '@/lib/freightCalculator';
-import { masterListHref } from '@/lib/invoiceReturn';
-import { formatEntryNumber, todayDate } from '@/lib/quickAdd';
+import { invoiceReturnQuery, masterListHref } from '@/lib/invoiceReturn';
+import { todayDate } from '@/lib/quickAdd';
 import type {
     Company,
     Customer,
+    Entrybook,
     FreightInvoice,
     FreightInvoiceLine,
     RouteLocation,
@@ -33,15 +34,12 @@ type InvoiceMetaData = {
     customers: Customer[];
     vehicles: Vehicle[];
     routeLocations: RouteLocation[];
-    entrySettings: EntrySettings;
+    entrybooks: Entrybook[];
+    entrySettings?: EntrySettings;
     nextBillNumber: string | null;
 };
 
-function buildEmptyLine(
-    entrySettings: EntrySettings,
-    lineIndex: number,
-    existing?: FreightInvoiceLine,
-): FreightInvoiceLine {
+function buildEmptyLine(existing?: FreightInvoiceLine): FreightInvoiceLine {
     if (existing) {
         return {
             ...existing,
@@ -50,10 +48,8 @@ function buildEmptyLine(
     }
 
     return {
-        entry_number: formatEntryNumber(
-            entrySettings.prefix,
-            entrySettings.nextSequence + lineIndex,
-        ),
+        entrybook_id: null,
+        entry_number: '',
         entry_date: todayDate(),
         vehicle_number: '',
         route_from: '',
@@ -62,6 +58,24 @@ function buildEmptyLine(
         rate: 0,
         advance_paid: 0,
         empty_container_charge: 0,
+    };
+}
+
+function applyEntrybookToLine(
+    line: FreightInvoiceLine,
+    entry: Entrybook,
+): FreightInvoiceLine {
+    return {
+        ...line,
+        entrybook_id: entry.id,
+        entry_number: entry.entry_number,
+        entry_date: entry.entry_date.slice(0, 10),
+        vehicle_number: entry.vehicle?.vehicle_number ?? '',
+        route_from: entry.route_from ?? '',
+        rate: entry.freight,
+        advance_paid: entry.advance,
+        weight: line.weight || 1,
+        product_name: line.product_name || 'AS PER INVOICES',
     };
 }
 
@@ -88,10 +102,7 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [routes, setRoutes] = useState<RouteLocation[]>([]);
-    const [entrySettings, setEntrySettings] = useState<EntrySettings>({
-        prefix: 'R2526',
-        nextSequence: 1769,
-    });
+    const [entrybooks, setEntrybooks] = useState<Entrybook[]>([]);
     const [billNumber, setBillNumber] = useState('');
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
@@ -135,13 +146,12 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
 
                     const invoice = showRes.data.invoice;
                     const meta = metaRes.data;
-                    const settings = meta.entrySettings;
 
                     setCompany(invoice.company ?? meta.company);
                     setCustomers(meta.customers);
                     setVehicles(meta.vehicles);
                     setRoutes(meta.routeLocations);
-                    setEntrySettings(settings);
+                    setEntrybooks(meta.entrybooks ?? []);
                     setBillNumber(invoice.bill_number);
 
                     setData({
@@ -153,10 +163,8 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                         prepared_by: invoice.prepared_by ?? '',
                         checked_by: invoice.checked_by ?? '',
                         lines: invoice.lines?.length
-                            ? invoice.lines.map((line, i) =>
-                                  buildEmptyLine(settings, i, line),
-                              )
-                            : [buildEmptyLine(settings, 0)],
+                            ? invoice.lines.map((line) => buildEmptyLine(line))
+                            : [buildEmptyLine()],
                     });
                 } else {
                     const metaRes = await appApiPost<ApiEnvelope<InvoiceMetaData>>(
@@ -173,13 +181,12 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                     }
 
                     const meta = metaRes.data;
-                    const settings = meta.entrySettings;
 
                     setCompany(meta.company);
                     setCustomers(meta.customers);
                     setVehicles(meta.vehicles);
                     setRoutes(meta.routeLocations);
-                    setEntrySettings(settings);
+                    setEntrybooks(meta.entrybooks ?? []);
                     setBillNumber(meta.nextBillNumber ?? '');
 
                     setData({
@@ -190,7 +197,7 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                         status: 'draft',
                         prepared_by: '',
                         checked_by: '',
-                        lines: [buildEmptyLine(settings, 0)],
+                        lines: [buildEmptyLine()],
                     });
                 }
             } catch {
@@ -267,9 +274,29 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
         setField('lines', lines);
     };
 
+    const selectEntryNumber = (index: number, entryNumber: string) => {
+        if (!entryNumber) {
+            const lines = [...data.lines];
+            lines[index] = { ...lines[index], entry_number: '', entrybook_id: null };
+            setField('lines', lines);
+            return;
+        }
+
+        const entry = entrybooks.find((e) => e.entry_number === entryNumber);
+        if (!entry) {
+            const lines = [...data.lines];
+            lines[index] = { ...lines[index], entry_number: entryNumber, entrybook_id: null };
+            setField('lines', lines);
+            return;
+        }
+
+        const lines = [...data.lines];
+        lines[index] = applyEntrybookToLine(lines[index], entry);
+        setField('lines', lines);
+    };
+
     const addLine = () => {
-        const nextIndex = data.lines.length;
-        setField('lines', [...data.lines, buildEmptyLine(entrySettings, nextIndex)]);
+        setField('lines', [...data.lines, buildEmptyLine()]);
     };
 
     const removeLine = (index: number) => {
@@ -290,8 +317,26 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
         [routes],
     );
 
+    const entrybookOptions = useMemo(
+        () => entrybooks.map((e) => ({ value: e.entry_number, label: e.entry_number })),
+        [entrybooks],
+    );
+
+    const entryOptionsForLine = (lineIndex: number, currentValue: string) => {
+        const used = new Set(
+            data.lines
+                .map((line, i) => (i !== lineIndex ? line.entry_number : ''))
+                .filter(Boolean),
+        );
+
+        return entrybookOptions.filter(
+            (option) => option.value === currentValue || !used.has(option.value),
+        );
+    };
+
     const vehiclesHref = masterListHref('vehicles.index', isEdit, invoiceId);
     const routesHref = masterListHref('routes.index', isEdit, invoiceId);
+    const entrybooksHref = route('entrybooks.create', invoiceReturnQuery(isEdit, invoiceId));
 
     usePageHeader(
         <h2 className="text-xl font-semibold text-gray-800">
@@ -370,13 +415,10 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                             </div>
 
                             <p className="text-xs text-gray-500">
-                                Entry numbers use prefix{' '}
-                                <strong>{entrySettings.prefix}</strong> (configure in{' '}
-                                <a href={route('company.edit')} className="text-indigo-600 underline">
-                                    Company
-                                </a>
-                                ). Line date defaults to today. If a vehicle or route is not
-                                listed, choose &quot;+ Add&quot; to open its form, then return here.
+                                Select an entry number from Entrybook to auto-fill vehicle, route,
+                                date, freight, and advance on each line. If a vehicle, route, or
+                                entry is not listed, choose &quot;+ Add&quot; to open its form, then
+                                return here.
                             </p>
 
                             <div className="overflow-x-auto rounded-lg bg-white p-4 shadow">
@@ -402,13 +444,16 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                                             <tr key={i} className="border-b align-top">
                                                 <td className="p-2">{i + 1}</td>
                                                 <td className="p-2">
-                                                    <input
-                                                        className="w-full min-w-[6.5rem] rounded border-gray-300 font-mono text-xs"
+                                                    <MasterDataSelect
                                                         value={line.entry_number ?? ''}
-                                                        onChange={(e) =>
-                                                            updateLine(i, 'entry_number', e.target.value)
-                                                        }
-                                                        placeholder="R2526-1767"
+                                                        options={entryOptionsForLine(
+                                                            i,
+                                                            line.entry_number ?? '',
+                                                        )}
+                                                        emptyLabel="Select entry"
+                                                        addLabel="+ Add entry"
+                                                        addHref={entrybooksHref}
+                                                        onChange={(v) => selectEntryNumber(i, v)}
                                                     />
                                                 </td>
                                                 <td className="p-2">

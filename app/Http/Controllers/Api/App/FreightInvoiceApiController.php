@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\App;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\Customer;
+use App\Models\Entrybook;
 use App\Models\FreightInvoice;
 use App\Models\RouteLocation;
 use App\Models\Vehicle;
@@ -306,6 +307,12 @@ class FreightInvoiceApiController extends Controller
             'customers' => $this->customersForUser($request),
             'vehicles' => Vehicle::query()->forUser($userId)->orderBy('vehicle_number')->get(['id', 'vehicle_number']),
             'routeLocations' => RouteLocation::query()->forUser($userId)->orderBy('name')->get(['id', 'name']),
+            'entrybooks' => Entrybook::query()
+                ->where('user_id', $userId)
+                ->with(['vehicle:id,vehicle_number'])
+                ->orderByDesc('entry_date')
+                ->orderByDesc('id')
+                ->get(['id', 'entry_number', 'entry_date', 'vehicle_id', 'route_from', 'freight', 'advance', 'balance']),
             'entrySettings' => [
                 'prefix' => $company->entry_number_prefix,
                 'nextSequence' => $nextSequence,
@@ -349,6 +356,7 @@ class FreightInvoiceApiController extends Controller
         foreach ($lines as $index => $line) {
             $invoice->lines()->create([
                 'serial_number' => $index + 1,
+                'entrybook_id' => $line['entrybook_id'] ?? null,
                 'entry_number' => $line['entry_number'] ?? null,
                 'entry_date' => $line['entry_date'] ?? null,
                 'vehicle_number' => $line['vehicle_number'] ?? null,
@@ -380,6 +388,7 @@ class FreightInvoiceApiController extends Controller
             'prepared_by' => ['nullable', 'string', 'max:100'],
             'checked_by' => ['nullable', 'string', 'max:100'],
             'lines' => ['required', 'array', 'min:1'],
+            'lines.*.entrybook_id' => ['nullable', 'integer', 'exists:entrybooks,id'],
             'lines.*.entry_number' => ['nullable', 'string', 'max:50'],
             'lines.*.entry_date' => ['nullable', 'date'],
             'lines.*.vehicle_number' => ['nullable', 'string', 'max:20'],
@@ -402,6 +411,17 @@ class FreightInvoiceApiController extends Controller
         $customer = Customer::query()->find($validated['customer_id']);
         if (! $customer || $customer->user_id !== $request->user()->id) {
             return $this->sendJsonResponse(false, 'Invalid customer.', null, 200);
+        }
+
+        foreach ($validated['lines'] as $line) {
+            if (empty($line['entrybook_id'])) {
+                continue;
+            }
+
+            $entrybook = Entrybook::query()->find($line['entrybook_id']);
+            if (! $entrybook || $entrybook->user_id !== $request->user()->id) {
+                return $this->sendJsonResponse(false, 'Invalid entrybook entry.', null, 200);
+            }
         }
 
         return $validated;
