@@ -73,6 +73,29 @@ export interface EntrybookTotals {
     balance: number;
 }
 
+export interface VehicleExpense {
+    id: number;
+    expense_date: string;
+    vehicle_id: number;
+    freight: string | number;
+    advance: string | number;
+    empty_charge: string | number;
+    toll: string | number;
+    maintenance: string | number;
+    balance: string | number;
+    vehicle?: Pick<Vehicle, 'id' | 'vehicle_number'>;
+}
+
+export interface VehicleExpenseTotals {
+    count: number;
+    freight: number;
+    advance: number;
+    empty_charge: number;
+    toll: number;
+    maintenance: number;
+    balance: number;
+}
+
 export interface ExpenseOption {
     value: string;
     label: string;

@@ -54,4 +54,9 @@ class Vehicle extends Model
     {
         return $this->hasMany(VehicleDocument::class);
     }
+
+    public function vehicleExpenses(): HasMany
+    {
+        return $this->hasMany(VehicleExpense::class);
+    }
 }

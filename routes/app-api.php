@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\App\ProfileApiController;
 use App\Http\Controllers\Api\App\RouteLocationApiController;
 use App\Http\Controllers\Api\App\VehicleApiController;
 use App\Http\Controllers\Api\App\VehicleDocumentApiController;
+use App\Http\Controllers\Api\App\VehicleExpenseApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
@@ -62,6 +63,15 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/drivers/driver-document-store', [DriverDocumentApiController::class, 'postDriverDocumentStore']);
     Route::post('/drivers/driver-document-update', [DriverDocumentApiController::class, 'postDriverDocumentUpdate']);
     Route::post('/drivers/driver-document-destroy', [DriverDocumentApiController::class, 'postDriverDocumentDestroy']);
+
+    Route::post('/vehicle-expenses/vehicle-expenses-list', [VehicleExpenseApiController::class, 'postVehicleExpensesList']);
+    Route::post('/vehicle-expenses/vehicle-expense-meta', [VehicleExpenseApiController::class, 'postVehicleExpenseMeta']);
+    Route::post('/vehicle-expenses/vehicle-expense-show', [VehicleExpenseApiController::class, 'postVehicleExpenseShow']);
+    Route::post('/vehicle-expenses/vehicle-expense-store', [VehicleExpenseApiController::class, 'postVehicleExpenseStore']);
+    Route::post('/vehicle-expenses/vehicle-expense-update', [VehicleExpenseApiController::class, 'postVehicleExpenseUpdate']);
+    Route::post('/vehicle-expenses/vehicle-expense-destroy', [VehicleExpenseApiController::class, 'postVehicleExpenseDestroy']);
+    Route::post('/vehicle-expenses/vehicle-expenses-export-csv', [VehicleExpenseApiController::class, 'postVehicleExpensesExportCsv']);
+    Route::post('/vehicle-expenses/vehicle-expenses-export-pdf', [VehicleExpenseApiController::class, 'postVehicleExpensesExportPdf']);
 
     Route::post('/entrybooks/entrybooks-list', [EntrybookApiController::class, 'postEntrybooksList']);
     Route::post('/entrybooks/entrybooks-export-csv', [EntrybookApiController::class, 'postEntrybooksExportCsv']);

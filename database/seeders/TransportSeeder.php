@@ -12,9 +12,11 @@ use App\Models\RouteLocation;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
+use App\Models\VehicleExpense;
 use App\Support\AmountInWords;
 use App\Support\EntryNumberGenerator;
 use App\Support\FreightInvoiceCalculator;
+use App\Support\VehicleExpenseCalculator;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
 
@@ -33,9 +35,10 @@ class TransportSeeder extends Seeder
         $customers = $this->seedCustomers($userId);
         $vehicles = $this->seedVehicles($userId);
         $drivers = $this->seedDrivers($userId);
-        $routes = $this->seedRoutes($userId);
-        $invoice = $this->seedInvoice($userId, $company, $customers[0], $vehicles);
-        $this->seedEntrybooks($userId, $vehicles);
+        $this->seedRoutes($userId);
+        $entrybooks = $this->seedEntrybooks($userId, $vehicles);
+        $this->seedInvoices($userId, $company, $customers, $vehicles, $entrybooks);
+        $this->seedVehicleExpenses($userId, $vehicles);
         $this->seedVehicleDocuments($userId, $vehicles);
         $this->seedDriverDocuments($userId, $drivers);
     }
@@ -175,6 +178,16 @@ class TransportSeeder extends Seeder
                 'address' => 'Navsari, Gujarat',
                 'status' => 'active',
             ],
+            'amit-desai' => [
+                'name' => 'Amit Desai',
+                'mobile' => '9898078912',
+                'license_number' => 'GJ-05-20200098765',
+                'license_expiry' => '2029-01-10',
+                'joining_date' => '2024-06-01',
+                'salary' => 15000,
+                'address' => 'Valsad, Gujarat',
+                'status' => 'inactive',
+            ],
         ];
 
         $result = [];
@@ -195,82 +208,162 @@ class TransportSeeder extends Seeder
             'J N P T / SARIGAM / 1X20',
             'NHAVA SHEVA / VAPI',
             'MUNDRA / HAZIRA',
+            'PIPAVAV / RAJKOT',
         ];
 
         return array_map(
-            fn (string $name) => RouteLocation::query()->firstOrCreate(
+            fn (string $name) => RouteLocation::query()->updateOrCreate(
                 ['user_id' => $userId, 'name' => $name],
+                ['is_active' => true],
             ),
             $names,
         );
     }
 
-    /** @param  array<string, Vehicle>  $vehicles */
-    private function seedInvoice(int $userId, Company $company, Customer $customer, array $vehicles): FreightInvoice
-    {
-        $lines = [
+    /**
+     * @param  list<Customer>  $customers
+     * @param  array<string, Vehicle>  $vehicles
+     * @param  array<string, Entrybook>  $entrybooks
+     */
+    private function seedInvoices(
+        int $userId,
+        Company $company,
+        array $customers,
+        array $vehicles,
+        array $entrybooks,
+    ): void {
+        $invoices = [
             [
-                'entry_number' => 'R2526-1767',
-                'entry_date' => '2025-08-13',
-                'vehicle_number' => 'MH04JU9931',
-                'route_from' => 'J N P T / SARIGAM / 1X20',
-                'product_name' => 'AS PER INVOICES',
-                'weight' => 1,
-                'rate' => 24000,
-                'advance_paid' => 23800,
-                'empty_container_charge' => 2386,
+                'bill_number' => 'R2526-0608',
+                'customer_index' => 0,
+                'invoice_date' => '2025-09-08',
+                'status' => 'finalized',
+                'prepared_by' => 'Admin',
+                'checked_by' => 'Manager',
+                'lines' => [
+                    [
+                        'entrybook' => '001',
+                        'entry_date' => '2025-08-13',
+                        'vehicle_number' => 'MH04JU9931',
+                        'route_from' => 'J N P T / SARIGAM / 1X20',
+                        'product_name' => 'AS PER INVOICES',
+                        'weight' => 1,
+                        'rate' => 24000,
+                        'advance_paid' => 12000,
+                        'empty_container_charge' => 2386,
+                    ],
+                    [
+                        'entrybook' => '002',
+                        'entry_date' => '2025-08-14',
+                        'vehicle_number' => 'MH04JU9932',
+                        'route_from' => 'J N P T / SARIGAM / 1X20',
+                        'product_name' => 'AS PER INVOICES',
+                        'weight' => 1,
+                        'rate' => 24000,
+                        'advance_paid' => 15000,
+                        'empty_container_charge' => 0,
+                    ],
+                ],
             ],
             [
-                'entry_number' => 'R2526-1768',
-                'entry_date' => '2025-08-14',
-                'vehicle_number' => 'MH04JU9932',
-                'route_from' => 'J N P T / SARIGAM / 1X20',
-                'product_name' => 'AS PER INVOICES',
-                'weight' => 1,
-                'rate' => 24000,
-                'advance_paid' => 23800,
-                'empty_container_charge' => 0,
+                'bill_number' => 'R2526-0609',
+                'customer_index' => 1,
+                'invoice_date' => '2025-09-10',
+                'status' => 'draft',
+                'prepared_by' => 'Admin',
+                'checked_by' => null,
+                'lines' => [
+                    [
+                        'entrybook' => '003',
+                        'entry_date' => '2025-08-20',
+                        'vehicle_number' => 'MH04JU9931',
+                        'route_from' => 'NHAVA SHEVA / VAPI',
+                        'product_name' => 'AS PER INVOICES',
+                        'weight' => 1,
+                        'rate' => 18500,
+                        'advance_paid' => 10000,
+                        'empty_container_charge' => 1200,
+                    ],
+                ],
+            ],
+            [
+                'bill_number' => 'R2526-0610',
+                'customer_index' => 0,
+                'invoice_date' => '2025-09-15',
+                'status' => 'finalized',
+                'prepared_by' => 'Admin',
+                'checked_by' => 'Manager',
+                'lines' => [
+                    [
+                        'entrybook' => '004',
+                        'entry_date' => '2025-08-25',
+                        'vehicle_number' => 'MH04JU9932',
+                        'route_from' => 'MUNDRA / HAZIRA',
+                        'product_name' => 'AS PER INVOICES',
+                        'weight' => 1,
+                        'rate' => 22000,
+                        'advance_paid' => 11000,
+                        'empty_container_charge' => 1500,
+                    ],
+                ],
             ],
         ];
 
-        [$totals, $lineFreights] = FreightInvoiceCalculator::forPersistence($lines, 5);
+        $entryNumbersForSequence = [];
 
-        $invoice = FreightInvoice::query()->updateOrCreate(
-            ['bill_number' => 'R2526-0608'],
-            [
-                'user_id' => $userId,
-                'company_id' => $company->id,
-                'customer_id' => $customer->id,
-                'invoice_date' => '2025-09-08',
-                'sac_code' => '996791',
-                'status' => 'finalized',
-                'igst_rate' => 5,
-                ...$totals,
-                'balance_in_words' => AmountInWords::rupees($totals['balance_amount']),
-                'prepared_by' => 'Admin',
-                'checked_by' => 'Manager',
-            ],
-        );
+        foreach ($invoices as $invoiceData) {
+            [$totals, $lineFreights] = FreightInvoiceCalculator::forPersistence(
+                $invoiceData['lines'],
+                (float) $company->igst_rate,
+            );
 
-        $invoice->lines()->delete();
-        foreach ($lines as $i => $line) {
-            $invoice->lines()->create([
-                'serial_number' => $i + 1,
-                ...$line,
-                'freight' => $lineFreights[$i],
-            ]);
+            $invoice = FreightInvoice::query()->updateOrCreate(
+                ['bill_number' => $invoiceData['bill_number']],
+                [
+                    'user_id' => $userId,
+                    'company_id' => $company->id,
+                    'customer_id' => $customers[$invoiceData['customer_index']]->id,
+                    'invoice_date' => $invoiceData['invoice_date'],
+                    'sac_code' => $company->sac_code,
+                    'status' => $invoiceData['status'],
+                    'igst_rate' => $company->igst_rate,
+                    ...$totals,
+                    'balance_in_words' => AmountInWords::rupees($totals['balance_amount']),
+                    'prepared_by' => $invoiceData['prepared_by'],
+                    'checked_by' => $invoiceData['checked_by'],
+                ],
+            );
+
+            $invoice->lines()->delete();
+
+            foreach ($invoiceData['lines'] as $index => $line) {
+                $entrybook = $entrybooks[$line['entrybook']] ?? null;
+                $entryNumbersForSequence[] = $line['entrybook'];
+
+                $invoice->lines()->create([
+                    'serial_number' => $index + 1,
+                    'entrybook_id' => $entrybook?->id,
+                    'entry_number' => $line['entrybook'],
+                    'entry_date' => $line['entry_date'],
+                    'vehicle_number' => $line['vehicle_number'],
+                    'route_from' => $line['route_from'],
+                    'product_name' => $line['product_name'],
+                    'weight' => $line['weight'],
+                    'rate' => $line['rate'],
+                    'freight' => $lineFreights[$index],
+                    'advance_paid' => $line['advance_paid'],
+                    'empty_container_charge' => $line['empty_container_charge'],
+                ]);
+            }
         }
 
-        EntryNumberGenerator::syncCompanySequence(
-            $company->fresh(),
-            collect($lines)->pluck('entry_number')->all(),
-        );
-
-        return $invoice;
+        EntryNumberGenerator::syncCompanySequence($company->fresh(), $entryNumbersForSequence);
     }
 
-    /** @param  array<string, Vehicle>  $vehicles */
-    private function seedEntrybooks(int $userId, array $vehicles): void
+    /** @param  array<string, Vehicle>  $vehicles
+     * @return array<string, Entrybook>
+     */
+    private function seedEntrybooks(int $userId, array $vehicles): array
     {
         $entries = [
             [
@@ -297,13 +390,23 @@ class TransportSeeder extends Seeder
                 'freight' => 18500,
                 'advance' => 10000,
             ],
+            [
+                'entry_number' => '004',
+                'entry_date' => '2025-08-25',
+                'vehicle_number' => 'MH04JU9932',
+                'route_from' => 'MUNDRA / HAZIRA',
+                'freight' => 22000,
+                'advance' => 11000,
+            ],
         ];
+
+        $result = [];
 
         foreach ($entries as $row) {
             $freight = (float) $row['freight'];
             $advance = (float) $row['advance'];
 
-            Entrybook::query()->updateOrCreate(
+            $result[$row['entry_number']] = Entrybook::query()->updateOrCreate(
                 [
                     'user_id' => $userId,
                     'entry_number' => $row['entry_number'],
@@ -318,100 +421,215 @@ class TransportSeeder extends Seeder
                 ],
             );
         }
+
+        return $result;
+    }
+
+    /** @param  array<string, Vehicle>  $vehicles */
+    private function seedVehicleExpenses(int $userId, array $vehicles): void
+    {
+        $rows = [
+            [
+                'expense_date' => '2025-08-13',
+                'vehicle_number' => 'MH04JU9931',
+                'freight' => 24000,
+                'advance' => 12000,
+                'empty_charge' => 2386,
+                'toll' => 850,
+                'maintenance' => 500,
+            ],
+            [
+                'expense_date' => '2025-08-14',
+                'vehicle_number' => 'MH04JU9932',
+                'freight' => 24000,
+                'advance' => 15000,
+                'empty_charge' => 0,
+                'toll' => 650,
+                'maintenance' => 300,
+            ],
+            [
+                'expense_date' => '2025-08-20',
+                'vehicle_number' => 'MH04JU9931',
+                'freight' => 18500,
+                'advance' => 10000,
+                'empty_charge' => 1200,
+                'toll' => 720,
+                'maintenance' => 450,
+            ],
+            [
+                'expense_date' => '2025-08-25',
+                'vehicle_number' => 'MH04JU9932',
+                'freight' => 22000,
+                'advance' => 11000,
+                'empty_charge' => 1500,
+                'toll' => 900,
+                'maintenance' => 600,
+            ],
+        ];
+
+        foreach ($rows as $row) {
+            $freight = (float) $row['freight'];
+            $advance = (float) $row['advance'];
+            $emptyCharge = (float) $row['empty_charge'];
+            $toll = (float) $row['toll'];
+            $maintenance = (float) $row['maintenance'];
+
+            VehicleExpense::query()->updateOrCreate(
+                [
+                    'user_id' => $userId,
+                    'expense_date' => $row['expense_date'],
+                    'vehicle_id' => $vehicles[$row['vehicle_number']]->id,
+                ],
+                [
+                    'freight' => $freight,
+                    'advance' => $advance,
+                    'empty_charge' => $emptyCharge,
+                    'toll' => $toll,
+                    'maintenance' => $maintenance,
+                    'balance' => VehicleExpenseCalculator::balance(
+                        $freight,
+                        $advance,
+                        $emptyCharge,
+                        $toll,
+                        $maintenance,
+                    ),
+                ],
+            );
+        }
     }
 
     /** @param  array<string, Vehicle>  $vehicles */
     private function seedVehicleDocuments(int $userId, array $vehicles): void
     {
-        $vehicle = $vehicles['MH04JU9931'];
-
-        $documents = [
-            [
-                'document_type' => 'insurance',
-                'title' => 'Insurance policy 2026',
-                'filename' => 'insurance-policy.pdf',
-                'expiry_date' => '2026-08-31',
-                'notes' => 'Comprehensive cover',
+        $sets = [
+            'MH04JU9931' => [
+                [
+                    'document_type' => 'insurance',
+                    'title' => 'Insurance policy 2026',
+                    'filename' => 'insurance-policy.pdf',
+                    'expiry_date' => '2026-08-31',
+                    'notes' => 'Comprehensive cover',
+                ],
+                [
+                    'document_type' => 'permit',
+                    'title' => 'National permit',
+                    'filename' => 'national-permit.pdf',
+                    'expiry_date' => '2026-06-30',
+                    'notes' => null,
+                ],
+                [
+                    'document_type' => 'fitness',
+                    'title' => 'Fitness certificate',
+                    'filename' => 'fitness-cert.pdf',
+                    'expiry_date' => '2026-07-20',
+                    'notes' => null,
+                ],
             ],
-            [
-                'document_type' => 'permit',
-                'title' => 'National permit',
-                'filename' => 'national-permit.pdf',
-                'expiry_date' => '2026-06-30',
-                'notes' => null,
-            ],
-            [
-                'document_type' => 'fitness',
-                'title' => 'Fitness certificate',
-                'filename' => 'fitness-cert.pdf',
-                'expiry_date' => '2026-07-20',
-                'notes' => null,
+            'MH04JU9932' => [
+                [
+                    'document_type' => 'insurance',
+                    'title' => 'Insurance policy 2026',
+                    'filename' => 'insurance-policy.pdf',
+                    'expiry_date' => '2026-09-15',
+                    'notes' => null,
+                ],
+                [
+                    'document_type' => 'pollution',
+                    'title' => 'PUC certificate',
+                    'filename' => 'puc-certificate.pdf',
+                    'expiry_date' => '2026-06-01',
+                    'notes' => null,
+                ],
             ],
         ];
 
-        foreach ($documents as $doc) {
-            $filePath = $this->seedDocumentFile(
-                "vehicles/{$userId}/{$vehicle->id}",
-                $doc['filename'],
-            );
+        foreach ($sets as $vehicleNumber => $documents) {
+            $vehicle = $vehicles[$vehicleNumber];
 
-            VehicleDocument::query()->updateOrCreate(
-                [
-                    'vehicle_id' => $vehicle->id,
-                    'document_type' => $doc['document_type'],
-                    'title' => $doc['title'],
-                ],
-                [
-                    'user_id' => $userId,
-                    'file_path' => $filePath,
-                    'expiry_date' => $doc['expiry_date'],
-                    'notes' => $doc['notes'],
-                ],
-            );
+            foreach ($documents as $doc) {
+                $filePath = $this->seedDocumentFile(
+                    "vehicles/{$userId}/{$vehicle->id}",
+                    $doc['filename'],
+                );
+
+                VehicleDocument::query()->updateOrCreate(
+                    [
+                        'vehicle_id' => $vehicle->id,
+                        'document_type' => $doc['document_type'],
+                        'title' => $doc['title'],
+                    ],
+                    [
+                        'user_id' => $userId,
+                        'file_path' => $filePath,
+                        'expiry_date' => $doc['expiry_date'],
+                        'notes' => $doc['notes'],
+                    ],
+                );
+            }
         }
     }
 
     /** @param  array<string, Driver>  $drivers */
     private function seedDriverDocuments(int $userId, array $drivers): void
     {
-        $driver = $drivers['rajesh-patel'];
-
-        $documents = [
-            [
-                'document_type' => 'license',
-                'title' => 'Driving license',
-                'filename' => 'driving-license.pdf',
-                'expiry_date' => '2028-03-15',
-                'notes' => null,
+        $sets = [
+            'rajesh-patel' => [
+                [
+                    'document_type' => 'license',
+                    'title' => 'Driving license',
+                    'filename' => 'driving-license.pdf',
+                    'expiry_date' => '2028-03-15',
+                    'notes' => null,
+                ],
+                [
+                    'document_type' => 'aadhaar',
+                    'title' => 'Aadhaar card',
+                    'filename' => 'aadhaar.pdf',
+                    'expiry_date' => null,
+                    'notes' => null,
+                ],
             ],
-            [
-                'document_type' => 'aadhaar',
-                'title' => 'Aadhaar card',
-                'filename' => 'aadhaar.pdf',
-                'expiry_date' => null,
-                'notes' => null,
+            'suresh-sharma' => [
+                [
+                    'document_type' => 'license',
+                    'title' => 'Driving license',
+                    'filename' => 'driving-license.pdf',
+                    'expiry_date' => '2027-11-20',
+                    'notes' => null,
+                ],
+                [
+                    'document_type' => 'pan',
+                    'title' => 'PAN card',
+                    'filename' => 'pan-card.pdf',
+                    'expiry_date' => null,
+                    'notes' => null,
+                ],
             ],
         ];
 
-        foreach ($documents as $doc) {
-            $filePath = $this->seedDocumentFile(
-                "drivers/{$userId}/{$driver->id}",
-                $doc['filename'],
-            );
+        foreach ($sets as $driverKey => $documents) {
+            $driver = $drivers[$driverKey];
 
-            DriverDocument::query()->updateOrCreate(
-                [
-                    'driver_id' => $driver->id,
-                    'document_type' => $doc['document_type'],
-                    'title' => $doc['title'],
-                ],
-                [
-                    'user_id' => $userId,
-                    'file_path' => $filePath,
-                    'expiry_date' => $doc['expiry_date'],
-                    'notes' => $doc['notes'],
-                ],
-            );
+            foreach ($documents as $doc) {
+                $filePath = $this->seedDocumentFile(
+                    "drivers/{$userId}/{$driver->id}",
+                    $doc['filename'],
+                );
+
+                DriverDocument::query()->updateOrCreate(
+                    [
+                        'driver_id' => $driver->id,
+                        'document_type' => $doc['document_type'],
+                        'title' => $doc['title'],
+                    ],
+                    [
+                        'user_id' => $userId,
+                        'file_path' => $filePath,
+                        'expiry_date' => $doc['expiry_date'],
+                        'notes' => $doc['notes'],
+                    ],
+                );
+            }
         }
     }
 
