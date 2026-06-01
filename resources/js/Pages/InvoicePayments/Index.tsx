@@ -1,6 +1,7 @@
 import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
+import PartyLink from '@/Components/PartyLink';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
@@ -177,7 +178,9 @@ export default function InvoicePaymentsIndex() {
                                 <tbody className="divide-y divide-gray-200">
                                     {partyOutstanding.map((row) => (
                                         <tr key={row.party_id} className="hover:bg-gray-50">
-                                            <td className="px-4 py-3 font-medium">{row.party_name}</td>
+                                            <td className="px-4 py-3 font-medium">
+                                                <PartyLink partyId={row.party_id} name={row.party_name} />
+                                            </td>
                                             <td className="px-4 py-3 text-right">{row.invoice_count}</td>
                                             <td className="px-4 py-3 text-right">
                                                 ₹ {formatMoney(row.balance_due)}
@@ -205,7 +208,7 @@ export default function InvoicePaymentsIndex() {
                                                 </button>
                                                 <span className="mx-2 text-gray-300">|</span>
                                                 <Link
-                                                    href={route('parties.payments', row.party_id)}
+                                                    href={route('parties.overview', row.party_id)}
                                                     className="text-indigo-600 hover:underline"
                                                 >
                                                     Manage
@@ -281,7 +284,10 @@ export default function InvoicePaymentsIndex() {
                                             <tr key={row.id} className="hover:bg-gray-50">
                                                 <td className="px-4 py-3">{formatAppDateTime(row.payment_date)}</td>
                                                 <td className="px-4 py-3 font-medium">
-                                                    {row.party?.name ?? '—'}
+                                                    <PartyLink
+                                                        partyId={row.party_id}
+                                                        name={row.party?.name}
+                                                    />
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     {row.freight_invoice ? (

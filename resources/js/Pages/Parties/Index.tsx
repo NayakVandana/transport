@@ -1,6 +1,7 @@
 import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
+import PartyLink from '@/Components/PartyLink';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
@@ -156,12 +157,7 @@ export default function PartiesIndex() {
                                         parties.map((party) => (
                                             <tr key={party.id} className="hover:bg-gray-50">
                                                 <td className="px-3 py-2 sm:px-6 sm:py-3 font-medium">
-                                                    <Link
-                                                        href={route('parties.overview', party.id)}
-                                                        className="text-indigo-600 hover:underline"
-                                                    >
-                                                        {party.name}
-                                                    </Link>
+                                                    <PartyLink partyId={party.id} name={party.name} />
                                                 </td>
                                                 <td className="px-3 py-2 sm:px-6 sm:py-3">{party.mobile ?? '—'}</td>
                                                 <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">

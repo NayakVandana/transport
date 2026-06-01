@@ -3,6 +3,7 @@ import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import InvoicePaymentStatusBadge, {
     invoicePaymentStatusFromAmounts,
 } from '@/Components/InvoicePaymentStatusBadge';
+import PartyLink from '@/Components/PartyLink';
 import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
 import { useAppQuery } from '@/hooks/useAppQuery';
@@ -129,7 +130,7 @@ export default function Dashboard() {
                                                         </Link>
                                                     </td>
                                                     <td className="px-3 py-2 sm:px-6 sm:py-3">
-                                                        {inv.party?.name}
+                                                        <PartyLink partyId={inv.party_id} name={inv.party?.name} />
                                                     </td>
                                                     <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(inv.invoice_date)}</td>
                                                     <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">

@@ -6,6 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import InvoicePaymentStatusBadge, {
     invoicePaymentStatusFromAmounts,
 } from '@/Components/InvoicePaymentStatusBadge';
+import PartyLink from '@/Components/PartyLink';
 import RecordPaymentForm from '@/Components/RecordPaymentForm';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
@@ -213,7 +214,9 @@ export default function InvoicesIndex() {
                                                         {inv.bill_number}
                                                     </Link>
                                                 </td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{inv.party?.name}</td>
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3">
+                                                    <PartyLink partyId={inv.party_id} name={inv.party?.name} />
+                                                </td>
                                                 <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(inv.invoice_date)}</td>
                                                 <td className="px-3 py-2 sm:px-6 sm:py-3">
                                                     <InvoicePaymentStatusBadge

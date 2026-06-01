@@ -1,6 +1,7 @@
 import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
+import PartyLink from '@/Components/PartyLink';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
@@ -234,7 +235,12 @@ export default function EntrybooksIndex() {
                                                     <td className="px-4 py-3">
                                                         {formatAppDateTime(entry.entry_date)}
                                                     </td>
-                                                    <td className="px-4 py-3">{entry.party?.name ?? '—'}</td>
+                                                    <td className="px-4 py-3">
+                                                        <PartyLink
+                                                            partyId={entry.party_id ?? entry.party?.id}
+                                                            name={entry.party?.name}
+                                                        />
+                                                    </td>
                                                     <td className="px-4 py-3 font-mono">
                                                         {entry.vehicle?.vehicle_number ?? '—'}
                                                     </td>
