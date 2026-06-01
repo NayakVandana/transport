@@ -14,7 +14,6 @@ import type {
     InvoicePayment,
     InvoicePaymentTotals,
     Party,
-    PartyOutstanding,
 } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
@@ -26,7 +25,6 @@ type InvoicePaymentFilters = ListFilters & {
 type InvoicePaymentsListData = {
     invoicePayments: { data: InvoicePayment[] };
     parties: Pick<Party, 'id' | 'name'>[];
-    partyOutstanding: PartyOutstanding[];
     filters: InvoicePaymentFilters;
     totals: InvoicePaymentTotals;
     filterSummary: string;
@@ -100,7 +98,6 @@ export default function InvoicePaymentsIndex() {
 
     const rows = data?.invoicePayments.data ?? [];
     const totals = data?.totals ?? emptyTotals;
-    const partyOutstanding = data?.partyOutstanding ?? [];
     const totalOutstanding = data?.totalOutstanding ?? 0;
 
     const destroy = async (id: number) => {
@@ -131,11 +128,6 @@ export default function InvoicePaymentsIndex() {
         }
     };
 
-    const filterByParty = (partyId: number) => {
-        setSearchInput('');
-        updateField('party_id', String(partyId));
-    };
-
     return (
         <>
             <Head title="Received Payments" />
@@ -158,68 +150,6 @@ export default function InvoicePaymentsIndex() {
                             value={`₹ ${formatMoney(totals.amount)}`}
                         />
                     </div>
-
-                    {partyOutstanding.length > 0 && (
-                        <div className="overflow-x-auto rounded-lg bg-white shadow">
-                            <div className="border-b px-4 py-3">
-                                <h3 className="font-semibold text-gray-800">Party-wise Outstanding</h3>
-                            </div>
-                            <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Party</th>
-                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Invoices</th>
-                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Balance Due</th>
-                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Received</th>
-                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Outstanding</th>
-                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {partyOutstanding.map((row) => (
-                                        <tr key={row.party_id} className="hover:bg-gray-50">
-                                            <td className="px-4 py-3 font-medium">
-                                                <PartyLink partyId={row.party_id} name={row.party_name} />
-                                            </td>
-                                            <td className="px-4 py-3 text-right">{row.invoice_count}</td>
-                                            <td className="px-4 py-3 text-right">
-                                                ₹ {formatMoney(row.balance_due)}
-                                            </td>
-                                            <td className="px-4 py-3 text-right text-green-700">
-                                                ₹ {formatMoney(row.received)}
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-semibold text-indigo-700">
-                                                ₹ {formatMoney(row.outstanding)}
-                                            </td>
-                                            <td className="px-4 py-3 text-right">
-                                                <Link
-                                                    href={`${route('invoice-payments.create')}?party=${row.party_id}`}
-                                                    className="text-indigo-600 hover:underline"
-                                                >
-                                                    Record payment
-                                                </Link>
-                                                <span className="mx-2 text-gray-300">|</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => filterByParty(row.party_id)}
-                                                    className="text-indigo-600 hover:underline"
-                                                >
-                                                    View payments
-                                                </button>
-                                                <span className="mx-2 text-gray-300">|</span>
-                                                <Link
-                                                    href={route('parties.overview', row.party_id)}
-                                                    className="text-indigo-600 hover:underline"
-                                                >
-                                                    Manage
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
 
                     <ListFilterBar
                         dateValue={dateValue}
