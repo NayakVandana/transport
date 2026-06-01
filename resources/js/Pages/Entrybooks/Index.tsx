@@ -7,12 +7,13 @@ import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import { formatMoney } from '@/lib/freightCalculator';
-import type { Entrybook, EntrybookTotals, RouteLocation, Vehicle } from '@/types/transport';
+import type { Entrybook, EntrybookTotals, Party, RouteLocation, Vehicle } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 
 type EntrybookFilters = ListFilters & {
     vehicle_id?: string;
+    party_id?: string;
     route_from?: string;
 };
 
@@ -20,6 +21,7 @@ type EntrybooksListData = {
     entrybooks: { data: Entrybook[] };
     vehicles: Pick<Vehicle, 'id' | 'vehicle_number'>[];
     routes: Pick<RouteLocation, 'id' | 'name'>[];
+    parties: Pick<Party, 'id' | 'name'>[];
     filters: EntrybookFilters;
     totals: EntrybookTotals;
     filterSummary: string;
@@ -28,6 +30,7 @@ type EntrybooksListData = {
 const defaultFilters: EntrybookFilters = {
     search: '',
     vehicle_id: '',
+    party_id: '',
     route_from: '',
     ...defaultDateFilters,
 };
@@ -69,7 +72,7 @@ export default function EntrybooksIndex() {
         fetchList,
     } = useFilteredList<EntrybooksListData, EntrybookFilters>({
         defaultFilters,
-        extraFilterKeys: ['vehicle_id', 'route_from'],
+        extraFilterKeys: ['vehicle_id', 'party_id', 'route_from'],
         load: async (activeFilters) => {
             const res = await appApiPost<ApiEnvelope<EntrybooksListData>>(
                 '/entrybooks/entrybooks-list',
@@ -132,7 +135,7 @@ export default function EntrybooksIndex() {
                         onDateChange={applyDateChange}
                         search={{
                             value: searchInput,
-                            placeholder: 'Search entry no. or route…',
+                            placeholder: 'Search entry no., party or route…',
                             onChange: setSearchInput,
                             onSubmit: () => applySearch(searchInput),
                         }}
@@ -146,6 +149,17 @@ export default function EntrybooksIndex() {
                                     label: v.vehicle_number,
                                 })),
                                 onChange: (value) => updateField('vehicle_id', value),
+                            },
+                            {
+                                name: 'party_id',
+                                label: 'Party',
+                                value: filters.party_id ?? '',
+                                widthClass: 'w-[10rem]',
+                                options: (data?.parties ?? []).map((p) => ({
+                                    value: String(p.id),
+                                    label: p.name,
+                                })),
+                                onChange: (value) => updateField('party_id', value),
                             },
                             {
                                 name: 'route_from',
@@ -191,6 +205,7 @@ export default function EntrybooksIndex() {
                                                 Entry No.
                                             </th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-500">Party</th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-500">Vehicle</th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-500">From</th>
                                             <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
@@ -202,7 +217,7 @@ export default function EntrybooksIndex() {
                                     <tbody className="divide-y divide-gray-200">
                                         {entries.length === 0 ? (
                                             <tr>
-                                                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                                                <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
                                                     {hasActiveFilters
                                                         ? 'No entries match your filters.'
                                                         : 'No entries yet.'}
@@ -217,6 +232,7 @@ export default function EntrybooksIndex() {
                                                     <td className="px-4 py-3">
                                                         {entry.entry_date?.slice(0, 10)}
                                                     </td>
+                                                    <td className="px-4 py-3">{entry.party?.name ?? '—'}</td>
                                                     <td className="px-4 py-3 font-mono">
                                                         {entry.vehicle?.vehicle_number ?? '—'}
                                                     </td>

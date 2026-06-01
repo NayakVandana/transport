@@ -30,4 +30,9 @@ class Party extends Model
     {
         return $this->hasMany(InvoicePayment::class);
     }
+
+    public function entrybooks(): HasMany
+    {
+        return $this->hasMany(Entrybook::class);
+    }
 }

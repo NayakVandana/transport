@@ -1,6 +1,7 @@
 export type EntrybookFormData = {
     entry_date: string;
     vehicle_id: string;
+    party_id: string;
     route_from: string;
     freight: string;
     advance: string;
@@ -20,6 +21,9 @@ const DEFAULT_MESSAGES: EntrybookValidationMessages = {
     },
     vehicle_id: {
         required: 'Please select a vehicle.',
+    },
+    party_id: {
+        required: 'Please select a party.',
     },
     freight: {
         required: 'Please enter the freight amount.',
@@ -66,6 +70,15 @@ export function validateEntrybookForm(
             'vehicle_id',
             'required',
             'Please select a vehicle.',
+        );
+    }
+
+    if (!data.party_id) {
+        errors.party_id = messageFor(
+            customMessages,
+            'party_id',
+            'required',
+            'Please select a party.',
         );
     }
 

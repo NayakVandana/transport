@@ -5,6 +5,7 @@ return [
         'entry_number' => 'Entry No.',
         'entry_date' => 'Date',
         'vehicle_id' => 'Vehicle',
+        'party_id' => 'Party',
         'route_from' => 'From',
         'freight' => 'Freight',
         'advance' => 'Advance',
@@ -23,6 +24,10 @@ return [
         'vehicle_id' => [
             'required' => 'Please select a vehicle.',
             'exists' => 'The selected vehicle is not valid.',
+        ],
+        'party_id' => [
+            'required' => 'Please select a party.',
+            'exists' => 'The selected party is not valid.',
         ],
         'route_from' => [
             'max' => 'From route is too long.',

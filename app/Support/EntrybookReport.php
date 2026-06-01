@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Entrybook;
+use App\Models\Party;
 use App\Models\RouteLocation;
 use App\Models\Vehicle;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,6 +12,15 @@ use Illuminate\Support\Collection;
 
 class EntrybookReport
 {
+    /** @return Collection<int, Party> */
+    public static function partiesForUser(int $userId): Collection
+    {
+        return Party::query()
+            ->where('user_id', $userId)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+    }
+
     /** @return Collection<int, Vehicle> */
     public static function vehiclesForUser(int $userId): Collection
     {
@@ -36,6 +46,7 @@ class EntrybookReport
         $dateFilters = ListFilter::dateFromRequest($request);
         $search = ListFilter::searchFromRequest($request);
         $vehicleId = ListFilter::optionalIdFromRequest($request, 'vehicle_id');
+        $partyId = ListFilter::optionalIdFromRequest($request, 'party_id');
 
         if ($vehicleId !== '') {
             $ownsVehicle = Vehicle::query()
@@ -44,6 +55,16 @@ class EntrybookReport
                 ->exists();
             if (! $ownsVehicle) {
                 $vehicleId = '';
+            }
+        }
+
+        if ($partyId !== '') {
+            $ownsParty = Party::query()
+                ->where('user_id', $userId)
+                ->whereKey($partyId)
+                ->exists();
+            if (! $ownsParty) {
+                $partyId = '';
             }
         }
 
@@ -62,6 +83,7 @@ class EntrybookReport
         return [
             'search' => $search,
             'vehicle_id' => $vehicleId,
+            'party_id' => $partyId,
             'route_from' => $routeFrom,
             ...$dateFilters,
         ];
@@ -71,14 +93,30 @@ class EntrybookReport
     public static function filteredQuery(int $userId, array $filters): Builder
     {
         $query = Entrybook::query()
-            ->with(['vehicle:id,vehicle_number'])
+            ->with([
+                'vehicle:id,vehicle_number',
+                'party:id,name',
+            ])
             ->where('user_id', $userId);
 
         ListFilter::applyDate($query, $filters, 'entry_date');
-        ListFilter::applySearch($query, $filters['search'] ?? '', ['entry_number', 'route_from']);
+
+        $search = $filters['search'] ?? '';
+        if ($search !== '') {
+            $query->where(function (Builder $builder) use ($search) {
+                $builder
+                    ->where('entry_number', 'like', "%{$search}%")
+                    ->orWhere('route_from', 'like', "%{$search}%")
+                    ->orWhereHas('party', fn (Builder $q) => $q->where('name', 'like', "%{$search}%"));
+            });
+        }
 
         if (($filters['vehicle_id'] ?? '') !== '') {
             $query->where('vehicle_id', $filters['vehicle_id']);
+        }
+
+        if (($filters['party_id'] ?? '') !== '') {
+            $query->where('party_id', $filters['party_id']);
         }
 
         if (($filters['route_from'] ?? '') !== '') {
@@ -89,10 +127,14 @@ class EntrybookReport
     }
 
     /** @param  array<string, string>  $filters */
-    public static function filterSummary(array $filters, Collection $vehicles, Collection $routes): string
+    public static function filterSummary(array $filters, Collection $vehicles, Collection $routes, Collection $parties): string
     {
         $vehicleLabel = ($filters['vehicle_id'] ?? '') !== ''
             ? 'Vehicle: '.($vehicles->firstWhere('id', (int) $filters['vehicle_id'])?->vehicle_number ?? 'All')
+            : null;
+
+        $partyLabel = ($filters['party_id'] ?? '') !== ''
+            ? 'Party: '.($parties->firstWhere('id', (int) $filters['party_id'])?->name ?? 'All')
             : null;
 
         $routeLabel = ($filters['route_from'] ?? '') !== ''
@@ -102,6 +144,7 @@ class EntrybookReport
         return ListFilter::summary([
             ($filters['search'] ?? '') !== '' ? 'Search: '.$filters['search'] : null,
             $vehicleLabel,
+            $partyLabel,
             $routeLabel,
             ListFilter::dateSummary($filters),
         ], 'All entries');

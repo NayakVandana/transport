@@ -316,10 +316,10 @@ class FreightInvoiceApiController extends Controller
             'routeLocations' => RouteLocation::query()->forUser($userId)->orderBy('name')->get(['id', 'name']),
             'entrybooks' => Entrybook::query()
                 ->where('user_id', $userId)
-                ->with(['vehicle:id,vehicle_number'])
+                ->with(['vehicle:id,vehicle_number', 'party:id,name'])
                 ->orderByDesc('entry_date')
                 ->orderByDesc('id')
-                ->get(['id', 'entry_number', 'entry_date', 'vehicle_id', 'route_from', 'freight', 'advance', 'balance']),
+                ->get(['id', 'entry_number', 'entry_date', 'vehicle_id', 'party_id', 'route_from', 'freight', 'advance', 'balance']),
             'entrySettings' => [
                 'prefix' => $company->entry_number_prefix,
                 'nextSequence' => $nextSequence,
@@ -428,6 +428,15 @@ class FreightInvoiceApiController extends Controller
             $entrybook = Entrybook::query()->find($line['entrybook_id']);
             if (! $entrybook || $entrybook->user_id !== $request->user()->id) {
                 return $this->sendJsonResponse(false, 'Invalid entrybook entry.', null, 200);
+            }
+
+            if ((int) $entrybook->party_id !== (int) $validated['party_id']) {
+                return $this->sendJsonResponse(
+                    false,
+                    'Entry '.$entrybook->entry_number.' does not belong to the selected party.',
+                    null,
+                    200,
+                );
             }
         }
 

@@ -16,6 +16,7 @@ class Entrybook extends Model
         'entry_number',
         'entry_date',
         'vehicle_id',
+        'party_id',
         'route_from',
         'freight',
         'advance',
@@ -40,6 +41,11 @@ class Entrybook extends Model
     public function vehicle(): BelongsTo
     {
         return $this->belongsTo(Vehicle::class);
+    }
+
+    public function party(): BelongsTo
+    {
+        return $this->belongsTo(Party::class);
     }
 
     public function freightInvoiceLines(): HasMany

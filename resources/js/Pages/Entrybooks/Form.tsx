@@ -12,7 +12,7 @@ import {
 } from '@/lib/entrybookValidation';
 import { calculateEntrybookBalance, formatMoney } from '@/lib/freightCalculator';
 import { masterListHref } from '@/lib/invoiceReturn';
-import type { Entrybook, RouteLocation, Vehicle } from '@/types/transport';
+import type { Entrybook, Party, RouteLocation, Vehicle } from '@/types/transport';
 import { Head, Link, router } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 
@@ -24,12 +24,14 @@ type EntrybookShowData = {
     entrybook: Entrybook;
     vehicles: Pick<Vehicle, 'id' | 'vehicle_number'>[];
     routes: Pick<RouteLocation, 'id' | 'name'>[];
+    parties: Pick<Party, 'id' | 'name'>[];
     validationMessages: EntrybookValidationMessages;
 };
 
 type EntrybookMetaData = {
     vehicles: Pick<Vehicle, 'id' | 'vehicle_number'>[];
     routes: Pick<RouteLocation, 'id' | 'name'>[];
+    parties: Pick<Party, 'id' | 'name'>[];
     validationMessages: EntrybookValidationMessages;
     nextEntryNumber: string;
 };
@@ -62,6 +64,7 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
 
     const [vehicles, setVehicles] = useState<Pick<Vehicle, 'id' | 'vehicle_number'>[]>([]);
     const [routes, setRoutes] = useState<Pick<RouteLocation, 'id' | 'name'>[]>([]);
+    const [parties, setParties] = useState<Pick<Party, 'id' | 'name'>[]>([]);
     const [validationMessages, setValidationMessages] = useState<EntrybookValidationMessages>({});
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
@@ -71,6 +74,7 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
     const [data, setData] = useState<EntrybookFormData>({
         entry_date: new Date().toISOString().slice(0, 10),
         vehicle_id: '',
+        party_id: '',
         route_from: '',
         freight: '',
         advance: '0',
@@ -96,11 +100,13 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                     const entry = res.data.entrybook;
                     setVehicles(res.data.vehicles);
                     setRoutes(res.data.routes);
+                    setParties(res.data.parties);
                     setValidationMessages(res.data.validationMessages);
                     setEntryNumber(entry.entry_number);
                     setData({
                         entry_date: dateInputValue(entry.entry_date),
                         vehicle_id: entry.vehicle_id ? String(entry.vehicle_id) : '',
+                        party_id: entry.party_id ? String(entry.party_id) : '',
                         route_from: entry.route_from ?? '',
                         freight: entry.freight != null ? String(entry.freight) : '',
                         advance: entry.advance != null ? String(entry.advance) : '0',
@@ -118,6 +124,7 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
 
                     setVehicles(res.data.vehicles);
                     setRoutes(res.data.routes);
+                    setParties(res.data.parties);
                     setValidationMessages(res.data.validationMessages);
                     setEntryNumber(res.data.nextEntryNumber);
                 }
@@ -168,6 +175,7 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
             const payload = {
                 ...data,
                 vehicle_id: Number(data.vehicle_id),
+                party_id: Number(data.party_id),
                 freight: Number(data.freight),
                 advance: Number(data.advance),
                 route_from: data.route_from || null,
@@ -267,6 +275,24 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                                 ))}
                             </select>
                             <InputError message={errors.vehicle_id} className="mt-1" />
+                        </div>
+
+                        <div>
+                            <InputLabel value="Party" />
+                            <select
+                                className={inputClass('party_id')}
+                                value={data.party_id}
+                                onChange={(e) => setField('party_id', e.target.value)}
+                                required
+                            >
+                                <option value="">Select party</option>
+                                {parties.map((party) => (
+                                    <option key={party.id} value={party.id}>
+                                        {party.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <InputError message={errors.party_id} className="mt-1" />
                         </div>
 
                         <div>

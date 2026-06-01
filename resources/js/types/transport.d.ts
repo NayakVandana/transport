@@ -59,11 +59,13 @@ export interface Entrybook {
     entry_number: string;
     entry_date: string;
     vehicle_id: number;
+    party_id?: number | null;
     route_from?: string | null;
     freight: string | number;
     advance: string | number;
     balance: string | number;
     vehicle?: Pick<Vehicle, 'id' | 'vehicle_number'>;
+    party?: Pick<Party, 'id' | 'name'>;
 }
 
 export interface EntrybookTotals {
@@ -125,6 +127,7 @@ export interface Party {
 
 export interface PartyOverview {
     invoice_count: number;
+    entry_count?: number;
     balance_due: number;
     received: number;
     outstanding: number;
@@ -142,6 +145,17 @@ export interface PartyInvoiceRow {
     received: number;
     outstanding: number;
     payment_status: InvoicePaymentStatus;
+}
+
+export interface PartyEntrybookRow {
+    id: number;
+    entry_number: string;
+    entry_date: string;
+    vehicle_number: string;
+    route_from: string;
+    freight: number;
+    advance: number;
+    balance: number;
 }
 
 export interface PartyPaymentRow {
@@ -171,6 +185,7 @@ export interface PartyAccountData {
     party: Party;
     overview: PartyOverview;
     invoices: PartyInvoiceRow[];
+    entrybooks: PartyEntrybookRow[];
     payments: PartyPaymentRow[];
     ledger: PartyLedgerEntry[];
     filters: { date_from?: string; date_to?: string };

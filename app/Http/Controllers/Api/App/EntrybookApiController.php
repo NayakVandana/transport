@@ -25,6 +25,7 @@ class EntrybookApiController extends Controller
             $filters = EntrybookReport::filtersFromRequest($request, $userId);
             $vehicles = EntrybookReport::vehiclesForUser($userId);
             $routes = EntrybookReport::routesForUser($userId);
+            $parties = EntrybookReport::partiesForUser($userId);
             $query = EntrybookReport::filteredQuery($userId, $filters);
             $perPage = (int) ($request->input('per_page') ?: 20);
             $currentPage = (int) ($request->input('current_page') ?: 1);
@@ -35,9 +36,10 @@ class EntrybookApiController extends Controller
                 'entrybooks' => $paginator,
                 'vehicles' => $vehicles,
                 'routes' => $routes,
+                'parties' => $parties,
                 'filters' => $filters,
                 'totals' => EntrybookReport::totals($query),
-                'filterSummary' => EntrybookReport::filterSummary($filters, $vehicles, $routes),
+                'filterSummary' => EntrybookReport::filterSummary($filters, $vehicles, $routes, $parties),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -53,6 +55,7 @@ class EntrybookApiController extends Controller
             return $this->sendJsonResponse(true, 'Entrybook form data loaded.', [
                 'vehicles' => EntrybookReport::vehiclesForUser($userId),
                 'routes' => EntrybookReport::routesForUser($userId),
+                'parties' => EntrybookReport::partiesForUser($userId),
                 'validationMessages' => EntrybookValidation::forFrontend(),
                 'nextEntryNumber' => EntryNumberGenerator::formatEntrybookNumber($nextSequence),
             ], 200);
@@ -74,7 +77,7 @@ class EntrybookApiController extends Controller
 
             $userId = (int) $request->user()->id;
             $entrybook = Entrybook::query()
-                ->with(['vehicle:id,vehicle_number'])
+                ->with(['vehicle:id,vehicle_number', 'party:id,name'])
                 ->where('user_id', $userId)
                 ->findOrFail($request->input('id'));
 
@@ -82,6 +85,7 @@ class EntrybookApiController extends Controller
                 'entrybook' => $entrybook,
                 'vehicles' => EntrybookReport::vehiclesForUser($userId),
                 'routes' => EntrybookReport::routesForUser($userId),
+                'parties' => EntrybookReport::partiesForUser($userId),
                 'validationMessages' => EntrybookValidation::forFrontend(),
             ], 200);
         } catch (Exception $e) {
@@ -103,7 +107,7 @@ class EntrybookApiController extends Controller
             ]);
 
             return $this->sendJsonResponse(true, 'Entry saved.', [
-                'entrybook' => $entrybook->load(['vehicle:id,vehicle_number']),
+                'entrybook' => $entrybook->load(['vehicle:id,vehicle_number', 'party:id,name']),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -129,7 +133,7 @@ class EntrybookApiController extends Controller
             $entrybook->update($this->payload($request));
 
             return $this->sendJsonResponse(true, 'Entry updated.', [
-                'entrybook' => $entrybook->fresh()->load(['vehicle:id,vehicle_number']),
+                'entrybook' => $entrybook->fresh()->load(['vehicle:id,vehicle_number', 'party:id,name']),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -166,19 +170,21 @@ class EntrybookApiController extends Controller
             $filters = EntrybookReport::filtersFromRequest($request, $userId);
             $vehicles = EntrybookReport::vehiclesForUser($userId);
             $routes = EntrybookReport::routesForUser($userId);
+            $parties = EntrybookReport::partiesForUser($userId);
             $query = EntrybookReport::filteredQuery($userId, $filters);
             $entries = $query->get();
             $totals = EntrybookReport::totals($query);
-            $filterSummary = EntrybookReport::filterSummary($filters, $vehicles, $routes);
+            $filterSummary = EntrybookReport::filterSummary($filters, $vehicles, $routes, $parties);
 
             return ListExport::csv(
                 'entrybook',
                 'Entrybook Export',
                 $filterSummary,
-                ['Entry No.', 'Date', 'Vehicle', 'From', 'Freight', 'Advance', 'Balance'],
+                ['Entry No.', 'Date', 'Party', 'Vehicle', 'From', 'Freight', 'Advance', 'Balance'],
                 $entries->map(fn ($entry) => [
                     $entry->entry_number,
                     ListExport::formatDate($entry->entry_date),
+                    $entry->party?->name ?? '',
                     $entry->vehicle?->vehicle_number ?? '',
                     $entry->route_from ?? '',
                     $entry->freight,
@@ -188,6 +194,7 @@ class EntrybookApiController extends Controller
                 [
                     'TOTAL',
                     $totals['count'].' entries',
+                    '',
                     '',
                     '',
                     ListExport::formatMoney($totals['freight']),
@@ -207,19 +214,21 @@ class EntrybookApiController extends Controller
             $filters = EntrybookReport::filtersFromRequest($request, $userId);
             $vehicles = EntrybookReport::vehiclesForUser($userId);
             $routes = EntrybookReport::routesForUser($userId);
+            $parties = EntrybookReport::partiesForUser($userId);
             $query = EntrybookReport::filteredQuery($userId, $filters);
             $entries = $query->get();
             $totals = EntrybookReport::totals($query);
-            $filterSummary = EntrybookReport::filterSummary($filters, $vehicles, $routes);
+            $filterSummary = EntrybookReport::filterSummary($filters, $vehicles, $routes, $parties);
 
             return ListExport::pdf(
                 'entrybook',
                 'Entrybook Report',
                 $filterSummary,
-                ['Entry No.', 'Date', 'Vehicle', 'From', 'Freight', 'Advance', 'Balance'],
+                ['Entry No.', 'Date', 'Party', 'Vehicle', 'From', 'Freight', 'Advance', 'Balance'],
                 $entries->map(fn ($entry) => [
                     $entry->entry_number,
                     ListExport::formatDate($entry->entry_date),
+                    $entry->party?->name ?? '—',
                     $entry->vehicle?->vehicle_number ?? '—',
                     $entry->route_from ?? '—',
                     ListExport::formatMoney($entry->freight),
@@ -230,6 +239,7 @@ class EntrybookApiController extends Controller
                 [
                     'TOTAL',
                     $totals['count'].' entries',
+                    '',
                     '',
                     '',
                     ListExport::formatMoney($totals['freight']),

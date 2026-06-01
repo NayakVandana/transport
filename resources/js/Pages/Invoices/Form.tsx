@@ -274,6 +274,14 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
         setField('lines', lines);
     };
 
+    const partyEntrybooks = useMemo(
+        () =>
+            data.party_id
+                ? entrybooks.filter((e) => String(e.party_id) === data.party_id)
+                : [],
+        [entrybooks, data.party_id],
+    );
+
     const selectEntryNumber = (index: number, entryNumber: string) => {
         if (!entryNumber) {
             const lines = [...data.lines];
@@ -282,7 +290,7 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
             return;
         }
 
-        const entry = entrybooks.find((e) => e.entry_number === entryNumber);
+        const entry = partyEntrybooks.find((e) => e.entry_number === entryNumber);
         if (!entry) {
             const lines = [...data.lines];
             lines[index] = { ...lines[index], entry_number: entryNumber, entrybook_id: null };
@@ -317,9 +325,42 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
         [routes],
     );
 
+    const changeParty = (partyId: string) => {
+        setData((prev) => {
+            const lines = prev.lines.map((line) => {
+                if (!line.entrybook_id) {
+                    return line;
+                }
+
+                const entry = entrybooks.find((e) => e.id === line.entrybook_id);
+                if (entry && String(entry.party_id) === partyId) {
+                    return line;
+                }
+
+                return {
+                    ...buildEmptyLine(),
+                    weight: line.weight,
+                    product_name: line.product_name || 'AS PER INVOICES',
+                };
+            });
+
+            return { ...prev, party_id: partyId, lines };
+        });
+
+        setErrors((prev) => {
+            const next = { ...prev };
+            delete next.party_id;
+            return next;
+        });
+    };
+
     const entrybookOptions = useMemo(
-        () => entrybooks.map((e) => ({ value: e.entry_number, label: e.entry_number })),
-        [entrybooks],
+        () =>
+            partyEntrybooks.map((e) => ({
+                value: e.entry_number,
+                label: e.entry_number,
+            })),
+        [partyEntrybooks],
     );
 
     const entryOptionsForLine = (lineIndex: number, currentValue: string) => {
@@ -365,7 +406,7 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                                     <select
                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                         value={data.party_id}
-                                        onChange={(e) => setField('party_id', e.target.value)}
+                                        onChange={(e) => changeParty(e.target.value)}
                                         required
                                     >
                                         {parties.map((p) => (
@@ -415,10 +456,10 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                             </div>
 
                             <p className="text-xs text-gray-500">
-                                Select an entry number from Entrybook to auto-fill vehicle, route,
-                                date, freight, and advance on each line. If a vehicle, route, or
-                                entry is not listed, choose &quot;+ Add&quot; to open its form, then
-                                return here.
+                                Select a party first — only Entrybook entries for that party appear
+                                in each line. Choosing an entry auto-fills vehicle, route, date,
+                                freight, and advance. Use &quot;+ Add entry&quot; to create a new
+                                entrybook record for this party.
                             </p>
 
                             <div className="overflow-x-auto rounded-lg bg-white p-4 shadow">

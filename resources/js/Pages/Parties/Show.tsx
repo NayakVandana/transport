@@ -14,16 +14,23 @@ import { usePageHeader } from '@/hooks/usePageHeader';
 import { dateFiltersFromPicker } from '@/lib/listFilters';
 import type { DatePickerRangeValue } from '@/Components/FormDatePicker';
 import { formatMoney } from '@/lib/freightCalculator';
-import type { Party, PartyAccountData, PartyInvoiceRow, PartyLedgerEntry } from '@/types/transport';
+import type {
+    Party,
+    PartyAccountData,
+    PartyEntrybookRow,
+    PartyInvoiceRow,
+    PartyLedgerEntry,
+} from '@/types/transport';
 import { Head, Link, router } from '@inertiajs/react';
 import { FormEventHandler, useCallback, useEffect, useMemo, useState } from 'react';
 
-type TabId = 'overview' | 'ledger' | 'invoices' | 'payments' | 'profile';
+type TabId = 'overview' | 'ledger' | 'invoices' | 'entries' | 'payments' | 'profile';
 
 const tabs: { id: TabId; label: string; route: string }[] = [
     { id: 'overview', label: 'Overview', route: 'parties.overview' },
     { id: 'ledger', label: 'Ledger', route: 'parties.ledger' },
     { id: 'invoices', label: 'Invoices', route: 'parties.invoices' },
+    { id: 'entries', label: 'Entries', route: 'parties.entries' },
     { id: 'payments', label: 'Payments', route: 'parties.payments' },
     { id: 'profile', label: 'Profile', route: 'parties.profile' },
 ];
@@ -137,6 +144,7 @@ export default function PartyShow({
     const overview = account?.overview;
     const recentLedger = useMemo(() => account?.ledger.slice(0, 8) ?? [], [account?.ledger]);
     const recentInvoices = useMemo(() => account?.invoices.slice(0, 5) ?? [], [account?.invoices]);
+    const recentEntries = useMemo(() => account?.entrybooks.slice(0, 5) ?? [], [account?.entrybooks]);
 
     const dateFilters = dateFiltersFromPicker(dateValue);
     const hasDateFilters = dateFilters.date_range !== 'all';
@@ -241,10 +249,14 @@ export default function PartyShow({
                                 <div className="p-4 sm:p-6">
                                     {tab === 'overview' && (
                                         <div className="space-y-4">
-                                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                                                 <StatCard
                                                     label="Invoices"
                                                     value={String(overview.invoice_count)}
+                                                />
+                                                <StatCard
+                                                    label="Entries"
+                                                    value={String(overview.entry_count ?? 0)}
                                                 />
                                                 <StatCard
                                                     label="Balance Due"
@@ -262,7 +274,7 @@ export default function PartyShow({
                                                 />
                                             </div>
 
-                                            <div className="grid gap-4 lg:grid-cols-2">
+                                            <div className="grid gap-4 lg:grid-cols-3">
                                                 <section className="rounded-lg border border-gray-200">
                                                     <div className="flex items-center justify-between border-b px-4 py-3">
                                                         <h3 className="font-semibold text-gray-800">
@@ -297,7 +309,22 @@ export default function PartyShow({
                                                     />
                                                 </section>
 
-                                                <section className="rounded-lg border border-gray-200 p-4 lg:col-span-2">
+                                                <section className="rounded-lg border border-gray-200">
+                                                    <div className="flex items-center justify-between border-b px-4 py-3">
+                                                        <h3 className="font-semibold text-gray-800">
+                                                            Recent Entries
+                                                        </h3>
+                                                        <Link
+                                                            href={route('parties.entries', partyId)}
+                                                            className="text-sm text-indigo-600 hover:underline"
+                                                        >
+                                                            View all
+                                                        </Link>
+                                                    </div>
+                                                    <EntrybooksTable rows={recentEntries} compact />
+                                                </section>
+
+                                                <section className="rounded-lg border border-gray-200 p-4 lg:col-span-3">
                                                     <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
                                                         <div>
                                                             <dt className="text-gray-500">Last invoice</dt>
@@ -344,6 +371,18 @@ export default function PartyShow({
                                                 rows={account.invoices}
                                                 onRecordPayment={openPaymentModal}
                                             />
+                                        </div>
+                                    )}
+
+                                    {tab === 'entries' && (
+                                        <div className="overflow-hidden rounded-lg border border-gray-200">
+                                            <div className="flex items-center justify-between border-b px-4 py-3">
+                                                <h3 className="font-semibold text-gray-800">Entrybook</h3>
+                                                <Link href={route('entrybooks.create')}>
+                                                    <PrimaryButton>Add Entry</PrimaryButton>
+                                                </Link>
+                                            </div>
+                                            <EntrybooksTable rows={account.entrybooks} />
                                         </div>
                                     )}
 
@@ -538,6 +577,83 @@ function LedgerTable({ rows, compact = false }: { rows: PartyLedgerEntry[]; comp
                                 {!compact && (
                                     <td className="px-4 py-3 text-right font-medium">
                                         ₹ {formatMoney(row.balance)}
+                                    </td>
+                                )}
+                            </tr>
+                        ))
+                    )}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
+function EntrybooksTable({
+    rows,
+    compact = false,
+}: {
+    rows: PartyEntrybookRow[];
+    compact?: boolean;
+}) {
+    return (
+        <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <thead className="bg-gray-50">
+                    <tr>
+                        <th className="px-4 py-3 text-left font-medium text-gray-500">Entry No.</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
+                        {!compact && (
+                            <th className="px-4 py-3 text-left font-medium text-gray-500">Vehicle</th>
+                        )}
+                        <th className="px-4 py-3 text-left font-medium text-gray-500">From</th>
+                        <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
+                        {!compact && (
+                            <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
+                        )}
+                        <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
+                        {!compact && (
+                            <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
+                        )}
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                    {rows.length === 0 ? (
+                        <tr>
+                            <td
+                                colSpan={compact ? 5 : 8}
+                                className="px-6 py-8 text-center text-gray-500"
+                            >
+                                No entrybook records for this party.
+                            </td>
+                        </tr>
+                    ) : (
+                        rows.map((row) => (
+                            <tr key={row.id}>
+                                <td className="px-4 py-3 font-mono font-medium">{row.entry_number}</td>
+                                <td className="px-4 py-3">{row.entry_date}</td>
+                                {!compact && (
+                                    <td className="px-4 py-3 font-mono">{row.vehicle_number || '—'}</td>
+                                )}
+                                <td className="px-4 py-3">{row.route_from || '—'}</td>
+                                <td className="px-4 py-3 text-right">
+                                    ₹ {formatMoney(row.freight)}
+                                </td>
+                                {!compact && (
+                                    <td className="px-4 py-3 text-right">
+                                        ₹ {formatMoney(row.advance)}
+                                    </td>
+                                )}
+                                <td className="px-4 py-3 text-right font-medium">
+                                    ₹ {formatMoney(row.balance)}
+                                </td>
+                                {!compact && (
+                                    <td className="px-4 py-3 text-right">
+                                        <Link
+                                            href={route('entrybooks.edit', row.id)}
+                                            className="text-indigo-600 hover:underline"
+                                        >
+                                            Edit
+                                        </Link>
                                     </td>
                                 )}
                             </tr>

@@ -37,7 +37,7 @@ class TransportSeeder extends Seeder
         $vehicles = $this->seedVehicles($userId);
         $drivers = $this->seedDrivers($userId);
         $this->seedRoutes($userId);
-        $entrybooks = $this->seedEntrybooks($userId, $vehicles);
+        $entrybooks = $this->seedEntrybooks($userId, $vehicles, $parties);
         $this->seedInvoices($userId, $company, $parties, $vehicles, $entrybooks);
         $this->seedInvoicePayments($userId);
         $this->seedVehicleExpenses($userId, $vehicles);
@@ -411,15 +411,17 @@ class TransportSeeder extends Seeder
     }
 
     /** @param  array<string, Vehicle>  $vehicles
+     * @param  list<Party>  $parties
      * @return array<string, Entrybook>
      */
-    private function seedEntrybooks(int $userId, array $vehicles): array
+    private function seedEntrybooks(int $userId, array $vehicles, array $parties): array
     {
         $entries = [
             [
                 'entry_number' => '001',
                 'entry_date' => '2025-08-13',
                 'vehicle_number' => 'MH04JU9931',
+                'party_index' => 0,
                 'route_from' => 'J N P T / SARIGAM / 1X20',
                 'freight' => 24000,
                 'advance' => 12000,
@@ -428,6 +430,7 @@ class TransportSeeder extends Seeder
                 'entry_number' => '002',
                 'entry_date' => '2025-08-14',
                 'vehicle_number' => 'MH04JU9932',
+                'party_index' => 0,
                 'route_from' => 'J N P T / SARIGAM / 1X20',
                 'freight' => 24000,
                 'advance' => 15000,
@@ -436,6 +439,7 @@ class TransportSeeder extends Seeder
                 'entry_number' => '003',
                 'entry_date' => '2025-08-20',
                 'vehicle_number' => 'MH04JU9931',
+                'party_index' => 0,
                 'route_from' => 'NHAVA SHEVA / VAPI',
                 'freight' => 18500,
                 'advance' => 10000,
@@ -444,6 +448,7 @@ class TransportSeeder extends Seeder
                 'entry_number' => '004',
                 'entry_date' => '2025-08-25',
                 'vehicle_number' => 'MH04JU9932',
+                'party_index' => 1,
                 'route_from' => 'MUNDRA / HAZIRA',
                 'freight' => 22000,
                 'advance' => 11000,
@@ -464,6 +469,7 @@ class TransportSeeder extends Seeder
                 [
                     'entry_date' => $row['entry_date'],
                     'vehicle_id' => $vehicles[$row['vehicle_number']]->id,
+                    'party_id' => $parties[$row['party_index']]->id ?? null,
                     'route_from' => $row['route_from'],
                     'freight' => $freight,
                     'advance' => $advance,

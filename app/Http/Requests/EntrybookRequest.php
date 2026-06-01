@@ -20,6 +20,14 @@ class EntrybookRequest extends FormRequest
                 'vehicle_id' => (int) $this->vehicle_id,
             ]);
         }
+
+        if ($this->has('party_id') && $this->party_id !== '') {
+            $this->merge([
+                'party_id' => (int) $this->party_id,
+            ]);
+        } elseif ($this->has('party_id') && $this->party_id === '') {
+            $this->merge(['party_id' => null]);
+        }
     }
 
     /** @return array<string, mixed> */
@@ -32,6 +40,13 @@ class EntrybookRequest extends FormRequest
                 'integer',
                 Rule::exists('vehicles', 'id')->where(
                     fn ($query) => $query->where('user_id', $this->user()->id)->whereNull('deleted_at'),
+                ),
+            ],
+            'party_id' => [
+                'required',
+                'integer',
+                Rule::exists('parties', 'id')->where(
+                    fn ($query) => $query->where('user_id', $this->user()->id),
                 ),
             ],
             'route_from' => ['nullable', 'string', 'max:255'],

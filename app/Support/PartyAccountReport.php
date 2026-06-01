@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\FreightInvoice;
+use App\Models\Entrybook;
 use App\Models\InvoicePayment;
 use App\Models\Party;
 use Illuminate\Http\Request;
@@ -128,10 +129,31 @@ class PartyAccountReport
 
         $ledger = self::buildLedger($invoices, $payments, $dateFilters);
 
+        $entrybookRows = Entrybook::query()
+            ->with(['vehicle:id,vehicle_number'])
+            ->where('user_id', $userId)
+            ->where('party_id', $partyId)
+            ->orderByDesc('entry_date')
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (Entrybook $entry) => [
+                'id' => $entry->id,
+                'entry_number' => $entry->entry_number,
+                'entry_date' => $entry->entry_date->format('Y-m-d'),
+                'vehicle_number' => $entry->vehicle?->vehicle_number ?? '',
+                'route_from' => $entry->route_from ?? '',
+                'freight' => round((float) $entry->freight, 2),
+                'advance' => round((float) $entry->advance, 2),
+                'balance' => round((float) $entry->balance, 2),
+            ])
+            ->values()
+            ->all();
+
         return [
             'party' => $party,
             'overview' => [
                 'invoice_count' => count($invoiceRows),
+                'entry_count' => count($entrybookRows),
                 'balance_due' => round($balanceDue, 2),
                 'received' => round($receivedTotal, 2),
                 'outstanding' => round($outstandingTotal, 2),
@@ -139,6 +161,7 @@ class PartyAccountReport
                 'last_payment_date' => $lastPaymentDate,
             ],
             'invoices' => $invoiceRows,
+            'entrybooks' => $entrybookRows,
             'payments' => $paymentRows,
             'ledger' => $ledger,
             'filters' => $dateFilters,
