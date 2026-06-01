@@ -23,7 +23,7 @@ export default function InvoicePaymentForm({
             <Head title={isEdit ? 'Edit Payment' : 'Record Payment'} />
 
             <PageContainer width="2xl">
-                    <div className="rounded-lg bg-white p-6 shadow">
+                    <div className="rounded-lg bg-white p-4 shadow sm:p-6">
                         <RecordPaymentForm
                             invoicePaymentId={invoicePaymentId}
                             partyId={partyId}

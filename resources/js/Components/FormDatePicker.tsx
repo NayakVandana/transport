@@ -54,7 +54,7 @@ export default function FormDatePicker({
         <Datepicker
             inputId={id}
             inputName={name}
-            inputClassName={`w-full min-w-[15rem] rounded-md border border-gray-300 bg-white py-1.5 pl-3 pr-8 text-sm text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${className}`}
+            inputClassName={`w-full min-w-0 max-w-full rounded-md border border-gray-300 bg-white py-1.5 pl-3 pr-8 text-sm text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:min-w-[15rem] ${className}`}
             placeholder={placeholder}
             asSingle={!isRange}
             useRange={useRange}

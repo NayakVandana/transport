@@ -189,7 +189,7 @@ export default function RoutesIndex() {
                         </p>
                     )}
 
-                    <form onSubmit={submit} className="rounded-lg bg-white p-6 shadow">
+                    <form onSubmit={submit} className="rounded-lg bg-white p-4 shadow sm:p-6">
                         <h3 className="mb-4 font-medium text-gray-900">Add Route / Location</h3>
                         <div>
                             <InputLabel value="From (Route)" />
@@ -229,17 +229,17 @@ export default function RoutesIndex() {
                     {loading && !data ? (
                         <p className="text-center text-sm text-gray-500">Loading routes…</p>
                     ) : (
-                        <div className="overflow-hidden rounded-lg bg-white shadow">
+                        <div className="overflow-x-auto rounded-lg bg-white shadow">
                             <table className="min-w-full divide-y divide-gray-200 text-sm">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">
                                             Name
                                         </th>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">
                                             Created
                                         </th>
-                                        <th className="px-6 py-3 text-right font-medium text-gray-500">
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">
                                             Actions
                                         </th>
                                     </tr>
@@ -259,11 +259,11 @@ export default function RoutesIndex() {
                                     ) : (
                                         routes.map((r) => (
                                             <tr key={r.id}>
-                                                <td className="px-6 py-3">{r.name}</td>
-                                                <td className="px-6 py-3 whitespace-nowrap text-gray-600">
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{r.name}</td>
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-gray-600">
                                                     {formatAppCreatedAt(r.created_at)}
                                                 </td>
-                                                <td className="px-6 py-3 text-right">
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
                                                     <button
                                                         type="button"
                                                         onClick={() => void destroy(r.id)}

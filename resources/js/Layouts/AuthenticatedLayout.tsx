@@ -276,7 +276,7 @@ export default function Authenticated({
                     </button>
 
                     {header && (
-                        <div className="min-w-0 flex-1 [&_h2]:truncate [&>div]:min-w-0">
+                        <div className="min-w-0 flex-1 [&>div]:min-w-0 [&>div]:w-full [&_h2]:leading-tight">
                             {header}
                         </div>
                     )}

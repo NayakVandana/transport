@@ -31,7 +31,7 @@ export default function PartiesIndex() {
     const [searchInput, setSearchInput] = useState('');
 
     usePageHeader(
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
             <h2 className="text-xl font-semibold text-gray-800">Party</h2>
             <Link href={route('parties.create')}>
                 <PrimaryButton>Add Party</PrimaryButton>
@@ -131,16 +131,16 @@ export default function PartiesIndex() {
                     {loading && !data ? (
                         <p className="text-center text-sm text-gray-500">Loading party…</p>
                     ) : (
-                        <div className="overflow-hidden rounded-lg bg-white shadow">
+                        <div className="overflow-x-auto rounded-lg bg-white shadow">
                             <table className="min-w-full divide-y divide-gray-200 text-sm">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Name</th>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Mobile</th>
-                                        <th className="px-6 py-3 text-right font-medium text-gray-500">Invoices</th>
-                                        <th className="px-6 py-3 text-right font-medium text-gray-500">Outstanding</th>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Created</th>
-                                        <th className="px-6 py-3 text-right font-medium text-gray-500">Actions</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Name</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Mobile</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Invoices</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Outstanding</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Created</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
@@ -155,7 +155,7 @@ export default function PartiesIndex() {
                                     ) : (
                                         parties.map((party) => (
                                             <tr key={party.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-3 font-medium">
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3 font-medium">
                                                     <Link
                                                         href={route('parties.overview', party.id)}
                                                         className="text-indigo-600 hover:underline"
@@ -163,17 +163,17 @@ export default function PartiesIndex() {
                                                         {party.name}
                                                     </Link>
                                                 </td>
-                                                <td className="px-6 py-3">{party.mobile ?? '—'}</td>
-                                                <td className="px-6 py-3 text-right">
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{party.mobile ?? '—'}</td>
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
                                                     {party.invoice_count ?? 0}
                                                 </td>
-                                                <td className="px-6 py-3 text-right font-medium text-indigo-700">
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-indigo-700">
                                                     ₹ {formatMoney(party.outstanding ?? 0)}
                                                 </td>
-                                                <td className="px-6 py-3 whitespace-nowrap text-gray-600">
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-gray-600">
                                                     {formatAppCreatedAt(party.created_at)}
                                                 </td>
-                                                <td className="whitespace-nowrap px-6 py-3 text-right">
+                                                <td className="whitespace-nowrap px-3 py-2 sm:px-6 sm:py-3 text-right">
                                                     <Link
                                                         href={route('parties.overview', party.id)}
                                                         className="text-indigo-600 hover:underline"

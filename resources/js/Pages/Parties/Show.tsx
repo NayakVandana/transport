@@ -275,7 +275,7 @@ export default function PartyShow({
 
                                             <div className="grid gap-4 lg:grid-cols-3">
                                                 <section className="rounded-lg border border-gray-200">
-                                                    <div className="flex items-center justify-between border-b px-4 py-3">
+                                                    <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
                                                         <h3 className="font-semibold text-gray-800">
                                                             Recent Ledger
                                                         </h3>
@@ -290,7 +290,7 @@ export default function PartyShow({
                                                 </section>
 
                                                 <section className="rounded-lg border border-gray-200">
-                                                    <div className="flex items-center justify-between border-b px-4 py-3">
+                                                    <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
                                                         <h3 className="font-semibold text-gray-800">
                                                             Recent Invoices
                                                         </h3>
@@ -305,7 +305,7 @@ export default function PartyShow({
                                                 </section>
 
                                                 <section className="rounded-lg border border-gray-200">
-                                                    <div className="flex items-center justify-between border-b px-4 py-3">
+                                                    <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
                                                         <h3 className="font-semibold text-gray-800">
                                                             Recent Entries
                                                         </h3>
@@ -348,17 +348,17 @@ export default function PartyShow({
                                                 hasActiveFilters={hasDateFilters}
                                                 onClear={clearDateFilters}
                                             />
-                                            <div className="overflow-hidden rounded-lg border border-gray-200">
+                                            <div className="overflow-x-auto rounded-lg border border-gray-200">
                                                 <LedgerTable rows={account.ledger} />
                                             </div>
                                         </div>
                                     )}
 
                                     {tab === 'invoices' && (
-                                        <div className="overflow-hidden rounded-lg border border-gray-200">
-                                            <div className="flex items-center justify-between border-b px-4 py-3">
+                                        <div className="overflow-x-auto rounded-lg border border-gray-200">
+                                            <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
                                                 <h3 className="font-semibold text-gray-800">Tax Invoices</h3>
-                                                <div className="flex gap-2">
+                                                <div className="flex flex-wrap gap-2">
                                                     {(overview?.outstanding ?? 0) > 0 && (
                                                         <PrimaryButton
                                                             type="button"
@@ -377,8 +377,8 @@ export default function PartyShow({
                                     )}
 
                                     {tab === 'entries' && (
-                                        <div className="overflow-hidden rounded-lg border border-gray-200">
-                                            <div className="flex items-center justify-between border-b px-4 py-3">
+                                        <div className="overflow-x-auto rounded-lg border border-gray-200">
+                                            <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
                                                 <h3 className="font-semibold text-gray-800">Entrybook</h3>
                                                 <Link href={route('entrybooks.create')}>
                                                     <PrimaryButton>Add Entry</PrimaryButton>
@@ -397,8 +397,8 @@ export default function PartyShow({
                                                 hasActiveFilters={hasDateFilters}
                                                 onClear={clearDateFilters}
                                             />
-                                            <div className="overflow-hidden rounded-lg border border-gray-200">
-                                                <div className="flex items-center justify-between border-b px-4 py-3">
+                                            <div className="overflow-x-auto rounded-lg border border-gray-200">
+                                                <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
                                                     <h3 className="font-semibold text-gray-800">
                                                         Received Payments
                                                     </h3>

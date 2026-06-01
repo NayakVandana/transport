@@ -55,7 +55,7 @@ export default function VehicleExpensesIndex() {
     const [searchInput, setSearchInput] = useState('');
 
     usePageHeader(
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
             <h2 className="text-xl font-semibold text-gray-800">Vehicle Expenses</h2>
             <Link href={route('vehicle-expenses.create')}>
                 <PrimaryButton>Add Expense</PrimaryButton>

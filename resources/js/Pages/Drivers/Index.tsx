@@ -34,7 +34,7 @@ export default function DriversIndex() {
     const [searchInput, setSearchInput] = useState('');
 
     usePageHeader(
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
             <h2 className="text-xl font-semibold text-gray-800">Drivers</h2>
             <Link href={route('drivers.create')}>
                 <PrimaryButton>Add Driver</PrimaryButton>
@@ -152,15 +152,15 @@ export default function DriversIndex() {
                             <table className="min-w-full divide-y divide-gray-200 text-sm">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Name</th>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Mobile</th>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Joining Date</th>
-                                        <th className="px-6 py-3 text-right font-medium text-gray-500">Salary</th>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">License No</th>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">License Expiry</th>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Status</th>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Created</th>
-                                        <th className="px-6 py-3 text-right font-medium text-gray-500">Actions</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Name</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Mobile</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Joining Date</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Salary</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">License No</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">License Expiry</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Status</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Created</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
@@ -175,17 +175,17 @@ export default function DriversIndex() {
                                     ) : (
                                         drivers.map((driver) => (
                                             <tr key={driver.id}>
-                                                <td className="px-6 py-3 font-medium">{driver.name}</td>
-                                                <td className="px-6 py-3">{driver.mobile ?? '—'}</td>
-                                                <td className="px-6 py-3">{formatAppDateTime(driver.joining_date)}</td>
-                                                <td className="px-6 py-3 text-right">
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3 font-medium">{driver.name}</td>
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{driver.mobile ?? '—'}</td>
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(driver.joining_date)}</td>
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
                                                     {driver.salary != null && driver.salary !== ''
                                                         ? `₹ ${formatMoney(driver.salary)}`
                                                         : '—'}
                                                 </td>
-                                                <td className="px-6 py-3">{driver.license_number ?? '—'}</td>
-                                                <td className="px-6 py-3">{formatAppDateTime(driver.license_expiry)}</td>
-                                                <td className="px-6 py-3">
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{driver.license_number ?? '—'}</td>
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(driver.license_expiry)}</td>
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3">
                                                     <span
                                                         className={
                                                             driver.status === 'active'
@@ -196,10 +196,10 @@ export default function DriversIndex() {
                                                         {driver.status === 'active' ? 'Active' : 'Inactive'}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-3 whitespace-nowrap text-gray-600">
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-gray-600">
                                                     {formatAppCreatedAt(driver.created_at)}
                                                 </td>
-                                                <td className="space-x-3 px-6 py-3 text-right">
+                                                <td className="space-x-3 px-3 py-2 sm:px-6 sm:py-3 text-right">
                                                     <Link
                                                         href={route('drivers.edit', driver.id)}
                                                         className="text-indigo-600 hover:underline"

@@ -198,7 +198,7 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
                         </p>
                     )}
 
-                    <form onSubmit={submit} className="space-y-5 rounded-lg bg-white p-6 shadow">
+                    <form onSubmit={submit} className="space-y-5 rounded-lg bg-white p-4 shadow sm:p-6">
                         <div className="grid gap-5 sm:grid-cols-2">
                             <div>
                                 <InputLabel value="Date" />

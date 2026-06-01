@@ -57,7 +57,7 @@ export default function InvoicePaymentsIndex() {
     const [searchInput, setSearchInput] = useState('');
 
     usePageHeader(
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
             <h2 className="text-xl font-semibold text-gray-800">Received Payments</h2>
             <Link href={route('invoice-payments.create')}>
                 <PrimaryButton>Record Payment</PrimaryButton>

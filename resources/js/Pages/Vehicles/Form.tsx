@@ -308,7 +308,7 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                         <form
                             onSubmit={submit}
                             noValidate
-                            className="space-y-6 rounded-lg bg-white p-6 shadow"
+                            className="space-y-6 rounded-lg bg-white p-4 shadow sm:p-6"
                         >
                             <div>
                                 <h3 className="mb-4 font-medium text-gray-900">Vehicle Details</h3>

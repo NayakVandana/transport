@@ -384,7 +384,7 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                         </p>
                     ) : (
                         <form onSubmit={submit} className="space-y-6">
-                            <div className="grid gap-4 rounded-lg bg-white p-6 shadow sm:grid-cols-2 lg:grid-cols-4">
+                            <div className="grid gap-4 rounded-lg bg-white p-4 shadow sm:p-6 sm:grid-cols-2 lg:grid-cols-4">
                                 <div>
                                     <InputLabel value="Party" />
                                     <select

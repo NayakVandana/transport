@@ -45,7 +45,7 @@ export default function InvoicesIndex() {
     const [paymentPartyId, setPaymentPartyId] = useState<number | null>(null);
 
     usePageHeader(
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
             <h2 className="text-xl font-semibold text-gray-800">Tax Invoices</h2>
             <Link href={route('invoices.create')}>
                 <PrimaryButton>New Invoice</PrimaryButton>
@@ -178,19 +178,19 @@ export default function InvoicesIndex() {
                     {loading && !data ? (
                         <p className="text-center text-sm text-gray-500">Loading invoices…</p>
                     ) : (
-                        <div className="overflow-hidden rounded-lg bg-white shadow">
+                        <div className="overflow-x-auto rounded-lg bg-white shadow">
                             <table className="min-w-full divide-y divide-gray-200 text-sm">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Bill No</th>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Party</th>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Date</th>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Payment</th>
-                                        <th className="px-6 py-3 text-right font-medium text-gray-500">Balance Due</th>
-                                        <th className="px-6 py-3 text-right font-medium text-gray-500">Received</th>
-                                        <th className="px-6 py-3 text-right font-medium text-gray-500">Outstanding</th>
-                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Created</th>
-                                        <th className="px-6 py-3 text-right font-medium text-gray-500">Actions</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Bill No</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Party</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Date</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Payment</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Balance Due</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Received</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Outstanding</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Created</th>
+                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
@@ -205,7 +205,7 @@ export default function InvoicesIndex() {
                                     ) : (
                                         invoices.map((inv) => (
                                             <tr key={inv.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-3 font-medium">
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3 font-medium">
                                                     <Link
                                                         href={route('invoices.show', inv.id)}
                                                         className="text-indigo-600 hover:underline"
@@ -213,9 +213,9 @@ export default function InvoicesIndex() {
                                                         {inv.bill_number}
                                                     </Link>
                                                 </td>
-                                                <td className="px-6 py-3">{inv.party?.name}</td>
-                                                <td className="px-6 py-3">{formatAppDateTime(inv.invoice_date)}</td>
-                                                <td className="px-6 py-3">
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{inv.party?.name}</td>
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(inv.invoice_date)}</td>
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3">
                                                     <InvoicePaymentStatusBadge
                                                         status={
                                                             inv.payment_status ??
@@ -226,19 +226,19 @@ export default function InvoicesIndex() {
                                                         }
                                                     />
                                                 </td>
-                                                <td className="px-6 py-3 text-right">
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
                                                     ₹ {formatMoney(inv.balance_amount)}
                                                 </td>
-                                                <td className="px-6 py-3 text-right text-green-700">
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3 text-right text-green-700">
                                                     ₹ {formatMoney(inv.received ?? 0)}
                                                 </td>
-                                                <td className="px-6 py-3 text-right font-medium text-indigo-700">
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-indigo-700">
                                                     ₹ {formatMoney(inv.outstanding ?? inv.balance_amount)}
                                                 </td>
-                                                <td className="px-6 py-3 whitespace-nowrap text-gray-600">
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-gray-600">
                                                     {formatAppCreatedAt(inv.created_at)}
                                                 </td>
-                                                <td className="whitespace-nowrap px-6 py-3 text-right">
+                                                <td className="whitespace-nowrap px-3 py-2 sm:px-6 sm:py-3 text-right">
                                                     <Link
                                                         href={route('invoices.show', inv.id)}
                                                         className="text-indigo-600 hover:underline"

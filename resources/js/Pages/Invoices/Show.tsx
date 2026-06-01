@@ -101,7 +101,7 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                         </p>
                     ) : invoice ? (
                         <>
-                            <div className="rounded-lg bg-white p-6 shadow">
+                            <div className="rounded-lg bg-white p-4 shadow sm:p-6">
                                 <div className="mb-4 flex flex-wrap items-center gap-3">
                                     {paymentSummary && (
                                         <InvoicePaymentStatusBadge
@@ -173,8 +173,8 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                             </div>
 
                             {payments.length > 0 && (
-                                <div className="overflow-hidden rounded-lg bg-white shadow">
-                                    <div className="border-b px-6 py-4">
+                                <div className="overflow-x-auto rounded-lg bg-white shadow">
+                                    <div className="border-b px-4 py-4 sm:px-6">
                                         <h3 className="font-semibold text-gray-800">
                                             Party Payments (allocated to this bill)
                                         </h3>
@@ -182,19 +182,19 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                                     <table className="min-w-full divide-y divide-gray-200 text-sm">
                                         <thead className="bg-gray-50">
                                             <tr>
-                                                <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                                <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">
                                                     Date
                                                 </th>
-                                                <th className="px-6 py-3 text-right font-medium text-gray-500">
+                                                <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">
                                                     Amount
                                                 </th>
-                                                <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                                <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">
                                                     Mode
                                                 </th>
-                                                <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                                <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">
                                                     Reference
                                                 </th>
-                                                <th className="px-6 py-3 text-right font-medium text-gray-500">
+                                                <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">
                                                     Actions
                                                 </th>
                                             </tr>
@@ -202,17 +202,17 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                                         <tbody className="divide-y divide-gray-200">
                                             {payments.map((payment: InvoicePayment) => (
                                                 <tr key={payment.id}>
-                                                    <td className="px-6 py-3">{formatAppDateTime(payment.payment_date)}</td>
-                                                    <td className="px-6 py-3 text-right font-medium">
+                                                    <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(payment.payment_date)}</td>
+                                                    <td className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium">
                                                         ₹ {formatMoney(payment.amount)}
                                                     </td>
-                                                    <td className="px-6 py-3 capitalize">
+                                                    <td className="px-3 py-2 sm:px-6 sm:py-3 capitalize">
                                                         {payment.payment_mode ?? '—'}
                                                     </td>
-                                                    <td className="px-6 py-3">
+                                                    <td className="px-3 py-2 sm:px-6 sm:py-3">
                                                         {payment.reference_no ?? '—'}
                                                     </td>
-                                                    <td className="px-6 py-3 text-right">
+                                                    <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
                                                         <Link
                                                             href={route(
                                                                 'invoice-payments.edit',

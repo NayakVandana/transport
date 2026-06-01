@@ -147,7 +147,7 @@ export default function CompanyEdit() {
                             {loadError}
                         </p>
                     ) : (
-                        <form onSubmit={submit} className="space-y-6 rounded-lg bg-white p-6 shadow">
+                        <form onSubmit={submit} className="space-y-6 rounded-lg bg-white p-4 shadow sm:p-6">
                             {loadError && (
                                 <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                                     {loadError}

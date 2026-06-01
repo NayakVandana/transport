@@ -83,29 +83,29 @@ export default function Dashboard() {
                                 </div>
                             </div>
 
-                            <div className="overflow-hidden rounded-lg bg-white shadow">
-                                <div className="border-b px-6 py-4">
+                            <div className="overflow-x-auto rounded-lg bg-white shadow">
+                                <div className="border-b px-4 py-4 sm:px-6">
                                     <h3 className="font-semibold text-gray-800">Recent Invoices</h3>
                                 </div>
                                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                            <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">
                                                 Bill No
                                             </th>
-                                            <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                            <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">
                                                 Party
                                             </th>
-                                            <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                            <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">
                                                 Date
                                             </th>
-                                            <th className="px-6 py-3 text-right font-medium text-gray-500">
+                                            <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">
                                                 Outstanding
                                             </th>
-                                            <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                            <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">
                                                 Payment
                                             </th>
-                                            <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                            <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">
                                                 Created
                                             </th>
                                         </tr>
@@ -120,7 +120,7 @@ export default function Dashboard() {
                                         ) : (
                                             data.recentInvoices.map((inv) => (
                                                 <tr key={inv.id} className="hover:bg-gray-50">
-                                                    <td className="px-6 py-3">
+                                                    <td className="px-3 py-2 sm:px-6 sm:py-3">
                                                         <Link
                                                             href={route('invoices.show', inv.id)}
                                                             className="text-indigo-600 hover:underline"
@@ -128,14 +128,14 @@ export default function Dashboard() {
                                                             {inv.bill_number}
                                                         </Link>
                                                     </td>
-                                                    <td className="px-6 py-3">
+                                                    <td className="px-3 py-2 sm:px-6 sm:py-3">
                                                         {inv.party?.name}
                                                     </td>
-                                                    <td className="px-6 py-3">{formatAppDateTime(inv.invoice_date)}</td>
-                                                    <td className="px-6 py-3 text-right">
+                                                    <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(inv.invoice_date)}</td>
+                                                    <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
                                                         ₹ {formatMoney(inv.outstanding ?? inv.balance_amount)}
                                                     </td>
-                                                    <td className="px-6 py-3">
+                                                    <td className="px-3 py-2 sm:px-6 sm:py-3">
                                                         <InvoicePaymentStatusBadge
                                                             status={
                                                                 inv.payment_status ??
@@ -146,7 +146,7 @@ export default function Dashboard() {
                                                             }
                                                         />
                                                     </td>
-                                                    <td className="px-6 py-3 whitespace-nowrap text-gray-600">
+                                                    <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-gray-600">
                                                         {formatAppCreatedAt(inv.created_at)}
                                                     </td>
                                                 </tr>

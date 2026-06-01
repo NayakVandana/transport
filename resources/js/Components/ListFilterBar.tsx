@@ -40,16 +40,18 @@ export default function ListFilterBar({
 }: ListFilterBarProps) {
     return (
         <div className="rounded-lg bg-white p-3 shadow">
-            <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
-                <FormDatePicker
-                    value={dateValue}
-                    onChange={onDateChange}
-                    isRange
-                    useRange
-                />
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap">
+                <div className="w-full min-w-0 sm:w-auto sm:max-w-xs lg:max-w-none">
+                    <FormDatePicker
+                        value={dateValue}
+                        onChange={onDateChange}
+                        isRange
+                        useRange
+                    />
+                </div>
 
                 {search && (
-                    <div className="flex min-w-[10rem] flex-1 items-center gap-1.5 border-l border-gray-200 pl-2">
+                    <div className="flex w-full min-w-0 flex-1 items-center gap-1.5 sm:border-l sm:border-gray-200 sm:pl-2">
                         <label className="sr-only" htmlFor="list_filter_search">
                             Search
                         </label>
@@ -65,7 +67,7 @@ export default function ListFilterBar({
                                 }
                             }}
                             placeholder={search.placeholder}
-                            className="w-full min-w-[8rem] rounded-md border-gray-300 py-1 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            className="w-full min-w-0 rounded-md border-gray-300 py-1 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         />
                     </div>
                 )}
@@ -73,7 +75,7 @@ export default function ListFilterBar({
                 {selects.map((select) => (
                     <div
                         key={select.name}
-                        className="flex shrink-0 items-center gap-1.5 border-l border-gray-200 pl-2"
+                        className="flex w-full min-w-0 items-center gap-1.5 sm:w-auto sm:shrink-0 sm:border-l sm:border-gray-200 sm:pl-2"
                     >
                         <label htmlFor={select.name} className="sr-only">
                             {select.label}
@@ -83,7 +85,7 @@ export default function ListFilterBar({
                             name={select.name}
                             value={select.value}
                             onChange={(e) => select.onChange(e.target.value)}
-                            className={`${select.widthClass ?? 'w-[9.5rem]'} rounded-md border-gray-300 py-1 pl-2 pr-7 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500`}
+                            className={`w-full ${select.widthClass ?? 'sm:w-[9.5rem]'} rounded-md border-gray-300 py-1 pl-2 pr-7 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500`}
                         >
                             <option value="">{select.allLabel ?? `All ${select.label.toLowerCase()}`}</option>
                             {select.options.map((option) => (
@@ -95,7 +97,7 @@ export default function ListFilterBar({
                     </div>
                 ))}
 
-                <div className="flex h-8 w-[3.25rem] shrink-0 items-center">
+                <div className="flex h-8 shrink-0 items-center sm:w-[3.25rem]">
                     <SecondaryButton
                         type="button"
                         onClick={onClear}
@@ -109,7 +111,7 @@ export default function ListFilterBar({
                 </div>
 
                 {(actions || filterSummary) && (
-                    <div className="ml-auto flex shrink-0 items-center gap-2 lg:min-w-[12rem] lg:justify-end">
+                    <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:ml-auto sm:w-auto lg:min-w-[12rem] lg:justify-end">
                         <span className="hidden text-xs text-gray-500 sm:inline">{filterSummary}</span>
                         {actions}
                     </div>

@@ -205,7 +205,7 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                             {loadError}
                         </p>
                     ) : (
-                        <form onSubmit={submit} className="space-y-4 rounded-lg bg-white p-6 shadow">
+                        <form onSubmit={submit} className="space-y-4 rounded-lg bg-white p-4 shadow sm:p-6">
                             <div>
                                 <InputLabel value="Name" />
                                 <TextInput

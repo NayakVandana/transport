@@ -70,10 +70,11 @@ export default function InvoicePrint({ invoiceId }: { invoiceId: number }) {
                 </button>
             </div>
 
-            <pre
-                className="mx-auto max-w-[210mm] whitespace-pre-wrap break-words bg-white p-4 font-mono text-[11px] leading-tight text-black sm:p-8 sm:text-xs"
-                style={{ fontFamily: 'Courier New, Courier, monospace' }}
-            >
+            <div className="overflow-x-auto">
+                <pre
+                    className="mx-auto min-w-[min(100%,640px)] max-w-[210mm] whitespace-pre bg-white p-4 font-mono text-[10px] leading-tight text-black sm:p-8 sm:text-xs"
+                    style={{ fontFamily: 'Courier New, Courier, monospace' }}
+                >
                 {line('=', 80)}
                 {'\n'}
                 {'TAX INVOICE'.padStart(48)}
@@ -217,7 +218,8 @@ export default function InvoicePrint({ invoiceId }: { invoiceId: number }) {
                 {line('=', 80)}
                 {'\n\n'}
                 {company.name.padStart(40 + Math.floor(company.name.length / 2))}
-            </pre>
+                </pre>
+            </div>
         </>
     );
 }
