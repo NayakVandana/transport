@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\App;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\EntrybookRequest;
 use App\Models\Entrybook;
 use App\Support\EntrybookCalculator;
 use App\Support\EntrybookReport;
@@ -14,6 +13,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EntrybookApiController extends Controller
@@ -93,15 +93,55 @@ class EntrybookApiController extends Controller
         }
     }
 
-    public function postEntrybookStore(EntrybookRequest $request)
+    public function postEntrybookStore(Request $request)
     {
         try {
+            $input = $request->all();
+            if (isset($input['vehicle_id']) && $input['vehicle_id'] !== '') {
+                $input['vehicle_id'] = (int) $input['vehicle_id'];
+            }
+            if (isset($input['party_id']) && $input['party_id'] !== '') {
+                $input['party_id'] = (int) $input['party_id'];
+            } elseif (array_key_exists('party_id', $input) && $input['party_id'] === '') {
+                $input['party_id'] = null;
+            }
+
+            $validation = Validator::make($input, [
+                'entry_date' => ['required', 'date'],
+                'vehicle_id' => [
+                    'required',
+                    'integer',
+                    Rule::exists('vehicles', 'id')->where(
+                        fn ($query) => $query->where('user_id', $request->user()->id)->whereNull('deleted_at'),
+                    ),
+                ],
+                'party_id' => [
+                    'required',
+                    'integer',
+                    Rule::exists('parties', 'id')->where(
+                        fn ($query) => $query->where('user_id', $request->user()->id),
+                    ),
+                ],
+                'route_from' => ['nullable', 'string', 'max:255'],
+                'freight' => ['required', 'numeric', 'min:0'],
+                'advance' => ['nullable', 'numeric', 'min:0'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
             $userId = (int) $request->user()->id;
             $sequence = EntryNumberGenerator::resolveEntrybookSequence($userId);
             $entryNumber = EntryNumberGenerator::formatEntrybookNumber($sequence);
+            $validated = $validation->validated();
+            $freight = (float) $validated['freight'];
+            $advance = (float) ($validated['advance'] ?? 0);
 
             $entrybook = Entrybook::query()->create([
-                ...$this->payload($request),
+                ...$validated,
+                'advance' => $advance,
+                'balance' => EntrybookCalculator::balance($freight, $advance),
                 'entry_number' => $entryNumber,
                 'user_id' => $userId,
             ]);
@@ -114,11 +154,39 @@ class EntrybookApiController extends Controller
         }
     }
 
-    public function postEntrybookUpdate(EntrybookRequest $request)
+    public function postEntrybookUpdate(Request $request)
     {
         try {
-            $validation = Validator::make($request->all(), [
+            $input = $request->all();
+            if (isset($input['vehicle_id']) && $input['vehicle_id'] !== '') {
+                $input['vehicle_id'] = (int) $input['vehicle_id'];
+            }
+            if (isset($input['party_id']) && $input['party_id'] !== '') {
+                $input['party_id'] = (int) $input['party_id'];
+            } elseif (array_key_exists('party_id', $input) && $input['party_id'] === '') {
+                $input['party_id'] = null;
+            }
+
+            $validation = Validator::make($input, [
                 'id' => ['required', 'integer'],
+                'entry_date' => ['required', 'date'],
+                'vehicle_id' => [
+                    'required',
+                    'integer',
+                    Rule::exists('vehicles', 'id')->where(
+                        fn ($query) => $query->where('user_id', $request->user()->id)->whereNull('deleted_at'),
+                    ),
+                ],
+                'party_id' => [
+                    'required',
+                    'integer',
+                    Rule::exists('parties', 'id')->where(
+                        fn ($query) => $query->where('user_id', $request->user()->id),
+                    ),
+                ],
+                'route_from' => ['nullable', 'string', 'max:255'],
+                'freight' => ['required', 'numeric', 'min:0'],
+                'advance' => ['nullable', 'numeric', 'min:0'],
             ]);
 
             if ($validation->fails()) {
@@ -130,7 +198,16 @@ class EntrybookApiController extends Controller
                 ->where('user_id', $userId)
                 ->findOrFail($request->input('id'));
 
-            $entrybook->update($this->payload($request));
+            $validated = $validation->validated();
+            unset($validated['id']);
+            $freight = (float) $validated['freight'];
+            $advance = (float) ($validated['advance'] ?? 0);
+
+            $entrybook->update([
+                ...$validated,
+                'advance' => $advance,
+                'balance' => EntrybookCalculator::balance($freight, $advance),
+            ]);
 
             return $this->sendJsonResponse(true, 'Entry updated.', [
                 'entrybook' => $entrybook->fresh()->load(['vehicle:id,vehicle_number', 'party:id,name']),
@@ -254,19 +331,5 @@ class EntrybookApiController extends Controller
         } catch (Exception $e) {
             return $this->sendError($e);
         }
-    }
-
-    /** @return array<string, mixed> */
-    private function payload(EntrybookRequest $request): array
-    {
-        $validated = $request->validated();
-        $freight = (float) $validated['freight'];
-        $advance = (float) ($validated['advance'] ?? 0);
-
-        return [
-            ...$validated,
-            'advance' => $advance,
-            'balance' => EntrybookCalculator::balance($freight, $advance),
-        ];
     }
 }

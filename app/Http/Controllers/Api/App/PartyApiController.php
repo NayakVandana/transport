@@ -147,7 +147,12 @@ class PartyApiController extends Controller
     public function postPartyStore(Request $request)
     {
         try {
-            $validation = Validator::make($request->all(), $this->rules());
+            $validation = Validator::make($request->all(), [
+                'name' => ['required', 'string', 'max:255'],
+                'mobile' => ['nullable', 'string', 'max:15'],
+                'address' => ['nullable', 'string'],
+                'state_code' => ['nullable', 'string', 'max:5'],
+            ]);
 
             if ($validation->fails()) {
                 return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
@@ -171,7 +176,10 @@ class PartyApiController extends Controller
         try {
             $validation = Validator::make($request->all(), [
                 'id' => ['required', 'integer'],
-                ...$this->rules(),
+                'name' => ['required', 'string', 'max:255'],
+                'mobile' => ['nullable', 'string', 'max:15'],
+                'address' => ['nullable', 'string'],
+                'state_code' => ['nullable', 'string', 'max:5'],
             ]);
 
             if ($validation->fails()) {
@@ -238,16 +246,5 @@ class PartyApiController extends Controller
             'search' => $search,
             ...$dateFilters,
         ]];
-    }
-
-    /** @return array<string, list<string>> */
-    private function rules(): array
-    {
-        return [
-            'name' => ['required', 'string', 'max:255'],
-            'mobile' => ['nullable', 'string', 'max:15'],
-            'address' => ['nullable', 'string'],
-            'state_code' => ['nullable', 'string', 'max:5'],
-        ];
     }
 }

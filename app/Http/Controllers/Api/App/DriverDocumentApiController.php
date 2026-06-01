@@ -46,9 +46,27 @@ class DriverDocumentApiController extends Controller
     public function postDriverDocumentStore(Request $request)
     {
         try {
-            $this->normalizeInput($request);
             $userId = (int) $request->user()->id;
-            $validation = Validator::make($request->all(), $this->rules($userId, true));
+            $request->merge([
+                'driver_id' => $request->filled('driver_id') ? (int) $request->input('driver_id') : null,
+                'title' => $request->input('title') ?: null,
+                'notes' => $request->input('notes') ?: null,
+            ]);
+
+            $validation = Validator::make($request->all(), [
+                'driver_id' => [
+                    'required',
+                    'integer',
+                    Rule::exists('drivers', 'id')->where(
+                        fn ($query) => $query->where('user_id', $userId)->whereNull('deleted_at'),
+                    ),
+                ],
+                'document_type' => ['required', 'string', Rule::in(DocumentValidation::driverDocumentTypes())],
+                'title' => ['nullable', 'string', 'max:255'],
+                'file' => ['required', DocumentValidation::fileRule()],
+                'expiry_date' => ['nullable', 'date'],
+                'notes' => ['nullable', 'string'],
+            ]);
 
             if ($validation->fails()) {
                 return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
@@ -77,11 +95,27 @@ class DriverDocumentApiController extends Controller
     public function postDriverDocumentUpdate(Request $request)
     {
         try {
-            $this->normalizeInput($request);
             $userId = (int) $request->user()->id;
+            $request->merge([
+                'driver_id' => $request->filled('driver_id') ? (int) $request->input('driver_id') : null,
+                'title' => $request->input('title') ?: null,
+                'notes' => $request->input('notes') ?: null,
+            ]);
+
             $validation = Validator::make($request->all(), [
                 'id' => ['required', 'integer'],
-                ...$this->rules($userId, false),
+                'driver_id' => [
+                    'required',
+                    'integer',
+                    Rule::exists('drivers', 'id')->where(
+                        fn ($query) => $query->where('user_id', $userId)->whereNull('deleted_at'),
+                    ),
+                ],
+                'document_type' => ['required', 'string', Rule::in(DocumentValidation::driverDocumentTypes())],
+                'title' => ['nullable', 'string', 'max:255'],
+                'file' => ['nullable', DocumentValidation::fileRule()],
+                'expiry_date' => ['nullable', 'date'],
+                'notes' => ['nullable', 'string'],
             ]);
 
             if ($validation->fails()) {
@@ -142,33 +176,5 @@ class DriverDocumentApiController extends Controller
         return Driver::query()
             ->where('user_id', $userId)
             ->findOrFail($driverId);
-    }
-
-    /** @return array<string, list<mixed>> */
-    private function rules(int $userId, bool $requireFile): array
-    {
-        return [
-            'driver_id' => [
-                'required',
-                'integer',
-                Rule::exists('drivers', 'id')->where(
-                    fn ($query) => $query->where('user_id', $userId)->whereNull('deleted_at'),
-                ),
-            ],
-            'document_type' => ['required', 'string', Rule::in(DocumentValidation::driverDocumentTypes())],
-            'title' => ['nullable', 'string', 'max:255'],
-            'file' => [$requireFile ? 'required' : 'nullable', DocumentValidation::fileRule()],
-            'expiry_date' => ['nullable', 'date'],
-            'notes' => ['nullable', 'string'],
-        ];
-    }
-
-    private function normalizeInput(Request $request): void
-    {
-        $request->merge([
-            'driver_id' => $request->filled('driver_id') ? (int) $request->input('driver_id') : null,
-            'title' => $request->input('title') ?: null,
-            'notes' => $request->input('notes') ?: null,
-        ]);
     }
 }

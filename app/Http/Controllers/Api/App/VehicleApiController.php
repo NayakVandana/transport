@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\App;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\VehicleRequest;
 use App\Models\Vehicle;
 use App\Support\DocumentValidation;
 use App\Support\ListExport;
@@ -13,6 +12,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class VehicleApiController extends Controller
@@ -131,11 +131,45 @@ class VehicleApiController extends Controller
         }
     }
 
-    public function postVehicleStore(VehicleRequest $request)
+    public function postVehicleStore(Request $request)
     {
         try {
+            if ($request->has('vehicle_number')) {
+                $request->merge([
+                    'vehicle_number' => strtoupper(trim((string) $request->vehicle_number)),
+                ]);
+            }
+
+            $validation = Validator::make($request->all(), [
+                'vehicle_number' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    Rule::unique('vehicles', 'vehicle_number')
+                        ->where(fn ($query) => $query
+                            ->where('user_id', $request->user()->id)
+                            ->whereNull('deleted_at')),
+                ],
+                'vehicle_type' => ['required', 'string', 'max:100'],
+                'brand' => ['required', 'string', 'max:100'],
+                'model' => ['required', 'string', 'max:100'],
+                'capacity' => ['nullable', 'string', 'max:50'],
+                'fuel_type' => ['required', 'string', Rule::in(VehicleValidation::fuelTypes())],
+                'insurance_number' => ['required', 'string', 'max:50'],
+                'insurance_expiry' => ['required', 'date'],
+                'permit_number' => ['required', 'string', 'max:50'],
+                'permit_expiry' => ['required', 'date'],
+                'pollution_expiry' => ['required', 'date'],
+                'fitness_expiry' => ['required', 'date'],
+                'status' => ['required', 'string', 'in:active,inactive'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
             $vehicle = Vehicle::query()->create([
-                ...$request->validated(),
+                ...$validation->validated(),
                 'user_id' => $request->user()->id,
             ]);
 
@@ -147,11 +181,41 @@ class VehicleApiController extends Controller
         }
     }
 
-    public function postVehicleUpdate(VehicleRequest $request)
+    public function postVehicleUpdate(Request $request)
     {
         try {
+            if ($request->has('vehicle_number')) {
+                $request->merge([
+                    'vehicle_number' => strtoupper(trim((string) $request->vehicle_number)),
+                ]);
+            }
+
+            $vehicleId = $request->integer('id') ?: null;
+
             $validation = Validator::make($request->all(), [
                 'id' => ['required', 'integer'],
+                'vehicle_number' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    Rule::unique('vehicles', 'vehicle_number')
+                        ->where(fn ($query) => $query
+                            ->where('user_id', $request->user()->id)
+                            ->whereNull('deleted_at'))
+                        ->ignore($vehicleId),
+                ],
+                'vehicle_type' => ['required', 'string', 'max:100'],
+                'brand' => ['required', 'string', 'max:100'],
+                'model' => ['required', 'string', 'max:100'],
+                'capacity' => ['nullable', 'string', 'max:50'],
+                'fuel_type' => ['required', 'string', Rule::in(VehicleValidation::fuelTypes())],
+                'insurance_number' => ['required', 'string', 'max:50'],
+                'insurance_expiry' => ['required', 'date'],
+                'permit_number' => ['required', 'string', 'max:50'],
+                'permit_expiry' => ['required', 'date'],
+                'pollution_expiry' => ['required', 'date'],
+                'fitness_expiry' => ['required', 'date'],
+                'status' => ['required', 'string', 'in:active,inactive'],
             ]);
 
             if ($validation->fails()) {
@@ -162,7 +226,9 @@ class VehicleApiController extends Controller
                 ->where('user_id', $request->user()->id)
                 ->findOrFail($request->input('id'));
 
-            $vehicle->update($request->validated());
+            $data = $validation->validated();
+            unset($data['id']);
+            $vehicle->update($data);
 
             return $this->sendJsonResponse(true, 'Vehicle updated.', [
                 'vehicle' => $vehicle->fresh(),

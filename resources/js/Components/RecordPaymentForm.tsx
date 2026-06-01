@@ -4,8 +4,12 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import { apiFieldErrors, hasApiFieldErrors } from '@/lib/apiFormErrors';
+import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { formatMoney } from '@/lib/freightCalculator';
+import {
+    validateInvoicePaymentForm,
+    type InvoicePaymentFormData,
+} from '@/lib/invoicePaymentValidation';
 import type { InvoicePayment, Party, PartyPaymentSummary } from '@/types/transport';
 import { Link, router } from '@inertiajs/react';
 import { FormEventHandler, useCallback, useEffect, useMemo, useState } from 'react';
@@ -14,14 +18,7 @@ function dateInputValue(value?: string | null): string {
     return value?.slice(0, 10) ?? '';
 }
 
-type PaymentFormData = {
-    party_id: string;
-    payment_date: string;
-    amount: string;
-    payment_mode: string;
-    reference_no: string;
-    notes: string;
-};
+type PaymentFormData = InvoicePaymentFormData;
 
 type InvoicePaymentMetaData = {
     parties: Pick<Party, 'id' | 'name'>[];
@@ -196,20 +193,7 @@ export default function RecordPaymentForm({
         setErrors({});
         setLoadError(null);
 
-        const clientErrors: Partial<Record<keyof PaymentFormData, string>> = {};
-
-        if (!data.party_id) {
-            clientErrors.party_id = 'Select a party (receiver).';
-        }
-        if (!data.payment_date) {
-            clientErrors.payment_date = 'Payment date is required.';
-        }
-        if (!data.amount || Number(data.amount) <= 0) {
-            clientErrors.amount = 'Enter a valid amount.';
-        } else if (maxAmount !== null && Number(data.amount) > maxAmount) {
-            clientErrors.amount = `Amount cannot exceed outstanding (₹ ${formatMoney(maxAmount)}).`;
-        }
-
+        const clientErrors = validateInvoicePaymentForm(data, maxAmount, formatMoney);
         if (Object.keys(clientErrors).length > 0) {
             setErrors(clientErrors);
             return;
@@ -256,9 +240,10 @@ export default function RecordPaymentForm({
     };
 
     const inputClass = (field: keyof PaymentFormData) =>
-        `mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 ${
-            errors[field] ? 'border-red-300' : ''
-        }`;
+        fieldInputClass(
+            Boolean(errors[field]),
+            'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500',
+        );
 
     const selectedPartyName =
         parties.find((party) => String(party.id) === data.party_id)?.name ??
@@ -310,7 +295,6 @@ export default function RecordPaymentForm({
                             className={inputClass('party_id')}
                             value={data.party_id}
                             onChange={(e) => void onPartyChange(e.target.value)}
-                            required
                             disabled={partyLocked && Boolean(resolvedPartyId) && !isEdit}
                         >
                             <option value="">Select party</option>
@@ -361,7 +345,6 @@ export default function RecordPaymentForm({
                             className={inputClass('payment_date')}
                             value={data.payment_date}
                             onChange={(e) => setField('payment_date', e.target.value)}
-                            required
                         />
                         <InputError message={errors.payment_date} className="mt-1" />
                     </div>
@@ -375,7 +358,6 @@ export default function RecordPaymentForm({
                             className={inputClass('amount')}
                             value={data.amount}
                             onChange={(e) => setField('amount', e.target.value)}
-                            required
                         />
                         <InputError message={errors.amount} className="mt-1" />
                     </div>
@@ -405,6 +387,7 @@ export default function RecordPaymentForm({
                             onChange={(e) => setField('reference_no', e.target.value)}
                             placeholder="UTR / cheque no."
                         />
+                        <InputError message={errors.reference_no} className="mt-1" />
                     </div>
                 </div>
 
@@ -415,6 +398,7 @@ export default function RecordPaymentForm({
                         value={data.notes}
                         onChange={(e) => setField('notes', e.target.value)}
                     />
+                    <InputError message={errors.notes} className="mt-1" />
                 </div>
 
                 <div className="flex items-center gap-3 pt-2">

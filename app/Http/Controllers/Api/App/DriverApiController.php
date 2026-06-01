@@ -129,7 +129,16 @@ class DriverApiController extends Controller
     public function postDriverStore(Request $request)
     {
         try {
-            $validation = Validator::make($request->all(), $this->rules());
+            $validation = Validator::make($request->all(), [
+                'name' => ['required', 'string', 'max:255'],
+                'mobile' => ['nullable', 'string', 'max:15'],
+                'license_number' => ['nullable', 'string', 'max:50'],
+                'license_expiry' => ['nullable', 'date'],
+                'joining_date' => ['nullable', 'date'],
+                'salary' => ['nullable', 'numeric', 'min:0'],
+                'address' => ['nullable', 'string'],
+                'status' => ['required', 'string', Rule::in(['active', 'inactive'])],
+            ]);
 
             if ($validation->fails()) {
                 return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
@@ -153,7 +162,14 @@ class DriverApiController extends Controller
         try {
             $validation = Validator::make($request->all(), [
                 'id' => ['required', 'integer'],
-                ...$this->rules(),
+                'name' => ['required', 'string', 'max:255'],
+                'mobile' => ['nullable', 'string', 'max:15'],
+                'license_number' => ['nullable', 'string', 'max:50'],
+                'license_expiry' => ['nullable', 'date'],
+                'joining_date' => ['nullable', 'date'],
+                'salary' => ['nullable', 'numeric', 'min:0'],
+                'address' => ['nullable', 'string'],
+                'status' => ['required', 'string', Rule::in(['active', 'inactive'])],
             ]);
 
             if ($validation->fails()) {
@@ -226,20 +242,5 @@ class DriverApiController extends Controller
             'status' => $status,
             ...$dateFilters,
         ]];
-    }
-
-    /** @return array<string, list<mixed>> */
-    private function rules(): array
-    {
-        return [
-            'name' => ['required', 'string', 'max:255'],
-            'mobile' => ['nullable', 'string', 'max:15'],
-            'license_number' => ['nullable', 'string', 'max:50'],
-            'license_expiry' => ['nullable', 'date'],
-            'joining_date' => ['nullable', 'date'],
-            'salary' => ['nullable', 'numeric', 'min:0'],
-            'address' => ['nullable', 'string'],
-            'status' => ['required', 'string', Rule::in(['active', 'inactive'])],
-        ];
     }
 }

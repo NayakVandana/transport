@@ -2,14 +2,16 @@ import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
+import TextInput from '@/Components/TextInput';
 import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
-import { applyApiFormErrors, hasApiFieldErrors } from '@/lib/apiFormErrors';
+import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { exportFilteredList } from '@/lib/listExport';
+import { validateRouteForm } from '@/lib/routeValidation';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
 import { resolveReturnHref } from '@/lib/invoiceReturn';
@@ -97,13 +99,26 @@ export default function RoutesIndex() {
 
     const routes = data?.routes.data ?? [];
 
+    const setRouteName = (value: string) => {
+        setName(value);
+        setFieldErrors((prev) => {
+            if (!prev.name) {
+                return prev;
+            }
+            const next = { ...prev };
+            delete next.name;
+            return next;
+        });
+    };
+
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
         setFieldErrors({});
         setActionError(null);
 
-        if (!name.trim()) {
-            setFieldErrors({ name: 'Route name is required.' });
+        const clientErrors = validateRouteForm({ name });
+        if (Object.keys(clientErrors).length > 0) {
+            setFieldErrors(clientErrors);
             return;
         }
 
@@ -112,11 +127,11 @@ export default function RoutesIndex() {
         try {
             const res = await appApiPost<ApiEnvelope<{ route: RouteLocation }>>(
                 '/routes/route-store',
-                { name },
+                { name: name.trim() },
             );
 
             if (!res.success) {
-                setFieldErrors(applyApiFormErrors(res, { fallbackField: 'name' }));
+                setFieldErrors(apiFieldErrors(res.data));
                 if (!hasApiFieldErrors(res.data)) {
                     setActionError(res.message || 'Could not add route.');
                 }
@@ -178,12 +193,11 @@ export default function RoutesIndex() {
                         <h3 className="mb-4 font-medium text-gray-900">Add Route / Location</h3>
                         <div>
                             <InputLabel value="From (Route)" />
-                            <input
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                            <TextInput
+                                className={fieldInputClass(Boolean(fieldErrors.name))}
                                 value={name}
-                                onChange={(e) => setName(e.target.value)}
+                                onChange={(e) => setRouteName(e.target.value)}
                                 placeholder="J N P T / SARIGAM / 1X20"
-                                required
                             />
                             <InputError message={fieldErrors.name} className="mt-1" />
                         </div>

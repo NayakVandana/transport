@@ -5,11 +5,10 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import { apiFieldErrors, hasApiFieldErrors } from '@/lib/apiFormErrors';
+import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import {
     validateVehicleExpenseForm,
     type VehicleExpenseFormData,
-    type VehicleExpenseValidationMessages,
 } from '@/lib/vehicleExpenseValidation';
 import { calculateVehicleExpenseBalance, formatMoney } from '@/lib/freightCalculator';
 import type { Vehicle, VehicleExpense } from '@/types/transport';
@@ -23,12 +22,10 @@ function dateInputValue(value?: string | null): string {
 type VehicleExpenseShowData = {
     vehicleExpense: VehicleExpense;
     vehicles: Pick<Vehicle, 'id' | 'vehicle_number'>[];
-    validationMessages: VehicleExpenseValidationMessages;
 };
 
 type VehicleExpenseMetaData = {
     vehicles: Pick<Vehicle, 'id' | 'vehicle_number'>[];
-    validationMessages: VehicleExpenseValidationMessages;
 };
 
 export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpenseId?: number }) {
@@ -41,7 +38,6 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
     );
 
     const [vehicles, setVehicles] = useState<Pick<Vehicle, 'id' | 'vehicle_number'>[]>([]);
-    const [validationMessages, setValidationMessages] = useState<VehicleExpenseValidationMessages>({});
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
@@ -75,7 +71,6 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
 
                     const row = res.data.vehicleExpense;
                     setVehicles(res.data.vehicles);
-                    setValidationMessages(res.data.validationMessages);
                     setData({
                         expense_date: dateInputValue(row.expense_date),
                         vehicle_id: row.vehicle_id ? String(row.vehicle_id) : '',
@@ -97,7 +92,6 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
                     }
 
                     setVehicles(res.data.vehicles);
-                    setValidationMessages(res.data.validationMessages);
                 }
             } catch {
                 setLoadError('Could not load form data.');
@@ -133,8 +127,9 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
         setErrors({});
+        setLoadError(null);
 
-        const clientErrors = validateVehicleExpenseForm(data, validationMessages);
+        const clientErrors = validateVehicleExpenseForm(data);
         if (Object.keys(clientErrors).length > 0) {
             setErrors(clientErrors);
             return;
@@ -178,9 +173,10 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
     };
 
     const inputClass = (field: keyof VehicleExpenseFormData) =>
-        `mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 ${
-            errors[field] ? 'border-red-300' : ''
-        }`;
+        fieldInputClass(
+            Boolean(errors[field]),
+            'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500',
+        );
 
     if (loading) {
         return (
@@ -211,7 +207,6 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
                                     className={inputClass('expense_date')}
                                     value={data.expense_date}
                                     onChange={(e) => setField('expense_date', e.target.value)}
-                                    required
                                 />
                                 <InputError message={errors.expense_date} className="mt-1" />
                             </div>
@@ -222,7 +217,6 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
                                     className={inputClass('vehicle_id')}
                                     value={data.vehicle_id}
                                     onChange={(e) => setField('vehicle_id', e.target.value)}
-                                    required
                                 >
                                     <option value="">Select vehicle</option>
                                     {vehicles.map((vehicle) => (
@@ -245,7 +239,6 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
                                     className={inputClass('freight')}
                                     value={data.freight}
                                     onChange={(e) => setField('freight', e.target.value)}
-                                    required
                                 />
                                 <InputError message={errors.freight} className="mt-1" />
                             </div>

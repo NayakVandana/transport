@@ -190,10 +190,58 @@ class FreightInvoiceApiController extends Controller
                 return $this->sendJsonResponse(false, 'Set up your company profile before creating invoices.', null, 200);
             }
 
-            $validated = $this->validatedInvoice($request);
-            if ($validated instanceof JsonResponse) {
-                return $validated;
+            $validation = Validator::make($request->all(), [
+                'party_id' => ['required', 'exists:parties,id'],
+                'bill_number' => ['required', 'string', 'max:50', 'unique:freight_invoices,bill_number'],
+                'invoice_date' => ['required', 'date'],
+                'sac_code' => ['nullable', 'string', 'max:10'],
+                'status' => ['required', 'in:draft,finalized'],
+                'prepared_by' => ['nullable', 'string', 'max:100'],
+                'checked_by' => ['nullable', 'string', 'max:100'],
+                'lines' => ['required', 'array', 'min:1'],
+                'lines.*.entrybook_id' => ['nullable', 'integer', 'exists:entrybooks,id'],
+                'lines.*.entry_number' => ['nullable', 'string', 'max:50'],
+                'lines.*.entry_date' => ['nullable', 'date'],
+                'lines.*.vehicle_number' => ['nullable', 'string', 'max:20'],
+                'lines.*.route_from' => ['nullable', 'string', 'max:255'],
+                'lines.*.product_name' => ['nullable', 'string', 'max:255'],
+                'lines.*.weight' => ['required', 'numeric', 'min:0'],
+                'lines.*.rate' => ['required', 'numeric', 'min:0'],
+                'lines.*.advance_paid' => ['nullable', 'numeric', 'min:0'],
+                'lines.*.empty_container_charge' => ['nullable', 'numeric', 'min:0'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
             }
+
+            $validated = $validation->validated();
+
+            $party = Party::query()->find($validated['party_id']);
+            if (! $party || $party->user_id !== $request->user()->id) {
+                return $this->sendJsonResponse(false, 'Invalid party.', null, 200);
+            }
+
+            foreach ($validated['lines'] as $line) {
+                if (empty($line['entrybook_id'])) {
+                    continue;
+                }
+
+                $entrybook = Entrybook::query()->find($line['entrybook_id']);
+                if (! $entrybook || $entrybook->user_id !== $request->user()->id) {
+                    return $this->sendJsonResponse(false, 'Invalid entrybook entry.', null, 200);
+                }
+
+                if ((int) $entrybook->party_id !== (int) $validated['party_id']) {
+                    return $this->sendJsonResponse(
+                        false,
+                        'Entry '.$entrybook->entry_number.' does not belong to the selected party.',
+                        null,
+                        200,
+                    );
+                }
+            }
+
             $lines = $validated['lines'];
             unset($validated['lines']);
 
@@ -234,26 +282,68 @@ class FreightInvoiceApiController extends Controller
     public function postInvoiceUpdate(Request $request)
     {
         try {
-            $idValidation = Validator::make($request->all(), [
+            $validation = Validator::make($request->all(), [
                 'id' => ['required', 'integer'],
+                'party_id' => ['required', 'exists:parties,id'],
+                'bill_number' => ['required', 'string', 'max:50', 'unique:freight_invoices,bill_number,'.$request->input('id')],
+                'invoice_date' => ['required', 'date'],
+                'sac_code' => ['nullable', 'string', 'max:10'],
+                'status' => ['required', 'in:draft,finalized'],
+                'prepared_by' => ['nullable', 'string', 'max:100'],
+                'checked_by' => ['nullable', 'string', 'max:100'],
+                'lines' => ['required', 'array', 'min:1'],
+                'lines.*.entrybook_id' => ['nullable', 'integer', 'exists:entrybooks,id'],
+                'lines.*.entry_number' => ['nullable', 'string', 'max:50'],
+                'lines.*.entry_date' => ['nullable', 'date'],
+                'lines.*.vehicle_number' => ['nullable', 'string', 'max:20'],
+                'lines.*.route_from' => ['nullable', 'string', 'max:255'],
+                'lines.*.product_name' => ['nullable', 'string', 'max:255'],
+                'lines.*.weight' => ['required', 'numeric', 'min:0'],
+                'lines.*.rate' => ['required', 'numeric', 'min:0'],
+                'lines.*.advance_paid' => ['nullable', 'numeric', 'min:0'],
+                'lines.*.empty_container_charge' => ['nullable', 'numeric', 'min:0'],
             ]);
 
-            if ($idValidation->fails()) {
-                return $this->sendJsonResponse(false, $idValidation->errors()->first(), $idValidation->errors()->getMessages(), 200);
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
             }
+
+            $validated = $validation->validated();
 
             $invoice = FreightInvoice::query()
                 ->where('user_id', $request->user()->id)
                 ->with('company')
-                ->findOrFail($request->input('id'));
+                ->findOrFail($validated['id']);
 
             $company = $invoice->company;
-            $validated = $this->validatedInvoice($request, $invoice->id);
-            if ($validated instanceof JsonResponse) {
-                return $validated;
+
+            $party = Party::query()->find($validated['party_id']);
+            if (! $party || $party->user_id !== $request->user()->id) {
+                return $this->sendJsonResponse(false, 'Invalid party.', null, 200);
             }
+
+            foreach ($validated['lines'] as $line) {
+                if (empty($line['entrybook_id'])) {
+                    continue;
+                }
+
+                $entrybook = Entrybook::query()->find($line['entrybook_id']);
+                if (! $entrybook || $entrybook->user_id !== $request->user()->id) {
+                    return $this->sendJsonResponse(false, 'Invalid entrybook entry.', null, 200);
+                }
+
+                if ((int) $entrybook->party_id !== (int) $validated['party_id']) {
+                    return $this->sendJsonResponse(
+                        false,
+                        'Entry '.$entrybook->entry_number.' does not belong to the selected party.',
+                        null,
+                        200,
+                    );
+                }
+            }
+
             $lines = $validated['lines'];
-            unset($validated['lines']);
+            unset($validated['lines'], $validated['id']);
 
             [$totals, $lineFreights] = FreightInvoiceCalculator::forPersistence(
                 $lines,
@@ -380,71 +470,6 @@ class FreightInvoiceApiController extends Controller
                 'empty_container_charge' => $line['empty_container_charge'] ?? 0,
             ]);
         }
-    }
-
-    /** @return array<string, mixed>|JsonResponse */
-    private function validatedInvoice(Request $request, ?int $ignoreId = null): array|JsonResponse
-    {
-        $billUnique = 'unique:freight_invoices,bill_number';
-        if ($ignoreId) {
-            $billUnique .= ','.$ignoreId;
-        }
-
-        $rules = [
-            'party_id' => ['required', 'exists:parties,id'],
-            'bill_number' => ['required', 'string', 'max:50', $billUnique],
-            'invoice_date' => ['required', 'date'],
-            'sac_code' => ['nullable', 'string', 'max:10'],
-            'status' => ['required', 'in:draft,finalized'],
-            'prepared_by' => ['nullable', 'string', 'max:100'],
-            'checked_by' => ['nullable', 'string', 'max:100'],
-            'lines' => ['required', 'array', 'min:1'],
-            'lines.*.entrybook_id' => ['nullable', 'integer', 'exists:entrybooks,id'],
-            'lines.*.entry_number' => ['nullable', 'string', 'max:50'],
-            'lines.*.entry_date' => ['nullable', 'date'],
-            'lines.*.vehicle_number' => ['nullable', 'string', 'max:20'],
-            'lines.*.route_from' => ['nullable', 'string', 'max:255'],
-            'lines.*.product_name' => ['nullable', 'string', 'max:255'],
-            'lines.*.weight' => ['required', 'numeric', 'min:0'],
-            'lines.*.rate' => ['required', 'numeric', 'min:0'],
-            'lines.*.advance_paid' => ['nullable', 'numeric', 'min:0'],
-            'lines.*.empty_container_charge' => ['nullable', 'numeric', 'min:0'],
-        ];
-
-        $validation = Validator::make($request->all(), $rules);
-
-        if ($validation->fails()) {
-            return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
-        }
-
-        $validated = $validation->validated();
-
-        $party = Party::query()->find($validated['party_id']);
-        if (! $party || $party->user_id !== $request->user()->id) {
-            return $this->sendJsonResponse(false, 'Invalid party.', null, 200);
-        }
-
-        foreach ($validated['lines'] as $line) {
-            if (empty($line['entrybook_id'])) {
-                continue;
-            }
-
-            $entrybook = Entrybook::query()->find($line['entrybook_id']);
-            if (! $entrybook || $entrybook->user_id !== $request->user()->id) {
-                return $this->sendJsonResponse(false, 'Invalid entrybook entry.', null, 200);
-            }
-
-            if ((int) $entrybook->party_id !== (int) $validated['party_id']) {
-                return $this->sendJsonResponse(
-                    false,
-                    'Entry '.$entrybook->entry_number.' does not belong to the selected party.',
-                    null,
-                    200,
-                );
-            }
-        }
-
-        return $validated;
     }
 
     /**

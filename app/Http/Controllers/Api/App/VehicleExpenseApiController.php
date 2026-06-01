@@ -3,16 +3,15 @@
 namespace App\Http\Controllers\Api\App;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\VehicleExpenseRequest;
 use App\Models\VehicleExpense;
 use App\Support\ListExport;
 use App\Support\VehicleExpenseCalculator;
 use App\Support\VehicleExpenseReport;
-use App\Support\VehicleExpenseValidation;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class VehicleExpenseApiController extends Controller
@@ -48,7 +47,6 @@ class VehicleExpenseApiController extends Controller
 
             return $this->sendJsonResponse(true, 'Vehicle expense form data loaded.', [
                 'vehicles' => VehicleExpenseReport::vehiclesForUser($userId),
-                'validationMessages' => VehicleExpenseValidation::forFrontend(),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -75,18 +73,42 @@ class VehicleExpenseApiController extends Controller
             return $this->sendJsonResponse(true, 'Vehicle expense loaded.', [
                 'vehicleExpense' => $vehicleExpense,
                 'vehicles' => VehicleExpenseReport::vehiclesForUser($userId),
-                'validationMessages' => VehicleExpenseValidation::forFrontend(),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
         }
     }
 
-    public function postVehicleExpenseStore(VehicleExpenseRequest $request)
+    public function postVehicleExpenseStore(Request $request)
     {
         try {
+            $input = $request->all();
+            if (isset($input['vehicle_id']) && $input['vehicle_id'] !== '') {
+                $input['vehicle_id'] = (int) $input['vehicle_id'];
+            }
+
+            $validation = Validator::make($input, [
+                'expense_date' => ['required', 'date'],
+                'vehicle_id' => [
+                    'required',
+                    'integer',
+                    Rule::exists('vehicles', 'id')->where(
+                        fn ($query) => $query->where('user_id', $request->user()->id)->whereNull('deleted_at'),
+                    ),
+                ],
+                'freight' => ['required', 'numeric', 'min:0'],
+                'advance' => ['nullable', 'numeric', 'min:0'],
+                'empty_charge' => ['nullable', 'numeric', 'min:0'],
+                'toll' => ['nullable', 'numeric', 'min:0'],
+                'maintenance' => ['nullable', 'numeric', 'min:0'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
             $vehicleExpense = VehicleExpense::query()->create([
-                ...$this->payload($request),
+                ...$this->payload($validation->validated()),
                 'user_id' => (int) $request->user()->id,
             ]);
 
@@ -98,11 +120,29 @@ class VehicleExpenseApiController extends Controller
         }
     }
 
-    public function postVehicleExpenseUpdate(VehicleExpenseRequest $request)
+    public function postVehicleExpenseUpdate(Request $request)
     {
         try {
-            $validation = Validator::make($request->all(), [
+            $input = $request->all();
+            if (isset($input['vehicle_id']) && $input['vehicle_id'] !== '') {
+                $input['vehicle_id'] = (int) $input['vehicle_id'];
+            }
+
+            $validation = Validator::make($input, [
                 'id' => ['required', 'integer'],
+                'expense_date' => ['required', 'date'],
+                'vehicle_id' => [
+                    'required',
+                    'integer',
+                    Rule::exists('vehicles', 'id')->where(
+                        fn ($query) => $query->where('user_id', $request->user()->id)->whereNull('deleted_at'),
+                    ),
+                ],
+                'freight' => ['required', 'numeric', 'min:0'],
+                'advance' => ['nullable', 'numeric', 'min:0'],
+                'empty_charge' => ['nullable', 'numeric', 'min:0'],
+                'toll' => ['nullable', 'numeric', 'min:0'],
+                'maintenance' => ['nullable', 'numeric', 'min:0'],
             ]);
 
             if ($validation->fails()) {
@@ -112,9 +152,9 @@ class VehicleExpenseApiController extends Controller
             $userId = (int) $request->user()->id;
             $vehicleExpense = VehicleExpense::query()
                 ->where('user_id', $userId)
-                ->findOrFail($request->input('id'));
+                ->findOrFail($validation->validated()['id']);
 
-            $vehicleExpense->update($this->payload($request));
+            $vehicleExpense->update($this->payload(collect($validation->validated())->except('id')->all()));
 
             return $this->sendJsonResponse(true, 'Vehicle expense updated.', [
                 'vehicleExpense' => $vehicleExpense->fresh()->load(['vehicle:id,vehicle_number']),
@@ -235,10 +275,9 @@ class VehicleExpenseApiController extends Controller
         }
     }
 
-    /** @return array<string, mixed> */
-    private function payload(VehicleExpenseRequest $request): array
+    /** @param array<string, mixed> $validated */
+    private function payload(array $validated): array
     {
-        $validated = $request->validated();
         $freight = (float) $validated['freight'];
         $advance = (float) ($validated['advance'] ?? 0);
         $emptyCharge = (float) ($validated['empty_charge'] ?? 0);

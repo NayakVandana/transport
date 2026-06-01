@@ -46,9 +46,27 @@ class VehicleDocumentApiController extends Controller
     public function postVehicleDocumentStore(Request $request)
     {
         try {
-            $this->normalizeInput($request);
             $userId = (int) $request->user()->id;
-            $validation = Validator::make($request->all(), $this->rules($userId, true));
+            $request->merge([
+                'vehicle_id' => $request->filled('vehicle_id') ? (int) $request->input('vehicle_id') : null,
+                'title' => $request->input('title') ?: null,
+                'notes' => $request->input('notes') ?: null,
+            ]);
+
+            $validation = Validator::make($request->all(), [
+                'vehicle_id' => [
+                    'required',
+                    'integer',
+                    Rule::exists('vehicles', 'id')->where(
+                        fn ($query) => $query->where('user_id', $userId)->whereNull('deleted_at'),
+                    ),
+                ],
+                'document_type' => ['required', 'string', Rule::in(DocumentValidation::vehicleDocumentTypes())],
+                'title' => ['nullable', 'string', 'max:255'],
+                'file' => ['required', DocumentValidation::fileRule()],
+                'expiry_date' => ['nullable', 'date'],
+                'notes' => ['nullable', 'string'],
+            ]);
 
             if ($validation->fails()) {
                 return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
@@ -77,11 +95,27 @@ class VehicleDocumentApiController extends Controller
     public function postVehicleDocumentUpdate(Request $request)
     {
         try {
-            $this->normalizeInput($request);
             $userId = (int) $request->user()->id;
+            $request->merge([
+                'vehicle_id' => $request->filled('vehicle_id') ? (int) $request->input('vehicle_id') : null,
+                'title' => $request->input('title') ?: null,
+                'notes' => $request->input('notes') ?: null,
+            ]);
+
             $validation = Validator::make($request->all(), [
                 'id' => ['required', 'integer'],
-                ...$this->rules($userId, false),
+                'vehicle_id' => [
+                    'required',
+                    'integer',
+                    Rule::exists('vehicles', 'id')->where(
+                        fn ($query) => $query->where('user_id', $userId)->whereNull('deleted_at'),
+                    ),
+                ],
+                'document_type' => ['required', 'string', Rule::in(DocumentValidation::vehicleDocumentTypes())],
+                'title' => ['nullable', 'string', 'max:255'],
+                'file' => ['nullable', DocumentValidation::fileRule()],
+                'expiry_date' => ['nullable', 'date'],
+                'notes' => ['nullable', 'string'],
             ]);
 
             if ($validation->fails()) {
@@ -142,33 +176,5 @@ class VehicleDocumentApiController extends Controller
         return Vehicle::query()
             ->where('user_id', $userId)
             ->findOrFail($vehicleId);
-    }
-
-    /** @return array<string, list<mixed>> */
-    private function rules(int $userId, bool $requireFile): array
-    {
-        return [
-            'vehicle_id' => [
-                'required',
-                'integer',
-                Rule::exists('vehicles', 'id')->where(
-                    fn ($query) => $query->where('user_id', $userId)->whereNull('deleted_at'),
-                ),
-            ],
-            'document_type' => ['required', 'string', Rule::in(DocumentValidation::vehicleDocumentTypes())],
-            'title' => ['nullable', 'string', 'max:255'],
-            'file' => [$requireFile ? 'required' : 'nullable', DocumentValidation::fileRule()],
-            'expiry_date' => ['nullable', 'date'],
-            'notes' => ['nullable', 'string'],
-        ];
-    }
-
-    private function normalizeInput(Request $request): void
-    {
-        $request->merge([
-            'vehicle_id' => $request->filled('vehicle_id') ? (int) $request->input('vehicle_id') : null,
-            'title' => $request->input('title') ?: null,
-            'notes' => $request->input('notes') ?: null,
-        ]);
     }
 }
