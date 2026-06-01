@@ -5,27 +5,11 @@ import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
+import { applyApiFormErrors } from '@/lib/apiFormErrors';
 import { clearAuthUserCache } from '@/auth/useAuthUser';
 import { setUserApiToken } from '@/auth/authToken';
 import { router } from '@inertiajs/react';
 import { FormEventHandler, useRef, useState } from 'react';
-
-function apiFieldErrors(data: unknown): Record<string, string> {
-    if (!data || typeof data !== 'object' || Array.isArray(data)) {
-        return {};
-    }
-
-    const errors: Record<string, string> = {};
-    for (const [key, val] of Object.entries(data)) {
-        if (Array.isArray(val) && val[0]) {
-            errors[key] = String(val[0]);
-        } else if (typeof val === 'string') {
-            errors[key] = val;
-        }
-    }
-
-    return errors;
-}
 
 export default function DeleteUserForm({
     className = '',
@@ -59,10 +43,12 @@ export default function DeleteUserForm({
             });
 
             if (!res.success) {
-                setErrors(apiFieldErrors(res.data));
-                if (!res.data) {
-                    setErrors({ password: res.message || 'Could not delete account.' });
-                }
+                setErrors(
+                    applyApiFormErrors(res, {
+                        fallbackField: 'password',
+                        fallbackMessage: 'Could not delete account.',
+                    }),
+                );
                 passwordInput.current?.focus();
                 return;
             }

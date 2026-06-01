@@ -6,25 +6,10 @@ import TextInput from '@/Components/TextInput';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import type { Company } from '@/types/transport';
+import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
+import { validateCompanyForm } from '@/lib/companyValidation';
 import { Head } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useState } from 'react';
-
-function apiFieldErrors(data: unknown): Record<string, string> {
-    if (!data || typeof data !== 'object' || Array.isArray(data)) {
-        return {};
-    }
-
-    const errors: Record<string, string> = {};
-    for (const [key, val] of Object.entries(data)) {
-        if (Array.isArray(val) && val[0]) {
-            errors[key] = String(val[0]);
-        } else if (typeof val === 'string') {
-            errors[key] = val;
-        }
-    }
-
-    return errors;
-}
 
 const defaultData = {
     name: '',
@@ -113,8 +98,16 @@ export default function CompanyEdit() {
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
         setErrors({});
-        setProcessing(true);
+        setLoadError(null);
         setSaved(false);
+
+        const clientErrors = validateCompanyForm(data);
+        if (Object.keys(clientErrors).length > 0) {
+            setErrors(clientErrors);
+            return;
+        }
+
+        setProcessing(true);
 
         try {
             const res = await appApiPost<ApiEnvelope<{ company: Company }>>(
@@ -128,7 +121,7 @@ export default function CompanyEdit() {
 
             if (!res.success) {
                 setErrors(apiFieldErrors(res.data));
-                if (!res.data) {
+                if (!hasApiFieldErrors(res.data)) {
                     setLoadError(res.message || 'Could not save company.');
                 }
                 return;
@@ -164,10 +157,10 @@ export default function CompanyEdit() {
                             <Section title="Business Details">
                                 <Field label="Company Name" error={errors.name}>
                                     <TextInput
-                                        className="mt-1 block w-full"
+                                        className={fieldInputClass(Boolean(errors.name))}
                                         value={data.name}
                                         onChange={(e) => setField('name', e.target.value)}
-                                        required
+                                        placeholder="Enter company name"
                                     />
                                 </Field>
                                 <div className="grid gap-4 sm:grid-cols-2">
@@ -213,20 +206,18 @@ export default function CompanyEdit() {
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <Field label="SAC Code" error={errors.sac_code}>
                                         <TextInput
-                                            className="mt-1 block w-full"
+                                            className={fieldInputClass(Boolean(errors.sac_code))}
                                             value={data.sac_code}
                                             onChange={(e) => setField('sac_code', e.target.value)}
-                                            required
                                         />
                                     </Field>
                                     <Field label="IGST Rate %" error={errors.igst_rate}>
                                         <TextInput
                                             type="number"
                                             step="0.0001"
-                                            className="mt-1 block w-full"
+                                            className={fieldInputClass(Boolean(errors.igst_rate))}
                                             value={data.igst_rate}
                                             onChange={(e) => setField('igst_rate', e.target.value)}
-                                            required
                                         />
                                     </Field>
                                 </div>
@@ -240,7 +231,7 @@ export default function CompanyEdit() {
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <Field label="Entry Prefix" error={errors.entry_number_prefix}>
                                         <TextInput
-                                            className="mt-1 block w-full font-mono"
+                                            className={`${fieldInputClass(Boolean(errors.entry_number_prefix))} font-mono`}
                                             value={data.entry_number_prefix}
                                             onChange={(e) =>
                                                 setField(
@@ -249,19 +240,17 @@ export default function CompanyEdit() {
                                                 )
                                             }
                                             placeholder="R2526"
-                                            required
                                         />
                                     </Field>
                                     <Field label="Next Sequence Number" error={errors.entry_next_sequence}>
                                         <TextInput
                                             type="number"
                                             min={1}
-                                            className="mt-1 block w-full"
+                                            className={fieldInputClass(Boolean(errors.entry_next_sequence))}
                                             value={data.entry_next_sequence}
                                             onChange={(e) =>
                                                 setField('entry_next_sequence', e.target.value)
                                             }
-                                            required
                                         />
                                     </Field>
                                 </div>

@@ -6,6 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
+import { apiFieldErrors, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import {
     validateEntrybookForm,
     type EntrybookFormData,
@@ -36,23 +37,6 @@ type EntrybookMetaData = {
     validationMessages: EntrybookValidationMessages;
     nextEntryNumber: string;
 };
-
-function apiFieldErrors(data: unknown): Record<string, string> {
-    if (!data || typeof data !== 'object' || Array.isArray(data)) {
-        return {};
-    }
-
-    const errors: Record<string, string> = {};
-    for (const [key, val] of Object.entries(data)) {
-        if (Array.isArray(val) && val[0]) {
-            errors[key] = String(val[0]);
-        } else if (typeof val === 'string') {
-            errors[key] = val;
-        }
-    }
-
-    return errors;
-}
 
 export default function EntrybookForm({ entrybookId }: { entrybookId?: number }) {
     const isEdit = Boolean(entrybookId);
@@ -190,7 +174,7 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
 
             if (!res.success) {
                 setErrors(apiFieldErrors(res.data));
-                if (!res.data) {
+                if (!hasApiFieldErrors(res.data)) {
                     setLoadError(res.message || 'Could not save entry.');
                 }
                 return;

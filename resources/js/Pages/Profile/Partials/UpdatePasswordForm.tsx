@@ -3,25 +3,9 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
+import { applyApiFormErrors } from '@/lib/apiFormErrors';
 import { Transition } from '@headlessui/react';
 import { FormEventHandler, useRef, useState } from 'react';
-
-function apiFieldErrors(data: unknown): Record<string, string> {
-    if (!data || typeof data !== 'object' || Array.isArray(data)) {
-        return {};
-    }
-
-    const errors: Record<string, string> = {};
-    for (const [key, val] of Object.entries(data)) {
-        if (Array.isArray(val) && val[0]) {
-            errors[key] = String(val[0]);
-        } else if (typeof val === 'string') {
-            errors[key] = val;
-        }
-    }
-
-    return errors;
-}
 
 export default function UpdatePasswordForm({
     className = '',
@@ -57,7 +41,10 @@ export default function UpdatePasswordForm({
             });
 
             if (!res.success) {
-                const fieldErrors = apiFieldErrors(res.data);
+                const fieldErrors = applyApiFormErrors(res, {
+                    fallbackField: 'current_password',
+                    fallbackMessage: 'Could not update password.',
+                });
                 setErrors(fieldErrors);
 
                 if (fieldErrors.password) {
@@ -68,10 +55,6 @@ export default function UpdatePasswordForm({
                 if (fieldErrors.current_password) {
                     reset('current_password');
                     currentPasswordInput.current?.focus();
-                }
-
-                if (!res.data) {
-                    setErrors({ current_password: res.message || 'Could not update password.' });
                 }
 
                 return;

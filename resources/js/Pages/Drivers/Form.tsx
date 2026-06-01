@@ -12,25 +12,10 @@ import { invalidateAppQuery } from '@/hooks/useAppQuery';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import type { Driver, EntityDocument, ExpenseOption } from '@/types/transport';
+import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
+import { validateDriverForm } from '@/lib/driverValidation';
 import { Head, router } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useState } from 'react';
-
-function apiFieldErrors(data: unknown): Record<string, string> {
-    if (!data || typeof data !== 'object' || Array.isArray(data)) {
-        return {};
-    }
-
-    const errors: Record<string, string> = {};
-    for (const [key, val] of Object.entries(data)) {
-        if (Array.isArray(val) && val[0]) {
-            errors[key] = String(val[0]);
-        } else if (typeof val === 'string') {
-            errors[key] = val;
-        }
-    }
-
-    return errors;
-}
 
 function dateInputValue(value?: string | null): string {
     return value?.slice(0, 10) ?? '';
@@ -131,6 +116,12 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
         setErrors({});
         setLoadError(null);
 
+        const clientErrors = validateDriverForm(data);
+        if (Object.keys(clientErrors).length > 0) {
+            setErrors(clientErrors);
+            return;
+        }
+
         if (documentDrafts.some((draft) => !draft.file)) {
             setLoadError('Each document row needs a file, or remove empty rows.');
             return;
@@ -152,7 +143,7 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
 
             if (!res.success) {
                 setErrors(apiFieldErrors(res.data));
-                if (!res.data) {
+                if (!hasApiFieldErrors(res.data)) {
                     setLoadError(res.message || 'Could not save driver.');
                 }
                 return;
@@ -218,17 +209,16 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                             <div>
                                 <InputLabel value="Name" />
                                 <TextInput
-                                    className="mt-1 block w-full"
+                                    className={fieldInputClass(Boolean(errors.name))}
                                     value={data.name}
                                     onChange={(e) => setField('name', e.target.value)}
-                                    required
                                 />
                                 <InputError message={errors.name} className="mt-1" />
                             </div>
                             <div>
                                 <InputLabel value="Mobile" />
                                 <TextInput
-                                    className="mt-1 block w-full"
+                                    className={fieldInputClass(Boolean(errors.mobile))}
                                     value={data.mobile}
                                     onChange={(e) => setField('mobile', e.target.value)}
                                 />

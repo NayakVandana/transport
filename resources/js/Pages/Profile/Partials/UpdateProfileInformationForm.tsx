@@ -3,27 +3,11 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
+import { applyApiFormErrors } from '@/lib/apiFormErrors';
 import { clearAuthUserCache, useAuthUser } from '@/auth/useAuthUser';
 import type { User } from '@/types';
 import { Transition } from '@headlessui/react';
 import { FormEventHandler, useEffect, useState } from 'react';
-
-function apiFieldErrors(data: unknown): Record<string, string> {
-    if (!data || typeof data !== 'object' || Array.isArray(data)) {
-        return {};
-    }
-
-    const errors: Record<string, string> = {};
-    for (const [key, val] of Object.entries(data)) {
-        if (Array.isArray(val) && val[0]) {
-            errors[key] = String(val[0]);
-        } else if (typeof val === 'string') {
-            errors[key] = val;
-        }
-    }
-
-    return errors;
-}
 
 export default function UpdateProfileInformation({
     className = '',
@@ -57,10 +41,12 @@ export default function UpdateProfileInformation({
             );
 
             if (!res.success) {
-                setErrors(apiFieldErrors(res.data));
-                if (!res.data) {
-                    setErrors({ email: res.message || 'Could not update profile.' });
-                }
+                setErrors(
+                    applyApiFormErrors(res, {
+                        fallbackField: 'email',
+                        fallbackMessage: 'Could not update profile.',
+                    }),
+                );
                 return;
             }
 

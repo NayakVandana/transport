@@ -7,25 +7,10 @@ import { invalidateAppQuery } from '@/hooks/useAppQuery';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import type { Party } from '@/types/transport';
+import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
+import { validatePartyForm } from '@/lib/partyValidation';
 import { Head, router } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useState } from 'react';
-
-function apiFieldErrors(data: unknown): Record<string, string> {
-    if (!data || typeof data !== 'object' || Array.isArray(data)) {
-        return {};
-    }
-
-    const errors: Record<string, string> = {};
-    for (const [key, val] of Object.entries(data)) {
-        if (Array.isArray(val) && val[0]) {
-            errors[key] = String(val[0]);
-        } else if (typeof val === 'string') {
-            errors[key] = val;
-        }
-    }
-
-    return errors;
-}
 
 export default function PartyForm({ partyId }: { partyId?: number }) {
     const isEdit = Boolean(partyId);
@@ -89,6 +74,14 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
         setErrors({});
+        setLoadError(null);
+
+        const clientErrors = validatePartyForm(data);
+        if (Object.keys(clientErrors).length > 0) {
+            setErrors(clientErrors);
+            return;
+        }
+
         setProcessing(true);
 
         try {
@@ -104,7 +97,7 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
 
             if (!res.success) {
                 setErrors(apiFieldErrors(res.data));
-                if (!res.data) {
+                if (!hasApiFieldErrors(res.data)) {
                     setLoadError(res.message || 'Could not save party.');
                 }
                 return;
@@ -135,17 +128,16 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
                             <div>
                                 <InputLabel value="Name" />
                                 <TextInput
-                                    className="mt-1 block w-full"
+                                    className={fieldInputClass(Boolean(errors.name))}
                                     value={data.name}
                                     onChange={(e) => setField('name', e.target.value)}
-                                    required
                                 />
                                 <InputError message={errors.name} className="mt-1" />
                             </div>
                             <div>
                                 <InputLabel value="Mobile" />
                                 <TextInput
-                                    className="mt-1 block w-full"
+                                    className={fieldInputClass(Boolean(errors.mobile))}
                                     value={data.mobile}
                                     onChange={(e) => setField('mobile', e.target.value)}
                                 />
@@ -154,7 +146,7 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
                             <div>
                                 <InputLabel value="Address" />
                                 <textarea
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                    className={`${fieldInputClass(Boolean(errors.address), 'mt-1 block w-full rounded-md shadow-sm focus:ring-indigo-500')} border-gray-300 focus:border-indigo-500`}
                                     rows={4}
                                     value={data.address}
                                     onChange={(e) => setField('address', e.target.value)}
@@ -164,7 +156,7 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
                             <div>
                                 <InputLabel value="State Code" />
                                 <TextInput
-                                    className="mt-1 block w-full"
+                                    className={fieldInputClass(Boolean(errors.state_code))}
                                     value={data.state_code}
                                     onChange={(e) => setField('state_code', e.target.value)}
                                     placeholder="e.g. 27"

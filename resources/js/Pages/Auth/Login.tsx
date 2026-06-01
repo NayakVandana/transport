@@ -7,6 +7,7 @@ import type { ApiEnvelope } from '@/api/apiClient';
 import { apiPost } from '@/api/apiClient';
 import { seedAuthUserCache, useAuthUser } from '@/auth/useAuthUser';
 import { setUserApiToken } from '@/auth/authToken';
+import { applyApiFormErrors } from '@/lib/apiFormErrors';
 import GuestLayout from '@/Layouts/GuestLayout';
 import type { User } from '@/types';
 import { getPostAuthRedirect, registerUrl } from '@/utils/requireAuth';
@@ -45,6 +46,18 @@ export default function Login({
         setProcessing(true);
         setErrors({});
 
+        if (!email.trim()) {
+            setErrors({ email: 'Email is required.' });
+            setProcessing(false);
+            return;
+        }
+
+        if (!password) {
+            setErrors({ password: 'Password is required.' });
+            setProcessing(false);
+            return;
+        }
+
         try {
             const res = await apiPost<LoginResponse>('/api/v1/auth/auth-login', {
                 email,
@@ -52,7 +65,12 @@ export default function Login({
             });
 
             if (!res.success || !res.data?.token) {
-                setErrors({ email: res.message || 'Invalid credentials.' });
+                setErrors(
+                    applyApiFormErrors(res, {
+                        fallbackField: 'email',
+                        fallbackMessage: 'Invalid credentials.',
+                    }),
+                );
 
                 return;
             }

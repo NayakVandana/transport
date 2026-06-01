@@ -6,6 +6,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import MasterDataSelect from '@/Components/MasterDataSelect';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
+import { apiFieldErrors, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { balanceInWords } from '@/lib/amountInWords';
 import {
     calculateFreightInvoice,
@@ -78,23 +79,6 @@ function applyEntrybookToLine(
         weight: line.weight || 1,
         product_name: line.product_name || 'AS PER INVOICES',
     };
-}
-
-function apiFieldErrors(data: unknown): Record<string, string> {
-    if (!data || typeof data !== 'object' || Array.isArray(data)) {
-        return {};
-    }
-
-    const errors: Record<string, string> = {};
-    for (const [key, val] of Object.entries(data)) {
-        if (Array.isArray(val) && val[0]) {
-            errors[key] = String(val[0]);
-        } else if (typeof val === 'string') {
-            errors[key] = val;
-        }
-    }
-
-    return errors;
 }
 
 export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
@@ -251,7 +235,7 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
 
             if (!res.success) {
                 setErrors(apiFieldErrors(res.data));
-                if (!res.data) {
+                if (!hasApiFieldErrors(res.data)) {
                     setLoadError(res.message || 'Could not save invoice.');
                 }
                 return;

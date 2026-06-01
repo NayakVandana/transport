@@ -14,6 +14,7 @@ import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { dateFiltersFromPicker } from '@/lib/listFilters';
 import type { DatePickerRangeValue } from '@/Components/FormDatePicker';
+import { apiFieldErrors, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
 import type {
@@ -47,23 +48,6 @@ function StatCard({ label, value, tone }: { label: string; value: string; tone?:
             <p className={`mt-1 text-lg font-semibold ${toneClass}`}>{value}</p>
         </div>
     );
-}
-
-function apiFieldErrors(data: unknown): Record<string, string> {
-    if (!data || typeof data !== 'object' || Array.isArray(data)) {
-        return {};
-    }
-
-    const errors: Record<string, string> = {};
-    for (const [key, val] of Object.entries(data)) {
-        if (Array.isArray(val) && val[0]) {
-            errors[key] = String(val[0]);
-        } else if (typeof val === 'string') {
-            errors[key] = val;
-        }
-    }
-
-    return errors;
 }
 
 export default function PartyShow({
@@ -187,7 +171,7 @@ export default function PartyShow({
 
             if (!res.success) {
                 setProfileErrors(apiFieldErrors(res.data));
-                if (!res.data) {
+                if (!hasApiFieldErrors(res.data)) {
                     setProfileMessage(res.message || 'Could not update party.');
                 }
                 return;

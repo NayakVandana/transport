@@ -8,6 +8,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { applyApiFormErrors, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
@@ -39,23 +40,6 @@ function useInvoiceReturn() {
             return_label: params.get('return_label'),
         };
     }, []);
-}
-
-function apiFieldErrors(data: unknown): Record<string, string> {
-    if (!data || typeof data !== 'object' || Array.isArray(data)) {
-        return {};
-    }
-
-    const errors: Record<string, string> = {};
-    for (const [key, val] of Object.entries(data)) {
-        if (Array.isArray(val) && val[0]) {
-            errors[key] = String(val[0]);
-        } else if (typeof val === 'string') {
-            errors[key] = val;
-        }
-    }
-
-    return errors;
 }
 
 export default function RoutesIndex() {
@@ -116,6 +100,13 @@ export default function RoutesIndex() {
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
         setFieldErrors({});
+        setActionError(null);
+
+        if (!name.trim()) {
+            setFieldErrors({ name: 'Route name is required.' });
+            return;
+        }
+
         setProcessing(true);
 
         try {
@@ -125,8 +116,8 @@ export default function RoutesIndex() {
             );
 
             if (!res.success) {
-                setFieldErrors(apiFieldErrors(res.data));
-                if (!res.data) {
+                setFieldErrors(applyApiFormErrors(res, { fallbackField: 'name' }));
+                if (!hasApiFieldErrors(res.data)) {
                     setActionError(res.message || 'Could not add route.');
                 }
                 return;

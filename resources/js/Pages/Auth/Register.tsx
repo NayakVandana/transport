@@ -6,6 +6,7 @@ import type { ApiEnvelope } from '@/api/apiClient';
 import { apiPost } from '@/api/apiClient';
 import { seedAuthUserCache, useAuthUser } from '@/auth/useAuthUser';
 import { setUserApiToken } from '@/auth/authToken';
+import { applyApiFormErrors } from '@/lib/apiFormErrors';
 import GuestLayout from '@/Layouts/GuestLayout';
 import type { User } from '@/types';
 import { getPostAuthRedirect, loginUrl } from '@/utils/requireAuth';
@@ -41,6 +42,28 @@ export default function Register({
         setProcessing(true);
         setErrors({});
 
+        const clientErrors: Record<string, string> = {};
+        if (!name.trim()) {
+            clientErrors.name = 'Name is required.';
+        }
+        if (!email.trim()) {
+            clientErrors.email = 'Email is required.';
+        }
+        if (!password) {
+            clientErrors.password = 'Password is required.';
+        }
+        if (!passwordConfirmation) {
+            clientErrors.password_confirmation = 'Please confirm your password.';
+        } else if (password !== passwordConfirmation) {
+            clientErrors.password_confirmation = 'Passwords do not match.';
+        }
+
+        if (Object.keys(clientErrors).length > 0) {
+            setErrors(clientErrors);
+            setProcessing(false);
+            return;
+        }
+
         try {
             const res = await apiPost<RegisterResponse>(
                 '/api/v1/auth/auth-register',
@@ -53,7 +76,12 @@ export default function Register({
             );
 
             if (!res.success || !res.data?.token) {
-                setErrors({ email: res.message || 'Registration failed.' });
+                setErrors(
+                    applyApiFormErrors(res, {
+                        fallbackField: 'email',
+                        fallbackMessage: 'Registration failed.',
+                    }),
+                );
 
                 return;
             }
