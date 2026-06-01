@@ -6,11 +6,10 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import { apiFieldErrors, hasApiFieldErrors } from '@/lib/apiFormErrors';
+import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import {
     validateEntrybookForm,
     type EntrybookFormData,
-    type EntrybookValidationMessages,
 } from '@/lib/entrybookValidation';
 import { calculateEntrybookBalance, formatMoney } from '@/lib/freightCalculator';
 import { masterListHref } from '@/lib/invoiceReturn';
@@ -27,14 +26,12 @@ type EntrybookShowData = {
     vehicles: Pick<Vehicle, 'id' | 'vehicle_number'>[];
     routes: Pick<RouteLocation, 'id' | 'name'>[];
     parties: Pick<Party, 'id' | 'name'>[];
-    validationMessages: EntrybookValidationMessages;
 };
 
 type EntrybookMetaData = {
     vehicles: Pick<Vehicle, 'id' | 'vehicle_number'>[];
     routes: Pick<RouteLocation, 'id' | 'name'>[];
     parties: Pick<Party, 'id' | 'name'>[];
-    validationMessages: EntrybookValidationMessages;
     nextEntryNumber: string;
 };
 
@@ -50,7 +47,6 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
     const [vehicles, setVehicles] = useState<Pick<Vehicle, 'id' | 'vehicle_number'>[]>([]);
     const [routes, setRoutes] = useState<Pick<RouteLocation, 'id' | 'name'>[]>([]);
     const [parties, setParties] = useState<Pick<Party, 'id' | 'name'>[]>([]);
-    const [validationMessages, setValidationMessages] = useState<EntrybookValidationMessages>({});
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
@@ -86,7 +82,6 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                     setVehicles(res.data.vehicles);
                     setRoutes(res.data.routes);
                     setParties(res.data.parties);
-                    setValidationMessages(res.data.validationMessages);
                     setEntryNumber(entry.entry_number);
                     setData({
                         entry_date: dateInputValue(entry.entry_date),
@@ -110,7 +105,6 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                     setVehicles(res.data.vehicles);
                     setRoutes(res.data.routes);
                     setParties(res.data.parties);
-                    setValidationMessages(res.data.validationMessages);
                     setEntryNumber(res.data.nextEntryNumber);
                 }
             } catch {
@@ -147,8 +141,9 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
         setErrors({});
+        setLoadError(null);
 
-        const clientErrors = validateEntrybookForm(data, validationMessages);
+        const clientErrors = validateEntrybookForm(data);
         if (Object.keys(clientErrors).length > 0) {
             setErrors(clientErrors);
             return;
@@ -189,9 +184,10 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
     };
 
     const inputClass = (field: keyof EntrybookFormData) =>
-        `mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 ${
-            errors[field] ? 'border-red-300' : ''
-        }`;
+        fieldInputClass(
+            Boolean(errors[field]),
+            'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500',
+        );
 
     if (loading) {
         return (
@@ -237,7 +233,6 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                                     className={inputClass('entry_date')}
                                     value={data.entry_date}
                                     onChange={(e) => setField('entry_date', e.target.value)}
-                                    required
                                 />
                                 <InputError message={errors.entry_date} className="mt-1" />
                             </div>
@@ -249,7 +244,6 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                                 className={inputClass('vehicle_id')}
                                 value={data.vehicle_id}
                                 onChange={(e) => setField('vehicle_id', e.target.value)}
-                                required
                             >
                                 <option value="">Select vehicle</option>
                                 {vehicles.map((vehicle) => (
@@ -267,7 +261,6 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                                 className={inputClass('party_id')}
                                 value={data.party_id}
                                 onChange={(e) => setField('party_id', e.target.value)}
-                                required
                             >
                                 <option value="">Select party</option>
                                 {parties.map((party) => (
@@ -302,7 +295,6 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                                     className={inputClass('freight')}
                                     value={data.freight}
                                     onChange={(e) => setField('freight', e.target.value)}
-                                    required
                                 />
                                 <InputError message={errors.freight} className="mt-1" />
                             </div>

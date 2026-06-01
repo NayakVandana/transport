@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Entrybook;
 use App\Support\EntrybookCalculator;
 use App\Support\EntrybookReport;
-use App\Support\EntrybookValidation;
 use App\Support\EntryNumberGenerator;
 use App\Support\ListExport;
 use Exception;
@@ -56,7 +55,6 @@ class EntrybookApiController extends Controller
                 'vehicles' => EntrybookReport::vehiclesForUser($userId),
                 'routes' => EntrybookReport::routesForUser($userId),
                 'parties' => EntrybookReport::partiesForUser($userId),
-                'validationMessages' => EntrybookValidation::forFrontend(),
                 'nextEntryNumber' => EntryNumberGenerator::formatEntrybookNumber($nextSequence),
             ], 200);
         } catch (Exception $e) {
@@ -86,7 +84,6 @@ class EntrybookApiController extends Controller
                 'vehicles' => EntrybookReport::vehiclesForUser($userId),
                 'routes' => EntrybookReport::routesForUser($userId),
                 'parties' => EntrybookReport::partiesForUser($userId),
-                'validationMessages' => EntrybookValidation::forFrontend(),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -96,17 +93,12 @@ class EntrybookApiController extends Controller
     public function postEntrybookStore(Request $request)
     {
         try {
-            $input = $request->all();
-            if (isset($input['vehicle_id']) && $input['vehicle_id'] !== '') {
-                $input['vehicle_id'] = (int) $input['vehicle_id'];
-            }
-            if (isset($input['party_id']) && $input['party_id'] !== '') {
-                $input['party_id'] = (int) $input['party_id'];
-            } elseif (array_key_exists('party_id', $input) && $input['party_id'] === '') {
-                $input['party_id'] = null;
-            }
+            $request->merge([
+                'vehicle_id' => $request->filled('vehicle_id') ? (int) $request->input('vehicle_id') : null,
+                'party_id' => $request->filled('party_id') ? (int) $request->input('party_id') : null,
+            ]);
 
-            $validation = Validator::make($input, [
+            $validation = Validator::make($request->all(), [
                 'entry_date' => ['required', 'date'],
                 'vehicle_id' => [
                     'required',
@@ -157,17 +149,12 @@ class EntrybookApiController extends Controller
     public function postEntrybookUpdate(Request $request)
     {
         try {
-            $input = $request->all();
-            if (isset($input['vehicle_id']) && $input['vehicle_id'] !== '') {
-                $input['vehicle_id'] = (int) $input['vehicle_id'];
-            }
-            if (isset($input['party_id']) && $input['party_id'] !== '') {
-                $input['party_id'] = (int) $input['party_id'];
-            } elseif (array_key_exists('party_id', $input) && $input['party_id'] === '') {
-                $input['party_id'] = null;
-            }
+            $request->merge([
+                'vehicle_id' => $request->filled('vehicle_id') ? (int) $request->input('vehicle_id') : null,
+                'party_id' => $request->filled('party_id') ? (int) $request->input('party_id') : null,
+            ]);
 
-            $validation = Validator::make($input, [
+            $validation = Validator::make($request->all(), [
                 'id' => ['required', 'integer'],
                 'entry_date' => ['required', 'date'],
                 'vehicle_id' => [
