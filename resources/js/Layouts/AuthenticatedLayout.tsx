@@ -249,24 +249,25 @@ export default function Authenticated({
                 <div
                     className="fixed inset-0 z-40 bg-gray-900/50 lg:hidden"
                     onClick={closeSidebar}
+                    aria-hidden
                 />
             )}
 
             <aside
                 className={
-                    'fixed inset-y-0 left-0 z-50 w-64 transform bg-slate-900 transition-transform duration-200 ease-in-out lg:translate-x-0 ' +
+                    'fixed inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] flex-col bg-slate-900 shadow-xl transition-transform duration-200 ease-in-out lg:translate-x-0 ' +
                     (sidebarOpen ? 'translate-x-0' : '-translate-x-full')
                 }
             >
                 <SidebarContent onNavigate={closeSidebar} onLogout={handleLogout} />
             </aside>
 
-            <div className="lg:pl-64">
-                <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:px-6 lg:px-8">
+            <div className="flex min-h-screen min-w-0 flex-col lg:pl-64">
+                <header className="sticky top-0 z-30 flex h-14 w-full shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-3 shadow-sm sm:h-16 sm:gap-4 sm:px-6 lg:px-8">
                     <button
                         type="button"
                         onClick={() => setSidebarOpen(true)}
-                        className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 lg:hidden"
+                        className="shrink-0 rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 lg:hidden"
                     >
                         <span className="sr-only">Open sidebar</span>
                         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -275,11 +276,13 @@ export default function Authenticated({
                     </button>
 
                     {header && (
-                        <div className="min-w-0 flex-1">{header}</div>
+                        <div className="min-w-0 flex-1 [&_h2]:truncate [&>div]:min-w-0">
+                            {header}
+                        </div>
                     )}
                 </header>
 
-                <main>{children}</main>
+                <main className="w-full min-w-0 flex-1">{children}</main>
             </div>
         </div>
     );

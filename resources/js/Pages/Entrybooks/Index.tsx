@@ -1,7 +1,9 @@
+import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
+import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
@@ -122,8 +124,7 @@ export default function EntrybooksIndex() {
         <>
             <Head title="Entrybook" />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
+            <PageContainer className="space-y-4">
                     {displayError && (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {displayError}
@@ -211,13 +212,14 @@ export default function EntrybooksIndex() {
                                             <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
                                             <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
                                             <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
                                             <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
                                         {entries.length === 0 ? (
                                             <tr>
-                                                <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
+                                                <td colSpan={10} className="px-6 py-8 text-center text-gray-500">
                                                     {hasActiveFilters
                                                         ? 'No entries match your filters.'
                                                         : 'No entries yet.'}
@@ -230,7 +232,7 @@ export default function EntrybooksIndex() {
                                                         {entry.entry_number}
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        {entry.entry_date?.slice(0, 10)}
+                                                        {formatAppDateTime(entry.entry_date)}
                                                     </td>
                                                     <td className="px-4 py-3">{entry.party?.name ?? '—'}</td>
                                                     <td className="px-4 py-3 font-mono">
@@ -245,6 +247,9 @@ export default function EntrybooksIndex() {
                                                     </td>
                                                     <td className="px-4 py-3 text-right font-medium">
                                                         ₹ {formatMoney(entry.balance)}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-gray-600">
+                                                        {formatAppCreatedAt(entry.created_at)}
                                                     </td>
                                                     <td className="space-x-3 px-4 py-3 text-right">
                                                         <Link
@@ -269,8 +274,7 @@ export default function EntrybooksIndex() {
                             </div>
                         </>
                     )}
-                </div>
-            </div>
+            </PageContainer>
         </>
     );
 }

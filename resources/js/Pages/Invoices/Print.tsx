@@ -1,5 +1,6 @@
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import { formatDate, formatMoney } from '@/lib/freightCalculator';
+import { formatAppDateTime } from '@/lib/dateUtils';
+import { formatMoney } from '@/lib/freightCalculator';
 import type { FreightInvoice } from '@/types/transport';
 import { Head } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
@@ -83,7 +84,7 @@ export default function InvoicePrint({ invoiceId }: { invoiceId: number }) {
                 {`Bill No. : ${invoice.bill_number}`}
                 {'\n'}
                 {party.name.padEnd(40)}
-                {`Date     : ${formatDate(invoice.invoice_date)}`}
+                {`Date     : ${formatAppDateTime(invoice.invoice_date, '')}`}
                 {'\n'}
                 {(party.address ?? '').split('\n').map((addrLine, i) => (
                     <span key={i}>
@@ -121,7 +122,7 @@ export default function InvoicePrint({ invoiceId }: { invoiceId: number }) {
                         {String(i + 1).padStart(3)}
                         {'  '}
                         {(row.entry_number ?? '').padEnd(12)}
-                        {formatDate(row.entry_date, true).padEnd(10)}
+                        {formatAppDateTime(row.entry_date, '').padEnd(16)}
                         {(row.vehicle_number ?? '').padEnd(12)}
                         {(row.route_from ?? '').substring(0, 18).padEnd(20)}
                         {(row.product_name ?? '').substring(0, 14).padEnd(16)}
@@ -183,7 +184,7 @@ export default function InvoicePrint({ invoiceId }: { invoiceId: number }) {
                 {company.udyam_reg_no
                     ? `UDYAM REG NO. : ${company.udyam_reg_no}${
                           company.udyam_date
-                              ? `  DATE : ${formatDate(company.udyam_date)}`
+                              ? `  DATE : ${formatAppDateTime(company.udyam_date, '')}`
                               : ''
                       }`
                     : ''}

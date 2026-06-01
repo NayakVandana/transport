@@ -65,7 +65,7 @@ class PartyApiController extends Controller
                     $party->mobile ?? '',
                     $party->address ?? '',
                     $party->state_code ?? '',
-                    ListExport::formatDate($party->created_at),
+                    ListExport::formatCreatedAt($party->created_at),
                 ]),
                 ['TOTAL', $parties->count().' party', '', '', ''],
             );
@@ -90,7 +90,7 @@ class PartyApiController extends Controller
                     $party->mobile ?? '—',
                     $party->address ?? '—',
                     $party->state_code ?? '—',
-                    ListExport::formatDate($party->created_at),
+                    ListExport::formatCreatedAt($party->created_at),
                 ]),
                 $parties->count(),
             );

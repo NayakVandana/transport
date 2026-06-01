@@ -61,7 +61,7 @@ export default function FormDatePicker({
             value={pickerValue}
             onChange={handleChange}
             maxDate={noMaxDate ? undefined : new Date()}
-            displayFormat={isRange ? 'DD MMM YY' : 'DD MMM YYYY'}
+            displayFormat={isRange ? 'D MMM, YYYY' : 'D MMM, YYYY'}
             showShortcuts={isRange}
             dateLooking="middle"
             disabled={disabled}

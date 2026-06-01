@@ -47,7 +47,7 @@ class RouteLocationApiController extends Controller
                 ['Route Name', 'Created'],
                 $routes->map(fn ($route) => [
                     $route->name,
-                    ListExport::formatDate($route->created_at),
+                    ListExport::formatCreatedAt($route->created_at),
                 ]),
                 ['TOTAL', $routes->count().' routes'],
             );
@@ -69,7 +69,7 @@ class RouteLocationApiController extends Controller
                 ['Route Name', 'Created'],
                 $routes->map(fn ($route) => [
                     $route->name,
-                    ListExport::formatDate($route->created_at),
+                    ListExport::formatCreatedAt($route->created_at),
                 ]),
                 $routes->count(),
             );

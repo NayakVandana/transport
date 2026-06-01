@@ -1,7 +1,9 @@
+import PageContainer from '@/Components/PageContainer';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import InvoicePaymentStatusBadge, {
     invoicePaymentStatusFromAmounts,
 } from '@/Components/InvoicePaymentStatusBadge';
+import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
 import { useAppQuery } from '@/hooks/useAppQuery';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -42,8 +44,7 @@ export default function Dashboard() {
         <>
             <Head title="Dashboard" />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
+            <PageContainer className="space-y-6">
                     {loading && !data ? (
                         <p className="text-center text-sm text-gray-500">Loading dashboard…</p>
                     ) : error ? (
@@ -104,12 +105,15 @@ export default function Dashboard() {
                                             <th className="px-6 py-3 text-left font-medium text-gray-500">
                                                 Payment
                                             </th>
+                                            <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                                Created
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
                                         {data.recentInvoices.length === 0 ? (
                                             <tr>
-                                                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                                                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                                                     No invoices yet.
                                                 </td>
                                             </tr>
@@ -127,7 +131,7 @@ export default function Dashboard() {
                                                     <td className="px-6 py-3">
                                                         {inv.party?.name}
                                                     </td>
-                                                    <td className="px-6 py-3">{inv.invoice_date}</td>
+                                                    <td className="px-6 py-3">{formatAppDateTime(inv.invoice_date)}</td>
                                                     <td className="px-6 py-3 text-right">
                                                         ₹ {formatMoney(inv.outstanding ?? inv.balance_amount)}
                                                     </td>
@@ -142,6 +146,9 @@ export default function Dashboard() {
                                                             }
                                                         />
                                                     </td>
+                                                    <td className="px-6 py-3 whitespace-nowrap text-gray-600">
+                                                        {formatAppCreatedAt(inv.created_at)}
+                                                    </td>
                                                 </tr>
                                             ))
                                         )}
@@ -150,8 +157,7 @@ export default function Dashboard() {
                             </div>
                         </>
                     ) : null}
-                </div>
-            </div>
+            </PageContainer>
         </>
     );
 }

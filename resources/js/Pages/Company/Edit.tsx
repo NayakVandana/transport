@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -145,8 +146,7 @@ export default function CompanyEdit() {
         <>
             <Head title="Company" />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-3xl sm:px-6 lg:px-8">
+            <PageContainer width="3xl">
                     {loading ? (
                         <p className="text-center text-sm text-gray-500">Loading…</p>
                     ) : loadError && !data.name ? (
@@ -317,8 +317,7 @@ export default function CompanyEdit() {
                             </div>
                         </form>
                     )}
-                </div>
-            </div>
+            </PageContainer>
         </>
     );
 }

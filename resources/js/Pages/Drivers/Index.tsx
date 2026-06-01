@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -6,6 +7,7 @@ import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
+import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
 import type { Driver } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
@@ -26,14 +28,6 @@ const defaultFilters: DriverFilters = {
     status: '',
     ...defaultDateFilters,
 };
-
-function formatDate(value?: string | null): string {
-    if (!value) {
-        return '—';
-    }
-
-    return value.slice(0, 10);
-}
 
 export default function DriversIndex() {
     const [actionError, setActionError] = useState<string | null>(null);
@@ -112,8 +106,7 @@ export default function DriversIndex() {
         <>
             <Head title="Drivers" />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
+            <PageContainer className="space-y-4">
                     {displayError && (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {displayError}
@@ -166,13 +159,14 @@ export default function DriversIndex() {
                                         <th className="px-6 py-3 text-left font-medium text-gray-500">License No</th>
                                         <th className="px-6 py-3 text-left font-medium text-gray-500">License Expiry</th>
                                         <th className="px-6 py-3 text-left font-medium text-gray-500">Status</th>
+                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Created</th>
                                         <th className="px-6 py-3 text-right font-medium text-gray-500">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {drivers.length === 0 ? (
                                         <tr>
-                                            <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                                            <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
                                                 {hasActiveFilters
                                                     ? 'No drivers match your filters.'
                                                     : 'No drivers yet.'}
@@ -183,14 +177,14 @@ export default function DriversIndex() {
                                             <tr key={driver.id}>
                                                 <td className="px-6 py-3 font-medium">{driver.name}</td>
                                                 <td className="px-6 py-3">{driver.mobile ?? '—'}</td>
-                                                <td className="px-6 py-3">{formatDate(driver.joining_date)}</td>
+                                                <td className="px-6 py-3">{formatAppDateTime(driver.joining_date)}</td>
                                                 <td className="px-6 py-3 text-right">
                                                     {driver.salary != null && driver.salary !== ''
                                                         ? `₹ ${formatMoney(driver.salary)}`
                                                         : '—'}
                                                 </td>
                                                 <td className="px-6 py-3">{driver.license_number ?? '—'}</td>
-                                                <td className="px-6 py-3">{formatDate(driver.license_expiry)}</td>
+                                                <td className="px-6 py-3">{formatAppDateTime(driver.license_expiry)}</td>
                                                 <td className="px-6 py-3">
                                                     <span
                                                         className={
@@ -201,6 +195,9 @@ export default function DriversIndex() {
                                                     >
                                                         {driver.status === 'active' ? 'Active' : 'Inactive'}
                                                     </span>
+                                                </td>
+                                                <td className="px-6 py-3 whitespace-nowrap text-gray-600">
+                                                    {formatAppCreatedAt(driver.created_at)}
                                                 </td>
                                                 <td className="space-x-3 px-6 py-3 text-right">
                                                     <Link
@@ -224,8 +221,7 @@ export default function DriversIndex() {
                             </table>
                         </div>
                     )}
-                </div>
-            </div>
+            </PageContainer>
         </>
     );
 }

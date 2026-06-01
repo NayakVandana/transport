@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -210,8 +211,7 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
         <>
             <Head title={isEdit ? 'Edit Vehicle Expense' : 'Add Vehicle Expense'} />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-2xl sm:px-6 lg:px-8">
+            <PageContainer width="2xl">
                     {loadError && (
                         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {loadError}
@@ -343,8 +343,7 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
                             </Link>
                         </div>
                     </form>
-                </div>
-            </div>
+            </PageContainer>
         </>
     );
 }

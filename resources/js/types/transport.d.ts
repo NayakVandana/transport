@@ -33,6 +33,7 @@ export interface Vehicle {
     pollution_expiry?: string | null;
     fitness_expiry?: string | null;
     status: 'active' | 'inactive';
+    created_at?: string | null;
     documents?: EntityDocument[];
 }
 
@@ -46,12 +47,14 @@ export interface Driver {
     salary?: string | number | null;
     address?: string | null;
     status: 'active' | 'inactive';
+    created_at?: string | null;
     documents?: EntityDocument[];
 }
 
 export interface RouteLocation {
     id: number;
     name: string;
+    created_at?: string | null;
 }
 
 export interface Entrybook {
@@ -66,6 +69,7 @@ export interface Entrybook {
     balance: string | number;
     vehicle?: Pick<Vehicle, 'id' | 'vehicle_number'>;
     party?: Pick<Party, 'id' | 'name'>;
+    created_at?: string | null;
 }
 
 export interface EntrybookTotals {
@@ -86,6 +90,7 @@ export interface VehicleExpense {
     maintenance: string | number;
     balance: string | number;
     vehicle?: Pick<Vehicle, 'id' | 'vehicle_number'>;
+    created_at?: string | null;
 }
 
 export interface VehicleExpenseTotals {
@@ -123,6 +128,7 @@ export interface Party {
     balance_due?: number | string;
     received?: number | string;
     outstanding?: number | string;
+    created_at?: string | null;
 }
 
 export interface PartyOverview {
@@ -237,6 +243,7 @@ export interface FreightInvoice {
     received?: string | number;
     outstanding?: string | number;
     payment_status?: InvoicePaymentStatus;
+    created_at?: string | null;
 }
 
 export interface InvoicePayment {
@@ -250,6 +257,7 @@ export interface InvoicePayment {
     notes?: string | null;
     party?: Pick<Party, 'id' | 'name'>;
     freight_invoice?: Pick<FreightInvoice, 'id' | 'bill_number' | 'balance_amount'> | null;
+    created_at?: string | null;
 }
 
 export interface PartyPaymentSummary {

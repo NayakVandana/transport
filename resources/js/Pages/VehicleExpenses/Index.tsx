@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -6,6 +7,7 @@ import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
+import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
 import type { Vehicle, VehicleExpense, VehicleExpenseTotals } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
@@ -128,8 +130,7 @@ export default function VehicleExpensesIndex() {
         <>
             <Head title="Vehicle Expenses" />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
+            <PageContainer className="space-y-4">
                     {displayError && (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {displayError}
@@ -201,13 +202,14 @@ export default function VehicleExpensesIndex() {
                                                 Maintenance
                                             </th>
                                             <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
                                             <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
                                         {rows.length === 0 ? (
                                             <tr>
-                                                <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
+                                                <td colSpan={10} className="px-6 py-8 text-center text-gray-500">
                                                     {hasActiveFilters
                                                         ? 'No vehicle expenses match your filters.'
                                                         : 'No vehicle expenses yet.'}
@@ -217,7 +219,7 @@ export default function VehicleExpensesIndex() {
                                             rows.map((row) => (
                                                 <tr key={row.id}>
                                                     <td className="px-4 py-3">
-                                                        {row.expense_date?.slice(0, 10)}
+                                                        {formatAppDateTime(row.expense_date)}
                                                     </td>
                                                     <td className="px-4 py-3 font-mono">
                                                         {row.vehicle?.vehicle_number ?? '—'}
@@ -239,6 +241,9 @@ export default function VehicleExpensesIndex() {
                                                     </td>
                                                     <td className="px-4 py-3 text-right font-medium">
                                                         ₹ {formatMoney(row.balance)}
+                                                    </td>
+                                                    <td className="px-4 py-3 whitespace-nowrap text-gray-600">
+                                                        {formatAppCreatedAt(row.created_at)}
                                                     </td>
                                                     <td className="space-x-3 px-4 py-3 text-right">
                                                         <Link
@@ -263,8 +268,7 @@ export default function VehicleExpensesIndex() {
                             </div>
                         </>
                     )}
-                </div>
-            </div>
+            </PageContainer>
         </>
     );
 }

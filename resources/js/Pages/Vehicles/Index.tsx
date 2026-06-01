@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -7,6 +8,7 @@ import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
+import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
 import { invoiceReturnQuery } from '@/lib/invoiceReturn';
 import type { Vehicle } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
@@ -38,11 +40,6 @@ function useInvoiceReturn() {
             return_label: params.get('return_label'),
         };
     }, []);
-}
-
-function formatDate(value?: string | null): string {
-    if (!value) return '—';
-    return value.slice(0, 10);
 }
 
 export default function VehiclesIndex() {
@@ -149,8 +146,7 @@ export default function VehiclesIndex() {
         <>
             <Head title="Vehicles" />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
+            <PageContainer className="space-y-4">
                     <p className="text-sm text-gray-600">
                         Manage vehicle details, insurance, and permit expiry dates. Active vehicles
                         appear in the invoice dropdown.
@@ -219,6 +215,9 @@ export default function VehiclesIndex() {
                                         <th className="px-4 py-3 text-left font-medium text-gray-500">
                                             Status
                                         </th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">
+                                            Created
+                                        </th>
                                         <th className="px-4 py-3 text-right font-medium text-gray-500">
                                             Actions
                                         </th>
@@ -228,7 +227,7 @@ export default function VehiclesIndex() {
                                     {vehicles.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan={7}
+                                                colSpan={8}
                                                 className="px-6 py-8 text-center text-gray-500"
                                             >
                                                 {hasActiveFilters
@@ -250,10 +249,10 @@ export default function VehiclesIndex() {
                                                         '—'}
                                                 </td>
                                                 <td className="px-4 py-3 text-gray-600">
-                                                    {formatDate(v.insurance_expiry)}
+                                                    {formatAppDateTime(v.insurance_expiry)}
                                                 </td>
                                                 <td className="px-4 py-3 text-gray-600">
-                                                    {formatDate(v.permit_expiry)}
+                                                    {formatAppDateTime(v.permit_expiry)}
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <span
@@ -265,6 +264,9 @@ export default function VehiclesIndex() {
                                                     >
                                                         {v.status === 'active' ? 'Active' : 'Inactive'}
                                                     </span>
+                                                </td>
+                                                <td className="px-4 py-3 whitespace-nowrap text-gray-600">
+                                                    {formatAppCreatedAt(v.created_at)}
                                                 </td>
                                                 <td className="space-x-3 px-4 py-3 text-right">
                                                     <Link
@@ -288,8 +290,7 @@ export default function VehiclesIndex() {
                             </table>
                         </div>
                     )}
-                </div>
-            </div>
+            </PageContainer>
         </>
     );
 }

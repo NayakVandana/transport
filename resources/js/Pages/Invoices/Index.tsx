@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
 import Modal from '@/Components/Modal';
@@ -11,6 +12,7 @@ import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
+import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
 import type { FreightInvoice, Party } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
@@ -112,8 +114,7 @@ export default function InvoicesIndex() {
         <>
             <Head title="Invoices" />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
+            <PageContainer className="space-y-4">
                     {displayError && (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {displayError}
@@ -188,13 +189,14 @@ export default function InvoicesIndex() {
                                         <th className="px-6 py-3 text-right font-medium text-gray-500">Balance Due</th>
                                         <th className="px-6 py-3 text-right font-medium text-gray-500">Received</th>
                                         <th className="px-6 py-3 text-right font-medium text-gray-500">Outstanding</th>
+                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Created</th>
                                         <th className="px-6 py-3 text-right font-medium text-gray-500">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {invoices.length === 0 ? (
                                         <tr>
-                                            <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                                            <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
                                                 {hasActiveFilters
                                                     ? 'No invoices match your filters.'
                                                     : 'No invoices yet.'}
@@ -212,7 +214,7 @@ export default function InvoicesIndex() {
                                                     </Link>
                                                 </td>
                                                 <td className="px-6 py-3">{inv.party?.name}</td>
-                                                <td className="px-6 py-3">{inv.invoice_date}</td>
+                                                <td className="px-6 py-3">{formatAppDateTime(inv.invoice_date)}</td>
                                                 <td className="px-6 py-3">
                                                     <InvoicePaymentStatusBadge
                                                         status={
@@ -232,6 +234,9 @@ export default function InvoicesIndex() {
                                                 </td>
                                                 <td className="px-6 py-3 text-right font-medium text-indigo-700">
                                                     ₹ {formatMoney(inv.outstanding ?? inv.balance_amount)}
+                                                </td>
+                                                <td className="px-6 py-3 whitespace-nowrap text-gray-600">
+                                                    {formatAppCreatedAt(inv.created_at)}
                                                 </td>
                                                 <td className="whitespace-nowrap px-6 py-3 text-right">
                                                     <Link
@@ -268,8 +273,7 @@ export default function InvoicesIndex() {
                             </table>
                         </div>
                     )}
-                </div>
-            </div>
+            </PageContainer>
 
             <Modal show={paymentPartyId !== null} onClose={closePaymentModal} maxWidth="2xl">
                 <div className="p-6">

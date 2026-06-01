@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import RecordPaymentForm from '@/Components/RecordPaymentForm';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { Head } from '@inertiajs/react';
@@ -21,8 +22,7 @@ export default function InvoicePaymentForm({
         <>
             <Head title={isEdit ? 'Edit Payment' : 'Record Payment'} />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-2xl sm:px-6 lg:px-8">
+            <PageContainer width="2xl">
                     <div className="rounded-lg bg-white p-6 shadow">
                         <RecordPaymentForm
                             invoicePaymentId={invoicePaymentId}
@@ -30,8 +30,7 @@ export default function InvoicePaymentForm({
                             showCancelLink
                         />
                     </div>
-                </div>
-            </div>
+            </PageContainer>
         </>
     );
 }

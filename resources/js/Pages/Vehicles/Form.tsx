@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import EntityDocumentsSection, {
@@ -312,8 +313,7 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
         <>
             <Head title={isEdit ? 'Edit Vehicle' : 'Add Vehicle'} />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-3xl sm:px-6 lg:px-8">
+            <PageContainer width="3xl">
                     {loading ? (
                         <p className="text-center text-sm text-gray-500">Loading…</p>
                     ) : loadError ? (
@@ -491,8 +491,7 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                             </PrimaryButton>
                         </form>
                     )}
-                </div>
-            </div>
+            </PageContainer>
         </>
     );
 }

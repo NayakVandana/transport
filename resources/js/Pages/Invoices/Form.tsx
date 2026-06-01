@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -390,8 +391,7 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
         <>
             <Head title="Invoice" />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+            <PageContainer>
                     {loading ? (
                         <p className="text-center text-sm text-gray-500">Loading…</p>
                     ) : loadError ? (
@@ -624,8 +624,7 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                             </PrimaryButton>
                         </form>
                     )}
-                </div>
-            </div>
+            </PageContainer>
         </>
     );
 }

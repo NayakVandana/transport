@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import ListFilterBar from '@/Components/ListFilterBar';
@@ -13,6 +14,7 @@ import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { dateFiltersFromPicker } from '@/lib/listFilters';
 import type { DatePickerRangeValue } from '@/Components/FormDatePicker';
+import { formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
 import type {
     Party,
@@ -219,8 +221,7 @@ export default function PartyShow({
         <>
             <Head title={`${account?.party.name ?? 'Party'} — ${tabs.find((t) => t.id === tab)?.label ?? 'Overview'}`} />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
+            <PageContainer className="space-y-4">
                     {error && (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {error}
@@ -338,11 +339,11 @@ export default function PartyShow({
                                                     <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
                                                         <div>
                                                             <dt className="text-gray-500">Last invoice</dt>
-                                                            <dd>{overview.last_invoice_date ?? '—'}</dd>
+                                                            <dd>{formatAppDateTime(overview.last_invoice_date)}</dd>
                                                         </div>
                                                         <div>
                                                             <dt className="text-gray-500">Last payment</dt>
-                                                            <dd>{overview.last_payment_date ?? '—'}</dd>
+                                                            <dd>{formatAppDateTime(overview.last_payment_date)}</dd>
                                                         </div>
                                                         <div className="sm:col-span-2">
                                                             <dt className="text-gray-500">Address</dt>
@@ -521,8 +522,7 @@ export default function PartyShow({
                             </div>
                         </>
                     ) : null}
-                </div>
-            </div>
+            </PageContainer>
 
             <Modal
                 show={paymentParty !== null}
@@ -588,7 +588,7 @@ function LedgerTable({ rows, compact = false }: { rows: PartyLedgerEntry[]; comp
                                           : `${row.type}-${row.date}-${index}`
                                 }
                             >
-                                <td className="px-4 py-3">{row.date}</td>
+                                <td className="px-4 py-3">{formatAppDateTime(row.date)}</td>
                                 <td className="px-4 py-3">{row.particulars}</td>
                                 <td className="px-4 py-3">
                                     {row.invoice_id ? (
@@ -664,7 +664,7 @@ function EntrybooksTable({
                         rows.map((row) => (
                             <tr key={row.id}>
                                 <td className="px-4 py-3 font-mono font-medium">{row.entry_number}</td>
-                                <td className="px-4 py-3">{row.entry_date}</td>
+                                <td className="px-4 py-3">{formatAppDateTime(row.entry_date)}</td>
                                 {!compact && (
                                     <td className="px-4 py-3 font-mono">{row.vehicle_number || '—'}</td>
                                 )}
@@ -746,7 +746,7 @@ function InvoicesTable({
                                         {row.bill_number}
                                     </Link>
                                 </td>
-                                <td className="px-4 py-3">{row.invoice_date}</td>
+                                <td className="px-4 py-3">{formatAppDateTime(row.invoice_date)}</td>
                                 <td className="px-4 py-3">
                                     <InvoicePaymentStatusBadge
                                         status={
@@ -815,7 +815,7 @@ function PaymentsTable({ rows }: { rows: PartyAccountData['payments'] }) {
                     ) : (
                         rows.map((row) => (
                             <tr key={row.id}>
-                                <td className="px-4 py-3">{row.payment_date}</td>
+                                <td className="px-4 py-3">{formatAppDateTime(row.payment_date)}</td>
                                 <td className="px-4 py-3">
                                     {row.freight_invoice_id ? (
                                         <Link

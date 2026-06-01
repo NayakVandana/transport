@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -9,6 +10,7 @@ import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
+import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
 import { resolveReturnHref } from '@/lib/invoiceReturn';
 import type { RouteLocation } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
@@ -169,8 +171,7 @@ export default function RoutesIndex() {
         <>
             <Head title="Routes" />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-3xl space-y-4 sm:px-6 lg:px-8">
+            <PageContainer className="space-y-4" width="3xl">
                     <p className="text-sm text-gray-600">
                         Add route / location names here (e.g. J N P T / SARIGAM / 1X20). They
                         appear in the invoice &quot;From&quot; dropdown after saving.
@@ -230,6 +231,9 @@ export default function RoutesIndex() {
                                         <th className="px-6 py-3 text-left font-medium text-gray-500">
                                             Name
                                         </th>
+                                        <th className="px-6 py-3 text-left font-medium text-gray-500">
+                                            Created
+                                        </th>
                                         <th className="px-6 py-3 text-right font-medium text-gray-500">
                                             Actions
                                         </th>
@@ -239,7 +243,7 @@ export default function RoutesIndex() {
                                     {routes.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan={2}
+                                                colSpan={3}
                                                 className="px-6 py-8 text-center text-gray-500"
                                             >
                                                 {hasActiveFilters
@@ -251,6 +255,9 @@ export default function RoutesIndex() {
                                         routes.map((r) => (
                                             <tr key={r.id}>
                                                 <td className="px-6 py-3">{r.name}</td>
+                                                <td className="px-6 py-3 whitespace-nowrap text-gray-600">
+                                                    {formatAppCreatedAt(r.created_at)}
+                                                </td>
                                                 <td className="px-6 py-3 text-right">
                                                     <button
                                                         type="button"
@@ -267,8 +274,7 @@ export default function RoutesIndex() {
                             </table>
                         </div>
                     )}
-                </div>
-            </div>
+            </PageContainer>
         </>
     );
 }

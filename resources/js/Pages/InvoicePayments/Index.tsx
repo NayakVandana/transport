@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -6,6 +7,7 @@ import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
+import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
 import type {
     InvoicePayment,
@@ -137,8 +139,7 @@ export default function InvoicePaymentsIndex() {
         <>
             <Head title="Received Payments" />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
+            <PageContainer className="space-y-4">
                     {displayError && (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {displayError}
@@ -262,13 +263,14 @@ export default function InvoicePaymentsIndex() {
                                         <th className="px-4 py-3 text-right font-medium text-gray-500">Amount</th>
                                         <th className="px-4 py-3 text-left font-medium text-gray-500">Mode</th>
                                         <th className="px-4 py-3 text-left font-medium text-gray-500">Reference</th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
                                         <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {rows.length === 0 ? (
                                         <tr>
-                                            <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                                            <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                                                 {hasActiveFilters
                                                     ? 'No payments match your filters.'
                                                     : 'No payments recorded yet.'}
@@ -277,7 +279,7 @@ export default function InvoicePaymentsIndex() {
                                     ) : (
                                         rows.map((row) => (
                                             <tr key={row.id} className="hover:bg-gray-50">
-                                                <td className="px-4 py-3">{row.payment_date}</td>
+                                                <td className="px-4 py-3">{formatAppDateTime(row.payment_date)}</td>
                                                 <td className="px-4 py-3 font-medium">
                                                     {row.party?.name ?? '—'}
                                                 </td>
@@ -303,6 +305,9 @@ export default function InvoicePaymentsIndex() {
                                                     {row.payment_mode ?? '—'}
                                                 </td>
                                                 <td className="px-4 py-3">{row.reference_no ?? '—'}</td>
+                                                <td className="px-4 py-3 whitespace-nowrap text-gray-600">
+                                                    {formatAppCreatedAt(row.created_at)}
+                                                </td>
                                                 <td className="px-4 py-3 text-right whitespace-nowrap">
                                                     <Link
                                                         href={route('invoice-payments.edit', row.id)}
@@ -326,8 +331,7 @@ export default function InvoicePaymentsIndex() {
                             </table>
                         </div>
                     )}
-                </div>
-            </div>
+            </PageContainer>
         </>
     );
 }

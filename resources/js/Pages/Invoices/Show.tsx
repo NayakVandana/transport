@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import Modal from '@/Components/Modal';
@@ -8,6 +9,7 @@ import RecordPaymentForm from '@/Components/RecordPaymentForm';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { invalidateAppQuery, useAppQuery } from '@/hooks/useAppQuery';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
 import type {
     FreightInvoice,
@@ -90,8 +92,7 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
         <>
             <Head title={`Invoice ${invoice?.bill_number ?? ''}`} />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-4xl space-y-6 sm:px-6 lg:px-8">
+            <PageContainer className="space-y-6">
                     {loading && !invoice ? (
                         <p className="text-center text-sm text-gray-500">Loading invoice…</p>
                     ) : error ? (
@@ -125,7 +126,7 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                                     </div>
                                     <div>
                                         <dt className="text-gray-500">Date</dt>
-                                        <dd>{invoice.invoice_date}</dd>
+                                        <dd>{formatAppDateTime(invoice.invoice_date)}</dd>
                                     </div>
                                     <div>
                                         <dt className="text-gray-500">Net Value</dt>
@@ -201,7 +202,7 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                                         <tbody className="divide-y divide-gray-200">
                                             {payments.map((payment: InvoicePayment) => (
                                                 <tr key={payment.id}>
-                                                    <td className="px-6 py-3">{payment.payment_date}</td>
+                                                    <td className="px-6 py-3">{formatAppDateTime(payment.payment_date)}</td>
                                                     <td className="px-6 py-3 text-right font-medium">
                                                         ₹ {formatMoney(payment.amount)}
                                                     </td>
@@ -230,8 +231,7 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                             )}
                         </>
                     ) : null}
-                </div>
-            </div>
+            </PageContainer>
 
             <Modal show={paymentOpen} onClose={() => setPaymentOpen(false)} maxWidth="2xl">
                 <div className="p-6">

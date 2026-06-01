@@ -2,6 +2,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, appApiPostFormData, type ApiEnvelope } from '@/api/appClient';
+import { formatAppDateTime } from '@/lib/dateUtils';
 import type { EntityDocument, ExpenseOption } from '@/types/transport';
 
 export type DocumentDraft = {
@@ -77,10 +78,6 @@ export async function deleteEntityDocuments(
     }
 
     return true;
-}
-
-function formatDate(value?: string | null): string {
-    return value?.slice(0, 10) ?? '—';
 }
 
 type EntityDocumentsSectionProps = {
@@ -169,7 +166,7 @@ export default function EntityDocumentsSection({
                                         {document.title || '—'}
                                     </td>
                                     <td className="px-4 py-2 text-gray-600">
-                                        {formatDate(document.expiry_date)}
+                                        {formatAppDateTime(document.expiry_date)}
                                     </td>
                                     <td className="space-x-3 px-4 py-2 text-right">
                                         {document.file_url && (

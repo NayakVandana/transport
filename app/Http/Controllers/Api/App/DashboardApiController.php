@@ -29,7 +29,7 @@ class DashboardApiController extends Controller
                 ->with('party:id,name')
                 ->orderByDesc('invoice_date')
                 ->limit(5)
-                ->get(['id', 'bill_number', 'invoice_date', 'party_id', 'balance_amount', 'status']);
+                ->get(['id', 'bill_number', 'invoice_date', 'party_id', 'balance_amount', 'status', 'created_at']);
 
             InvoicePaymentCalculator::attachSummariesToInvoices($recentInvoices);
 

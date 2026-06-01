@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -122,8 +123,7 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
         <>
             <Head title={isEdit ? 'Edit Party' : 'New Party'} />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-xl sm:px-6 lg:px-8">
+            <PageContainer width="xl">
                     {loading ? (
                         <p className="text-center text-sm text-gray-500">Loading…</p>
                     ) : loadError ? (
@@ -176,8 +176,7 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
                             </PrimaryButton>
                         </form>
                     )}
-                </div>
-            </div>
+            </PageContainer>
         </>
     );
 }

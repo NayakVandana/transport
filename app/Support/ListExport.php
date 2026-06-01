@@ -27,7 +27,7 @@ class ListExport
             $handle = fopen('php://output', 'w');
             fputcsv($handle, [$title]);
             fputcsv($handle, ['Filters', $filterSummary]);
-            fputcsv($handle, ['Generated', now()->format('d-m-Y H:i')]);
+            fputcsv($handle, ['Generated', ListExport::formatDate(now())]);
             fputcsv($handle, []);
             fputcsv($handle, $columnHeaders);
 
@@ -67,7 +67,7 @@ class ListExport
         $pdf = Pdf::loadView('exports.table-pdf', [
             'title' => $title,
             'filterSummary' => $filterSummary,
-            'generatedAt' => now()->format('d-m-Y H:i'),
+            'generatedAt' => ListExport::formatDate(now()),
             'recordCount' => $recordCount,
             'headers' => $headers,
             'rows' => $rowsArray,
@@ -83,16 +83,35 @@ class ListExport
         return number_format((float) $amount, 2, '.', ',');
     }
 
+    public static function formatCreatedAt(mixed $date): string
+    {
+        if ($date === null || $date === '') {
+            return '';
+        }
+
+        $carbon = $date instanceof \DateTimeInterface
+            ? \Carbon\Carbon::instance($date)
+            : \Carbon\Carbon::parse((string) $date);
+
+        return $carbon->format('j M, Y').' | '.$carbon->format('g:i A');
+    }
+
     public static function formatDate(mixed $date): string
     {
         if ($date === null || $date === '') {
             return '';
         }
 
-        if ($date instanceof \DateTimeInterface) {
-            return $date->format('Y-m-d');
+        $carbon = $date instanceof \DateTimeInterface
+            ? \Carbon\Carbon::instance($date)
+            : \Carbon\Carbon::parse((string) $date);
+
+        $datePart = $carbon->format('j M, Y');
+
+        if ($carbon->format('H:i:s') === '00:00:00') {
+            return $datePart;
         }
 
-        return \Carbon\Carbon::parse((string) $date)->format('Y-m-d');
+        return $datePart.' | '.$carbon->format('g:i A');
     }
 }

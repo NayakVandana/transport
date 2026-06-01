@@ -19,38 +19,125 @@ export function parseDateString(value: string): Date | null {
     return new Date(year, month - 1, day);
 }
 
-export function formatDisplayDate(value: string): string {
-    const date = parseDateString(value);
-    if (!date) {
-        return value;
+export function parseAppDate(value: string | Date | null | undefined): Date | null {
+    if (value == null || value === '') {
+        return null;
     }
 
-    return date.toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-    });
+    if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? null : value;
+    }
+
+    const str = String(value).trim();
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        const [year, month, day] = str.split('-').map(Number);
+
+        return new Date(year, month - 1, day);
+    }
+
+    const parsed = new Date(str);
+
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatTime12h(date: Date): string {
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const period = hours >= 12 ? 'PM' : 'AM';
+    hours %= 12;
+
+    if (hours === 0) {
+        hours = 12;
+    }
+
+    return `${hours}:${String(minutes).padStart(2, '0')} ${period}`;
+}
+
+function isDateOnlyValue(value: string | Date): boolean {
+    if (value instanceof Date) {
+        return false;
+    }
+
+    const str = String(value).trim();
+
+    return (
+        /^\d{4}-\d{2}-\d{2}$/.test(str) ||
+        /^\d{4}-\d{2}-\d{2}T00:00:00(\.\d+)?Z?$/.test(str)
+    );
+}
+
+function formatDatePart(date: Date): string {
+    const day = date.getDate();
+    const month = date.toLocaleDateString('en-GB', { month: 'short' });
+    const year = date.getFullYear();
+
+    return `${day} ${month}, ${year}`;
+}
+
+/** Display format: `30 May, 2026` or `30 May, 2026 | 4:15 PM` when time is present. */
+export function formatAppDateTime(
+    value: string | Date | null | undefined,
+    fallback = '—',
+): string {
+    if (value == null || value === '') {
+        return fallback;
+    }
+
+    const date = parseAppDate(value);
+
+    if (!date) {
+        return String(value);
+    }
+
+    const datePart = formatDatePart(date);
+
+    if (isDateOnlyValue(value)) {
+        return datePart;
+    }
+
+    const hasTime =
+        date.getHours() !== 0 ||
+        date.getMinutes() !== 0 ||
+        date.getSeconds() !== 0 ||
+        date.getMilliseconds() !== 0;
+
+    if (!hasTime) {
+        return datePart;
+    }
+
+    return `${datePart} | ${formatTime12h(date)}`;
+}
+
+/** Always show date and time — for `created_at` / timestamps. */
+export function formatAppCreatedAt(
+    value: string | Date | null | undefined,
+    fallback = '—',
+): string {
+    if (value == null || value === '') {
+        return fallback;
+    }
+
+    const date = parseAppDate(value);
+
+    if (!date) {
+        return String(value);
+    }
+
+    return `${formatDatePart(date)} | ${formatTime12h(date)}`;
+}
+
+/** @deprecated Use formatAppDateTime */
+export function formatDisplayDate(value: string): string {
+    return formatAppDateTime(value, value);
 }
 
 export function formatPickerDate(date: Date): string {
-    return date.toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-    });
+    return formatDatePart(date);
 }
 
 export function formatCompactDate(value: string): string {
-    const date = parseDateString(value);
-    if (!date) {
-        return value;
-    }
-
-    const day = date.getDate();
-    const month = date.toLocaleDateString('en-GB', { month: 'short' });
-    const year = String(date.getFullYear()).slice(-2);
-
-    return `${day} ${month} ${year}`;
+    return formatAppDateTime(value, value);
 }
 
 export function addMonths(date: Date, amount: number): Date {

@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -6,6 +7,7 @@ import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
+import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
 import type { Party } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
@@ -99,8 +101,7 @@ export default function PartiesIndex() {
         <>
             <Head title="Party" />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
+            <PageContainer className="space-y-4">
                     {displayError && (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {displayError}
@@ -138,13 +139,14 @@ export default function PartiesIndex() {
                                         <th className="px-6 py-3 text-left font-medium text-gray-500">Mobile</th>
                                         <th className="px-6 py-3 text-right font-medium text-gray-500">Invoices</th>
                                         <th className="px-6 py-3 text-right font-medium text-gray-500">Outstanding</th>
+                                        <th className="px-6 py-3 text-left font-medium text-gray-500">Created</th>
                                         <th className="px-6 py-3 text-right font-medium text-gray-500">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {parties.length === 0 ? (
                                         <tr>
-                                            <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                                            <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                                                 {hasActiveFilters
                                                     ? 'No party match your filters.'
                                                     : 'No party yet.'}
@@ -167,6 +169,9 @@ export default function PartiesIndex() {
                                                 </td>
                                                 <td className="px-6 py-3 text-right font-medium text-indigo-700">
                                                     ₹ {formatMoney(party.outstanding ?? 0)}
+                                                </td>
+                                                <td className="px-6 py-3 whitespace-nowrap text-gray-600">
+                                                    {formatAppCreatedAt(party.created_at)}
                                                 </td>
                                                 <td className="whitespace-nowrap px-6 py-3 text-right">
                                                     <Link
@@ -209,8 +214,7 @@ export default function PartiesIndex() {
                             </table>
                         </div>
                     )}
-                </div>
-            </div>
+            </PageContainer>
         </>
     );
 }

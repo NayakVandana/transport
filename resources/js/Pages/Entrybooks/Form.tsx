@@ -1,3 +1,4 @@
+import PageContainer from '@/Components/PageContainer';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import MasterDataSelect from '@/Components/MasterDataSelect';
@@ -221,8 +222,7 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
         <>
             <Head title={isEdit ? 'Edit Entry' : 'Add Entry'} />
 
-            <div className="py-8">
-                <div className="mx-auto max-w-2xl sm:px-6 lg:px-8">
+            <PageContainer width="2xl">
                     {loadError && (
                         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {loadError}
@@ -356,8 +356,7 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                             </Link>
                         </div>
                     </form>
-                </div>
-            </div>
+            </PageContainer>
         </>
     );
 }
