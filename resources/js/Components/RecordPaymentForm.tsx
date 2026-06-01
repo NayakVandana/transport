@@ -5,7 +5,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { formatMoney } from '@/lib/freightCalculator';
-import type { InvoicePayment, OpenInvoiceOption, Party } from '@/types/transport';
+import type { InvoicePayment, Party, PartyPaymentSummary } from '@/types/transport';
 import { Link, router } from '@inertiajs/react';
 import { FormEventHandler, useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -15,7 +15,6 @@ function dateInputValue(value?: string | null): string {
 
 type PaymentFormData = {
     party_id: string;
-    freight_invoice_id: string;
     payment_date: string;
     amount: string;
     payment_mode: string;
@@ -25,22 +24,20 @@ type PaymentFormData = {
 
 type InvoicePaymentMetaData = {
     parties: Pick<Party, 'id' | 'name'>[];
-    openInvoices: OpenInvoiceOption[];
+    partySummary: PartyPaymentSummary | null;
     paymentModes: string[];
 };
 
 type InvoicePaymentShowData = InvoicePaymentMetaData & {
     invoicePayment: InvoicePayment;
-    invoiceSummary: { received: number; outstanding: number };
 };
 
-export type LockedPaymentInvoice = {
+export type LockedPaymentParty = {
     id: number;
-    bill_number: string;
-    party_name?: string;
-    balance_amount: number | string;
-    received?: number | string;
-    outstanding?: number | string;
+    name: string;
+    balance_due: number | string;
+    received: number | string;
+    outstanding: number | string;
 };
 
 function apiFieldErrors(data: unknown): Record<string, string> {
@@ -61,34 +58,34 @@ function apiFieldErrors(data: unknown): Record<string, string> {
 }
 
 export default function RecordPaymentForm({
-    invoiceId,
+    partyId,
     invoicePaymentId,
-    lockedInvoice,
+    lockedParty,
     onSuccess,
     onCancel,
     showCancelLink = false,
 }: {
-    invoiceId?: number | null;
+    partyId?: number | null;
     invoicePaymentId?: number;
-    lockedInvoice?: LockedPaymentInvoice | null;
+    lockedParty?: LockedPaymentParty | null;
     onSuccess?: () => void;
     onCancel?: () => void;
     showCancelLink?: boolean;
 }) {
     const isEdit = Boolean(invoicePaymentId);
-    const fixedInvoice = lockedInvoice ?? null;
-    const resolvedInvoiceId = fixedInvoice?.id ?? invoiceId ?? null;
+    const fixedParty = lockedParty ?? null;
+    const resolvedPartyId = fixedParty?.id ?? partyId ?? null;
+    const partyLocked = Boolean(fixedParty || resolvedPartyId);
 
     const [parties, setParties] = useState<Pick<Party, 'id' | 'name'>[]>([]);
-    const [openInvoices, setOpenInvoices] = useState<OpenInvoiceOption[]>([]);
+    const [partySummary, setPartySummary] = useState<PartyPaymentSummary | null>(null);
     const [paymentModes, setPaymentModes] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Partial<Record<keyof PaymentFormData, string>>>({});
     const [data, setData] = useState<PaymentFormData>({
-        party_id: '',
-        freight_invoice_id: resolvedInvoiceId ? String(resolvedInvoiceId) : '',
+        party_id: resolvedPartyId ? String(resolvedPartyId) : '',
         payment_date: new Date().toISOString().slice(0, 10),
         amount: '',
         payment_mode: 'neft',
@@ -96,31 +93,25 @@ export default function RecordPaymentForm({
         notes: '',
     });
 
-    const loadMeta = useCallback(
-        async (partyId?: string, freightInvoiceId?: string) => {
-            const payload: Record<string, string | number> = {};
-            if (partyId) {
-                payload.party_id = partyId;
-            }
-            if (freightInvoiceId) {
-                payload.freight_invoice_id = freightInvoiceId;
-            }
+    const loadMeta = useCallback(async (selectedPartyId?: string) => {
+        const payload: Record<string, string | number> = {};
+        if (selectedPartyId) {
+            payload.party_id = selectedPartyId;
+        }
 
-            const res = await appApiPost<ApiEnvelope<InvoicePaymentMetaData>>(
-                '/invoice-payments/invoice-payment-meta',
-                payload,
-            );
+        const res = await appApiPost<ApiEnvelope<InvoicePaymentMetaData>>(
+            '/invoice-payments/invoice-payment-meta',
+            payload,
+        );
 
-            if (!res.success || !res.data) {
-                throw new Error(res.message || 'Could not load form data.');
-            }
+        if (!res.success || !res.data) {
+            throw new Error(res.message || 'Could not load form data.');
+        }
 
-            setParties(res.data.parties);
-            setOpenInvoices(res.data.openInvoices);
-            setPaymentModes(res.data.paymentModes);
-        },
-        [],
-    );
+        setParties(res.data.parties);
+        setPartySummary(res.data.partySummary);
+        setPaymentModes(res.data.paymentModes);
+    }, []);
 
     useEffect(() => {
         setLoading(true);
@@ -141,29 +132,27 @@ export default function RecordPaymentForm({
 
                     const row = res.data.invoicePayment;
                     setParties(res.data.parties);
-                    setOpenInvoices(res.data.openInvoices);
+                    setPartySummary(res.data.partySummary);
                     setPaymentModes(res.data.paymentModes);
                     setData({
                         party_id: String(row.party_id),
-                        freight_invoice_id: String(row.freight_invoice_id),
                         payment_date: dateInputValue(row.payment_date),
                         amount: String(row.amount),
                         payment_mode: row.payment_mode ?? 'neft',
                         reference_no: row.reference_no ?? '',
                         notes: row.notes ?? '',
                     });
-                } else {
-                    await loadMeta(
-                        undefined,
-                        resolvedInvoiceId ? String(resolvedInvoiceId) : undefined,
-                    );
 
-                    if (resolvedInvoiceId) {
-                        setData((prev) => ({
-                            ...prev,
-                            freight_invoice_id: String(resolvedInvoiceId),
-                        }));
+                    if (!res.data.partySummary) {
+                        await loadMeta(String(row.party_id));
                     }
+                } else {
+                    await loadMeta(resolvedPartyId ? String(resolvedPartyId) : undefined);
+
+                    setData((prev) => ({
+                        ...prev,
+                        party_id: resolvedPartyId ? String(resolvedPartyId) : prev.party_id,
+                    }));
                 }
             } catch {
                 setLoadError('Could not load form data.');
@@ -173,57 +162,31 @@ export default function RecordPaymentForm({
         };
 
         void load();
-    }, [invoicePaymentId, resolvedInvoiceId, loadMeta]);
+    }, [invoicePaymentId, resolvedPartyId, loadMeta]);
 
-    useEffect(() => {
-        if (invoicePaymentId || !resolvedInvoiceId || openInvoices.length === 0) {
-            return;
-        }
-
-        const invoice = openInvoices.find((inv) => inv.id === resolvedInvoiceId);
-        if (!invoice) {
-            return;
-        }
-
-        setData((prev) => ({
-            ...prev,
-            party_id: String(invoice.party_id),
-            freight_invoice_id: String(resolvedInvoiceId),
-        }));
-    }, [openInvoices, resolvedInvoiceId, invoicePaymentId]);
-
-    const selectedInvoice = useMemo(() => {
-        if (fixedInvoice) {
-            const fromMeta = openInvoices.find((inv) => inv.id === fixedInvoice.id);
-            if (fromMeta) {
-                return fromMeta;
-            }
-
+    const activePartySummary = useMemo((): PartyPaymentSummary | null => {
+        if (fixedParty) {
             return {
-                id: fixedInvoice.id,
-                bill_number: fixedInvoice.bill_number,
-                party_id: 0,
-                party_name: fixedInvoice.party_name ?? '',
-                balance_amount: Number(fixedInvoice.balance_amount),
-                received: Number(fixedInvoice.received ?? 0),
-                outstanding: Number(fixedInvoice.outstanding ?? fixedInvoice.balance_amount),
-            } satisfies OpenInvoiceOption;
+                balance_due: Number(fixedParty.balance_due),
+                received: Number(fixedParty.received),
+                outstanding: Number(fixedParty.outstanding),
+            };
         }
 
-        return openInvoices.find((inv) => String(inv.id) === data.freight_invoice_id);
-    }, [fixedInvoice, openInvoices, data.freight_invoice_id]);
+        return partySummary;
+    }, [fixedParty, partySummary]);
 
     const maxAmount = useMemo(() => {
-        if (!selectedInvoice) {
+        if (!activePartySummary) {
             return null;
         }
 
         if (isEdit && invoicePaymentId) {
-            return selectedInvoice.outstanding + Number(data.amount || 0);
+            return activePartySummary.outstanding + Number(data.amount || 0);
         }
 
-        return selectedInvoice.outstanding;
-    }, [selectedInvoice, isEdit, invoicePaymentId, data.amount]);
+        return activePartySummary.outstanding;
+    }, [activePartySummary, isEdit, invoicePaymentId, data.amount]);
 
     const setField = (field: keyof PaymentFormData, value: string) => {
         setData((prev) => ({ ...prev, [field]: value }));
@@ -234,23 +197,13 @@ export default function RecordPaymentForm({
         });
     };
 
-    const onPartyChange = async (partyId: string) => {
-        setField('party_id', partyId);
-        setField('freight_invoice_id', '');
+    const onPartyChange = async (nextPartyId: string) => {
+        setField('party_id', nextPartyId);
 
         try {
-            await loadMeta(partyId || undefined);
+            await loadMeta(nextPartyId || undefined);
         } catch {
-            setLoadError('Could not load invoices for party.');
-        }
-    };
-
-    const onInvoiceChange = (invoiceIdValue: string) => {
-        setField('freight_invoice_id', invoiceIdValue);
-
-        const invoice = openInvoices.find((inv) => String(inv.id) === invoiceIdValue);
-        if (invoice) {
-            setField('party_id', String(invoice.party_id));
+            setLoadError('Could not load party outstanding.');
         }
     };
 
@@ -261,8 +214,8 @@ export default function RecordPaymentForm({
 
         const clientErrors: Partial<Record<keyof PaymentFormData, string>> = {};
 
-        if (!data.freight_invoice_id) {
-            clientErrors.freight_invoice_id = 'Select an invoice.';
+        if (!data.party_id) {
+            clientErrors.party_id = 'Select a party (receiver).';
         }
         if (!data.payment_date) {
             clientErrors.payment_date = 'Payment date is required.';
@@ -282,7 +235,7 @@ export default function RecordPaymentForm({
 
         try {
             const payload = {
-                freight_invoice_id: Number(data.freight_invoice_id),
+                party_id: Number(data.party_id),
                 payment_date: data.payment_date,
                 amount: Number(data.amount),
                 payment_mode: data.payment_mode || null,
@@ -323,6 +276,11 @@ export default function RecordPaymentForm({
             errors[field] ? 'border-red-300' : ''
         }`;
 
+    const selectedPartyName =
+        parties.find((party) => String(party.id) === data.party_id)?.name ??
+        fixedParty?.name ??
+        '';
+
     if (loading) {
         return <p className="py-6 text-center text-sm text-gray-500">Loading…</p>;
     }
@@ -336,97 +294,79 @@ export default function RecordPaymentForm({
             )}
 
             <form onSubmit={submit} className="space-y-5">
-                {fixedInvoice ? (
+                {fixedParty ? (
                     <div className="rounded-lg bg-gray-50 p-4 text-sm">
-                        <p className="font-medium text-gray-900">{fixedInvoice.bill_number}</p>
-                        {fixedInvoice.party_name && (
-                            <p className="mt-1 text-gray-600">{fixedInvoice.party_name}</p>
-                        )}
-                        {selectedInvoice && (
-                            <dl className="mt-3 grid gap-2 sm:grid-cols-3">
-                                <div>
-                                    <dt className="text-gray-500">Balance due</dt>
-                                    <dd className="font-medium">
-                                        ₹ {formatMoney(selectedInvoice.balance_amount)}
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt className="text-gray-500">Already received</dt>
-                                    <dd className="font-medium text-green-700">
-                                        ₹ {formatMoney(selectedInvoice.received)}
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt className="text-gray-500">Outstanding</dt>
-                                    <dd className="font-semibold text-indigo-700">
-                                        ₹ {formatMoney(selectedInvoice.outstanding)}
-                                    </dd>
-                                </div>
-                            </dl>
-                        )}
+                        <p className="font-medium text-gray-900">{fixedParty.name}</p>
+                        <p className="mt-1 text-gray-600">Party account (receiver)</p>
+                        <dl className="mt-3 grid gap-2 sm:grid-cols-3">
+                            <div>
+                                <dt className="text-gray-500">Balance due</dt>
+                                <dd className="font-medium">
+                                    ₹ {formatMoney(fixedParty.balance_due)}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt className="text-gray-500">Already received</dt>
+                                <dd className="font-medium text-green-700">
+                                    ₹ {formatMoney(fixedParty.received)}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt className="text-gray-500">Outstanding</dt>
+                                <dd className="font-semibold text-indigo-700">
+                                    ₹ {formatMoney(fixedParty.outstanding)}
+                                </dd>
+                            </div>
+                        </dl>
                     </div>
                 ) : (
-                    <>
-                        <div>
-                            <InputLabel value="Party (filter invoices)" />
-                            <select
-                                className={inputClass('party_id')}
-                                value={data.party_id}
-                                onChange={(e) => void onPartyChange(e.target.value)}
-                            >
-                                <option value="">All parties</option>
-                                {parties.map((party) => (
-                                    <option key={party.id} value={party.id}>
-                                        {party.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                    <div>
+                        <InputLabel value="Party (receiver)" />
+                        <select
+                            className={inputClass('party_id')}
+                            value={data.party_id}
+                            onChange={(e) => void onPartyChange(e.target.value)}
+                            required
+                            disabled={partyLocked && Boolean(resolvedPartyId) && !isEdit}
+                        >
+                            <option value="">Select party</option>
+                            {parties.map((party) => (
+                                <option key={party.id} value={party.id}>
+                                    {party.name}
+                                </option>
+                            ))}
+                        </select>
+                        <InputError message={errors.party_id} className="mt-1" />
+                    </div>
+                )}
 
-                        <div>
-                            <InputLabel value="Invoice" />
-                            <select
-                                className={inputClass('freight_invoice_id')}
-                                value={data.freight_invoice_id}
-                                onChange={(e) => onInvoiceChange(e.target.value)}
-                                required
-                            >
-                                <option value="">Select invoice</option>
-                                {openInvoices.map((invoice) => (
-                                    <option key={invoice.id} value={invoice.id}>
-                                        {invoice.bill_number} — {invoice.party_name} (outstanding ₹{' '}
-                                        {formatMoney(invoice.outstanding)})
-                                    </option>
-                                ))}
-                            </select>
-                            <InputError message={errors.freight_invoice_id} className="mt-1" />
-                        </div>
-
-                        {selectedInvoice && (
-                            <div className="rounded-lg bg-gray-50 p-4 text-sm">
-                                <dl className="grid gap-2 sm:grid-cols-3">
-                                    <div>
-                                        <dt className="text-gray-500">Balance due</dt>
-                                        <dd className="font-medium">
-                                            ₹ {formatMoney(selectedInvoice.balance_amount)}
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt className="text-gray-500">Already received</dt>
-                                        <dd className="font-medium text-green-700">
-                                            ₹ {formatMoney(selectedInvoice.received)}
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt className="text-gray-500">Outstanding</dt>
-                                        <dd className="font-semibold text-indigo-700">
-                                            ₹ {formatMoney(selectedInvoice.outstanding)}
-                                        </dd>
-                                    </div>
-                                </dl>
+                {activePartySummary && data.party_id && !fixedParty && (
+                    <div className="rounded-lg bg-gray-50 p-4 text-sm">
+                        <p className="font-medium text-gray-900">{selectedPartyName}</p>
+                        <p className="mt-1 text-gray-600">
+                            Payment is recorded against the party account, not a specific bill.
+                        </p>
+                        <dl className="mt-3 grid gap-2 sm:grid-cols-3">
+                            <div>
+                                <dt className="text-gray-500">Balance due</dt>
+                                <dd className="font-medium">
+                                    ₹ {formatMoney(activePartySummary.balance_due)}
+                                </dd>
                             </div>
-                        )}
-                    </>
+                            <div>
+                                <dt className="text-gray-500">Already received</dt>
+                                <dd className="font-medium text-green-700">
+                                    ₹ {formatMoney(activePartySummary.received)}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt className="text-gray-500">Outstanding</dt>
+                                <dd className="font-semibold text-indigo-700">
+                                    ₹ {formatMoney(activePartySummary.outstanding)}
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
                 )}
 
                 <div className="grid gap-5 sm:grid-cols-2">

@@ -188,6 +188,13 @@ export default function InvoicePaymentsIndex() {
                                                 ₹ {formatMoney(row.outstanding)}
                                             </td>
                                             <td className="px-4 py-3 text-right">
+                                                <Link
+                                                    href={`${route('invoice-payments.create')}?party=${row.party_id}`}
+                                                    className="text-indigo-600 hover:underline"
+                                                >
+                                                    Record payment
+                                                </Link>
+                                                <span className="mx-2 text-gray-300">|</span>
                                                 <button
                                                     type="button"
                                                     onClick={() => filterByParty(row.party_id)}
@@ -250,8 +257,8 @@ export default function InvoicePaymentsIndex() {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Bill No.</th>
                                         <th className="px-4 py-3 text-left font-medium text-gray-500">Party</th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Bill No.</th>
                                         <th className="px-4 py-3 text-right font-medium text-gray-500">Amount</th>
                                         <th className="px-4 py-3 text-left font-medium text-gray-500">Mode</th>
                                         <th className="px-4 py-3 text-left font-medium text-gray-500">Reference</th>
@@ -271,22 +278,24 @@ export default function InvoicePaymentsIndex() {
                                         rows.map((row) => (
                                             <tr key={row.id} className="hover:bg-gray-50">
                                                 <td className="px-4 py-3">{row.payment_date}</td>
+                                                <td className="px-4 py-3 font-medium">
+                                                    {row.party?.name ?? '—'}
+                                                </td>
                                                 <td className="px-4 py-3">
                                                     {row.freight_invoice ? (
                                                         <Link
                                                             href={route(
                                                                 'invoices.show',
-                                                                row.freight_invoice_id,
+                                                                row.freight_invoice_id!,
                                                             )}
                                                             className="text-indigo-600 hover:underline"
                                                         >
                                                             {row.freight_invoice.bill_number}
                                                         </Link>
                                                     ) : (
-                                                        '—'
+                                                        <span className="text-gray-500">Party account</span>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-3">{row.party?.name ?? '—'}</td>
                                                 <td className="px-4 py-3 text-right font-medium">
                                                     ₹ {formatMoney(row.amount)}
                                                 </td>

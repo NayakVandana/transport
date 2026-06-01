@@ -165,7 +165,7 @@ export interface PartyPaymentRow {
     payment_mode?: string | null;
     reference_no?: string | null;
     notes?: string | null;
-    freight_invoice_id: number;
+    freight_invoice_id: number | null;
     bill_number: string;
 }
 
@@ -241,7 +241,7 @@ export interface FreightInvoice {
 
 export interface InvoicePayment {
     id: number;
-    freight_invoice_id: number;
+    freight_invoice_id: number | null;
     party_id: number;
     payment_date: string;
     amount: string | number;
@@ -249,7 +249,13 @@ export interface InvoicePayment {
     reference_no?: string | null;
     notes?: string | null;
     party?: Pick<Party, 'id' | 'name'>;
-    freight_invoice?: Pick<FreightInvoice, 'id' | 'bill_number' | 'balance_amount'>;
+    freight_invoice?: Pick<FreightInvoice, 'id' | 'bill_number' | 'balance_amount'> | null;
+}
+
+export interface PartyPaymentSummary {
+    balance_due: number;
+    received: number;
+    outstanding: number;
 }
 
 export interface OpenInvoiceOption {

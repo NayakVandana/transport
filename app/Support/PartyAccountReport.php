@@ -86,16 +86,10 @@ class PartyAccountReport
         $payments = $paymentsQuery->get();
 
         $invoiceRows = [];
-        $balanceDue = 0.0;
-        $receivedTotal = 0.0;
-        $outstandingTotal = 0.0;
         $lastInvoiceDate = null;
 
         foreach ($invoices as $invoice) {
             $summary = InvoicePaymentCalculator::invoiceSummary($invoice);
-            $balanceDue += (float) $invoice->balance_amount;
-            $receivedTotal += $summary['received'];
-            $outstandingTotal += $summary['outstanding'];
 
             if ($lastInvoiceDate === null || $invoice->invoice_date > $lastInvoiceDate) {
                 $lastInvoiceDate = $invoice->invoice_date->format('Y-m-d');
@@ -113,6 +107,8 @@ class PartyAccountReport
                 'payment_status' => $summary['payment_status'],
             ];
         }
+
+        $partyTotals = InvoicePaymentCalculator::partySummary($userId, $partyId);
 
         $paymentRows = $payments->map(fn (InvoicePayment $payment) => [
             'id' => $payment->id,
@@ -154,9 +150,9 @@ class PartyAccountReport
             'overview' => [
                 'invoice_count' => count($invoiceRows),
                 'entry_count' => count($entrybookRows),
-                'balance_due' => round($balanceDue, 2),
-                'received' => round($receivedTotal, 2),
-                'outstanding' => round($outstandingTotal, 2),
+                'balance_due' => $partyTotals['balance_due'],
+                'received' => $partyTotals['received'],
+                'outstanding' => $partyTotals['outstanding'],
                 'last_invoice_date' => $lastInvoiceDate,
                 'last_payment_date' => $lastPaymentDate,
             ],
@@ -217,7 +213,8 @@ class PartyAccountReport
                 continue;
             }
 
-            $reference = $payment->reference_no ?: ($payment->freightInvoice?->bill_number ?? '');
+            $reference = $payment->reference_no
+                ?: ($payment->freightInvoice?->bill_number ?? 'Party payment');
             $mode = $payment->payment_mode ? strtoupper($payment->payment_mode) : 'Payment';
 
             $entries[] = [

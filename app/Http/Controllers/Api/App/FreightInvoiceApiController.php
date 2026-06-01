@@ -171,6 +171,10 @@ class FreightInvoiceApiController extends Controller
             return $this->sendJsonResponse(true, 'Invoice loaded.', [
                 'invoice' => $invoice,
                 'paymentSummary' => $paymentSummary,
+                'partySummary' => InvoicePaymentCalculator::partySummary(
+                    (int) $request->user()->id,
+                    (int) $invoice->party_id,
+                ),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -468,7 +472,7 @@ class FreightInvoiceApiController extends Controller
         if ($status !== '') {
             $query->where('status', $status);
         }
-        InvoicePaymentCalculator::applyPaymentStatusFilter($query, $paymentStatus);
+        InvoicePaymentCalculator::applyPaymentStatusFilter($query, $paymentStatus, $userId);
         $query->orderByDesc('invoice_date')->orderByDesc('id');
 
         $parties = Party::query()

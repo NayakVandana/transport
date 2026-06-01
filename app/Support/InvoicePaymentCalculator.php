@@ -10,17 +10,123 @@ use Illuminate\Support\Collection as SupportCollection;
 
 class InvoicePaymentCalculator
 {
-    public static function receivedAmount(FreightInvoice|int $invoice, ?int $excludePaymentId = null): float
+    /** @return array{balance_due: float, received: float, outstanding: float} */
+    public static function partySummary(int $userId, int $partyId, ?int $excludePaymentId = null): array
     {
-        $invoiceId = $invoice instanceof FreightInvoice ? $invoice->id : $invoice;
+        $balanceDue = round((float) FreightInvoice::query()
+            ->where('user_id', $userId)
+            ->where('party_id', $partyId)
+            ->sum('balance_amount'), 2);
 
-        $query = InvoicePayment::query()->where('freight_invoice_id', $invoiceId);
+        $query = InvoicePayment::query()
+            ->where('user_id', $userId)
+            ->where('party_id', $partyId);
 
         if ($excludePaymentId !== null) {
             $query->where('id', '!=', $excludePaymentId);
         }
 
-        return round((float) $query->sum('amount'), 2);
+        $received = round((float) $query->sum('amount'), 2);
+        $outstanding = max(0, round($balanceDue - $received, 2));
+
+        return [
+            'balance_due' => $balanceDue,
+            'received' => $received,
+            'outstanding' => $outstanding,
+        ];
+    }
+
+    /**
+     * Allocate party payments to invoices (oldest first). Invoice-linked payments apply to that bill first.
+     *
+     * @return array<int, float>
+     */
+    public static function fifoAllocatedReceivedByInvoice(
+        int $userId,
+        ?int $excludePaymentId = null,
+        ?int $partyId = null,
+    ): array {
+        $allocated = [];
+
+        $partiesQuery = Party::query()->where('user_id', $userId);
+
+        if ($partyId !== null) {
+            $partiesQuery->whereKey($partyId);
+        }
+
+        foreach ($partiesQuery->get(['id']) as $party) {
+            $invoices = FreightInvoice::query()
+                ->where('user_id', $userId)
+                ->where('party_id', $party->id)
+                ->orderBy('invoice_date')
+                ->orderBy('id')
+                ->get(['id', 'balance_amount']);
+
+            $remaining = [];
+
+            foreach ($invoices as $invoice) {
+                $remaining[$invoice->id] = (float) $invoice->balance_amount;
+                $allocated[$invoice->id] = 0.0;
+            }
+
+            $paymentsQuery = InvoicePayment::query()
+                ->where('user_id', $userId)
+                ->where('party_id', $party->id)
+                ->orderBy('payment_date')
+                ->orderBy('id');
+
+            if ($excludePaymentId !== null) {
+                $paymentsQuery->where('id', '!=', $excludePaymentId);
+            }
+
+            foreach ($paymentsQuery->get(['id', 'freight_invoice_id', 'amount']) as $payment) {
+                $amount = (float) $payment->amount;
+
+                if ($payment->freight_invoice_id && isset($remaining[$payment->freight_invoice_id])) {
+                    $invId = $payment->freight_invoice_id;
+                    $apply = min($amount, max(0, $remaining[$invId]));
+                    $allocated[$invId] += $apply;
+                    $remaining[$invId] -= $apply;
+                    $amount -= $apply;
+                }
+
+                foreach ($invoices as $invoice) {
+                    if ($amount <= 0) {
+                        break;
+                    }
+
+                    if ($remaining[$invoice->id] <= 0) {
+                        continue;
+                    }
+
+                    $apply = min($amount, $remaining[$invoice->id]);
+                    $allocated[$invoice->id] += $apply;
+                    $remaining[$invoice->id] -= $apply;
+                    $amount -= $apply;
+                }
+            }
+        }
+
+        return $allocated;
+    }
+
+    public static function receivedAmount(FreightInvoice|int $invoice, ?int $excludePaymentId = null): float
+    {
+        $invoiceModel = $invoice instanceof FreightInvoice
+            ? $invoice
+            : FreightInvoice::query()->find($invoice);
+
+        if (! $invoiceModel) {
+            return 0.0;
+        }
+
+        $allocated = self::fifoAllocatedReceivedByInvoice(
+            (int) $invoiceModel->user_id,
+            $excludePaymentId,
+            (int) $invoiceModel->party_id,
+        );
+
+        return round((float) ($allocated[$invoiceModel->id] ?? 0), 2);
     }
 
     public static function outstanding(FreightInvoice $invoice, ?int $excludePaymentId = null): float
@@ -57,21 +163,28 @@ class InvoicePaymentCalculator
     }
 
     /** @param  \Illuminate\Database\Eloquent\Builder<\App\Models\FreightInvoice>  $query */
-    public static function applyPaymentStatusFilter($query, string $paymentStatus): void
+    public static function applyPaymentStatusFilter($query, string $paymentStatus, int $userId): void
     {
         if ($paymentStatus === '') {
             return;
         }
 
-        $receivedSubquery = '(SELECT COALESCE(SUM(amount), 0) FROM invoice_payments WHERE freight_invoice_id = freight_invoices.id AND deleted_at IS NULL)';
+        $baseQuery = clone $query;
+        $candidates = $baseQuery->get();
+        self::attachSummariesToInvoices($candidates);
 
-        match ($paymentStatus) {
-            'paid' => $query->whereRaw("{$receivedSubquery} >= freight_invoices.balance_amount"),
-            'pending' => $query->whereRaw("{$receivedSubquery} = 0")->where('balance_amount', '>', 0),
-            'partial' => $query->whereRaw("{$receivedSubquery} > 0")
-                ->whereRaw("{$receivedSubquery} < freight_invoices.balance_amount"),
-            default => null,
-        };
+        $matchingIds = $candidates
+            ->filter(fn (FreightInvoice $invoice) => $invoice->getAttribute('payment_status') === $paymentStatus)
+            ->pluck('id')
+            ->all();
+
+        if ($matchingIds === []) {
+            $query->whereRaw('0 = 1');
+
+            return;
+        }
+
+        $query->whereIn('id', $matchingIds);
     }
 
     /** @param  Collection<int, FreightInvoice>|SupportCollection<int, FreightInvoice>  $invoices */
@@ -81,14 +194,11 @@ class InvoicePaymentCalculator
             return $invoices;
         }
 
-        $receivedByInvoice = InvoicePayment::query()
-            ->whereIn('freight_invoice_id', $invoices->pluck('id'))
-            ->groupBy('freight_invoice_id')
-            ->selectRaw('freight_invoice_id, COALESCE(SUM(amount), 0) as received')
-            ->pluck('received', 'freight_invoice_id');
+        $userId = (int) $invoices->first()->user_id;
+        $allocated = self::fifoAllocatedReceivedByInvoice($userId);
 
-        return $invoices->map(function (FreightInvoice $invoice) use ($receivedByInvoice) {
-            $received = round((float) ($receivedByInvoice[$invoice->id] ?? 0), 2);
+        return $invoices->map(function (FreightInvoice $invoice) use ($allocated) {
+            $received = round((float) ($allocated[$invoice->id] ?? 0), 2);
             $outstanding = max(0, round((float) $invoice->balance_amount - $received, 2));
             $invoice->setAttribute('received', $received);
             $invoice->setAttribute('outstanding', $outstanding);
@@ -103,16 +213,16 @@ class InvoicePaymentCalculator
 
     public static function totalOutstanding(int $userId, ?int $partyId = null): float
     {
-        $query = FreightInvoice::query()->where('user_id', $userId);
+        $partiesQuery = Party::query()->where('user_id', $userId);
 
         if ($partyId !== null) {
-            $query->where('party_id', $partyId);
+            $partiesQuery->whereKey($partyId);
         }
 
         $total = 0.0;
 
-        foreach ($query->get(['id', 'balance_amount']) as $invoice) {
-            $total += self::outstanding($invoice);
+        foreach ($partiesQuery->pluck('id') as $id) {
+            $total += self::partySummary($userId, (int) $id)['outstanding'];
         }
 
         return round($total, 2);
@@ -132,28 +242,20 @@ class InvoicePaymentCalculator
         }
 
         return $partiesQuery->get()->map(function (Party $party) use ($userId) {
-            $invoices = FreightInvoice::query()
+            $invoiceCount = FreightInvoice::query()
                 ->where('user_id', $userId)
                 ->where('party_id', $party->id)
-                ->get(['id', 'balance_amount']);
+                ->count();
 
-            $balanceDue = round((float) $invoices->sum('balance_amount'), 2);
-            $received = 0.0;
-            $outstanding = 0.0;
-
-            foreach ($invoices as $invoice) {
-                $summary = self::invoiceSummary($invoice);
-                $received += $summary['received'];
-                $outstanding += $summary['outstanding'];
-            }
+            $summary = self::partySummary($userId, $party->id);
 
             return [
                 'party_id' => $party->id,
                 'party_name' => $party->name,
-                'invoice_count' => $invoices->count(),
-                'balance_due' => $balanceDue,
-                'received' => round($received, 2),
-                'outstanding' => round($outstanding, 2),
+                'invoice_count' => $invoiceCount,
+                'balance_due' => $summary['balance_due'],
+                'received' => $summary['received'],
+                'outstanding' => $summary['outstanding'],
             ];
         })->filter(fn (array $row) => $row['invoice_count'] > 0 || $row['received'] > 0)->values();
     }

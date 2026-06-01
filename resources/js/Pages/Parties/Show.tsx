@@ -3,7 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import ListFilterBar from '@/Components/ListFilterBar';
 import Modal from '@/Components/Modal';
 import PrimaryButton from '@/Components/PrimaryButton';
-import RecordPaymentForm, { type LockedPaymentInvoice } from '@/Components/RecordPaymentForm';
+import RecordPaymentForm, { type LockedPaymentParty } from '@/Components/RecordPaymentForm';
 import SecondaryButton from '@/Components/SecondaryButton';
 import InvoicePaymentStatusBadge, {
     invoicePaymentStatusFromAmounts,
@@ -76,7 +76,7 @@ export default function PartyShow({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [dateValue, setDateValue] = useState<DatePickerRangeValue>({ startDate: null, endDate: null });
-    const [paymentInvoice, setPaymentInvoice] = useState<LockedPaymentInvoice | null>(null);
+    const [paymentParty, setPaymentParty] = useState<LockedPaymentParty | null>(null);
 
     const [profileData, setProfileData] = useState({
         name: '',
@@ -157,14 +157,17 @@ export default function PartyShow({
         setDateValue({ startDate: null, endDate: null });
     };
 
-    const openPaymentModal = (inv: PartyInvoiceRow) => {
-        setPaymentInvoice({
-            id: inv.id,
-            bill_number: inv.bill_number,
-            party_name: account?.party.name,
-            balance_amount: inv.balance_amount,
-            received: inv.received,
-            outstanding: inv.outstanding,
+    const openPartyPaymentModal = () => {
+        if (!account || !overview) {
+            return;
+        }
+
+        setPaymentParty({
+            id: account.party.id,
+            name: account.party.name,
+            balance_due: overview.balance_due,
+            received: overview.received,
+            outstanding: overview.outstanding,
         });
     };
 
@@ -274,6 +277,17 @@ export default function PartyShow({
                                                 />
                                             </div>
 
+                                            {(overview.outstanding ?? 0) > 0 && (
+                                                <div className="flex justify-end">
+                                                    <PrimaryButton
+                                                        type="button"
+                                                        onClick={openPartyPaymentModal}
+                                                    >
+                                                        Record Payment
+                                                    </PrimaryButton>
+                                                </div>
+                                            )}
+
                                             <div className="grid gap-4 lg:grid-cols-3">
                                                 <section className="rounded-lg border border-gray-200">
                                                     <div className="flex items-center justify-between border-b px-4 py-3">
@@ -302,11 +316,7 @@ export default function PartyShow({
                                                             View all
                                                         </Link>
                                                     </div>
-                                                    <InvoicesTable
-                                                        rows={recentInvoices}
-                                                        onRecordPayment={openPaymentModal}
-                                                        compact
-                                                    />
+                                                    <InvoicesTable rows={recentInvoices} compact />
                                                 </section>
 
                                                 <section className="rounded-lg border border-gray-200">
@@ -363,14 +373,21 @@ export default function PartyShow({
                                         <div className="overflow-hidden rounded-lg border border-gray-200">
                                             <div className="flex items-center justify-between border-b px-4 py-3">
                                                 <h3 className="font-semibold text-gray-800">Tax Invoices</h3>
-                                                <Link href={route('invoices.create')}>
-                                                    <PrimaryButton>New Invoice</PrimaryButton>
-                                                </Link>
+                                                <div className="flex gap-2">
+                                                    {(overview?.outstanding ?? 0) > 0 && (
+                                                        <PrimaryButton
+                                                            type="button"
+                                                            onClick={openPartyPaymentModal}
+                                                        >
+                                                            Record Payment
+                                                        </PrimaryButton>
+                                                    )}
+                                                    <Link href={route('invoices.create')}>
+                                                        <PrimaryButton>New Invoice</PrimaryButton>
+                                                    </Link>
+                                                </div>
                                             </div>
-                                            <InvoicesTable
-                                                rows={account.invoices}
-                                                onRecordPayment={openPaymentModal}
-                                            />
+                                            <InvoicesTable rows={account.invoices} />
                                         </div>
                                     )}
 
@@ -396,6 +413,19 @@ export default function PartyShow({
                                                 onClear={clearDateFilters}
                                             />
                                             <div className="overflow-hidden rounded-lg border border-gray-200">
+                                                <div className="flex items-center justify-between border-b px-4 py-3">
+                                                    <h3 className="font-semibold text-gray-800">
+                                                        Received Payments
+                                                    </h3>
+                                                    {(overview?.outstanding ?? 0) > 0 && (
+                                                        <PrimaryButton
+                                                            type="button"
+                                                            onClick={openPartyPaymentModal}
+                                                        >
+                                                            Record Payment
+                                                        </PrimaryButton>
+                                                    )}
+                                                </div>
                                                 <PaymentsTable rows={account.payments} />
                                             </div>
                                         </div>
@@ -494,20 +524,24 @@ export default function PartyShow({
                 </div>
             </div>
 
-            <Modal show={paymentInvoice !== null} onClose={() => setPaymentInvoice(null)} maxWidth="2xl">
+            <Modal
+                show={paymentParty !== null}
+                onClose={() => setPaymentParty(null)}
+                maxWidth="2xl"
+            >
                 <div className="p-6">
                     <h3 className="text-lg font-semibold text-gray-900">Record Payment</h3>
-                    {paymentInvoice && (
+                    {paymentParty && (
                         <div className="mt-4">
                             <RecordPaymentForm
-                                key={paymentInvoice.id}
-                                invoiceId={paymentInvoice.id}
-                                lockedInvoice={paymentInvoice}
+                                key={`party-${paymentParty.id}`}
+                                partyId={paymentParty.id}
+                                lockedParty={paymentParty}
                                 onSuccess={() => {
-                                    setPaymentInvoice(null);
+                                    setPaymentParty(null);
                                     void loadAccount();
                                 }}
-                                onCancel={() => setPaymentInvoice(null)}
+                                onCancel={() => setPaymentParty(null)}
                             />
                         </div>
                     )}
@@ -667,11 +701,9 @@ function EntrybooksTable({
 
 function InvoicesTable({
     rows,
-    onRecordPayment,
     compact = false,
 }: {
     rows: PartyInvoiceRow[];
-    onRecordPayment: (inv: PartyInvoiceRow) => void;
     compact?: boolean;
 }) {
     return (
@@ -748,18 +780,6 @@ function InvoicesTable({
                                         >
                                             View
                                         </Link>
-                                        {row.outstanding > 0 && (
-                                            <>
-                                                <span className="mx-2 text-gray-300">|</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => onRecordPayment(row)}
-                                                    className="text-green-700 hover:underline"
-                                                >
-                                                    Record Payment
-                                                </button>
-                                            </>
-                                        )}
                                     </td>
                                 )}
                             </tr>
@@ -797,12 +817,16 @@ function PaymentsTable({ rows }: { rows: PartyAccountData['payments'] }) {
                             <tr key={row.id}>
                                 <td className="px-4 py-3">{row.payment_date}</td>
                                 <td className="px-4 py-3">
-                                    <Link
-                                        href={route('invoices.show', row.freight_invoice_id)}
-                                        className="text-indigo-600 hover:underline"
-                                    >
-                                        {row.bill_number}
-                                    </Link>
+                                    {row.freight_invoice_id ? (
+                                        <Link
+                                            href={route('invoices.show', row.freight_invoice_id)}
+                                            className="text-indigo-600 hover:underline"
+                                        >
+                                            {row.bill_number}
+                                        </Link>
+                                    ) : (
+                                        <span className="text-gray-500">Party account</span>
+                                    )}
                                 </td>
                                 <td className="px-4 py-3 text-right font-medium">
                                     ₹ {formatMoney(row.amount)}

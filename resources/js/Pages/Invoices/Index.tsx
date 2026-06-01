@@ -5,7 +5,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import InvoicePaymentStatusBadge, {
     invoicePaymentStatusFromAmounts,
 } from '@/Components/InvoicePaymentStatusBadge';
-import RecordPaymentForm, { type LockedPaymentInvoice } from '@/Components/RecordPaymentForm';
+import RecordPaymentForm from '@/Components/RecordPaymentForm';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -40,7 +40,7 @@ const defaultFilters: InvoiceFilters = {
 export default function InvoicesIndex() {
     const [actionError, setActionError] = useState<string | null>(null);
     const [searchInput, setSearchInput] = useState('');
-    const [paymentInvoice, setPaymentInvoice] = useState<LockedPaymentInvoice | null>(null);
+    const [paymentPartyId, setPaymentPartyId] = useState<number | null>(null);
 
     usePageHeader(
         <div className="flex items-center justify-between">
@@ -96,18 +96,11 @@ export default function InvoicesIndex() {
     };
 
     const openPaymentModal = (inv: FreightInvoice & { party?: { name: string } }) => {
-        setPaymentInvoice({
-            id: inv.id,
-            bill_number: inv.bill_number,
-            party_name: inv.party?.name,
-            balance_amount: inv.balance_amount,
-            received: inv.received ?? 0,
-            outstanding: inv.outstanding ?? inv.balance_amount,
-        });
+        setPaymentPartyId(inv.party_id);
     };
 
     const closePaymentModal = () => {
-        setPaymentInvoice(null);
+        setPaymentPartyId(null);
     };
 
     const onPaymentSaved = async () => {
@@ -278,15 +271,14 @@ export default function InvoicesIndex() {
                 </div>
             </div>
 
-            <Modal show={paymentInvoice !== null} onClose={closePaymentModal} maxWidth="2xl">
+            <Modal show={paymentPartyId !== null} onClose={closePaymentModal} maxWidth="2xl">
                 <div className="p-6">
                     <h3 className="text-lg font-semibold text-gray-900">Record Payment</h3>
-                    {paymentInvoice && (
+                    {paymentPartyId && (
                         <div className="mt-4">
                             <RecordPaymentForm
-                                key={paymentInvoice.id}
-                                invoiceId={paymentInvoice.id}
-                                lockedInvoice={paymentInvoice}
+                                key={paymentPartyId}
+                                partyId={paymentPartyId}
                                 onSuccess={() => void onPaymentSaved()}
                                 onCancel={closePaymentModal}
                             />

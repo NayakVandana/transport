@@ -1,22 +1,33 @@
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import Modal from '@/Components/Modal';
 import InvoicePaymentStatusBadge, {
     invoicePaymentStatusFromAmounts,
 } from '@/Components/InvoicePaymentStatusBadge';
+import RecordPaymentForm from '@/Components/RecordPaymentForm';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { invalidateAppQuery, useAppQuery } from '@/hooks/useAppQuery';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { formatMoney } from '@/lib/freightCalculator';
-import type { FreightInvoice, InvoicePayment, InvoicePaymentSummary } from '@/types/transport';
+import type {
+    FreightInvoice,
+    InvoicePayment,
+    InvoicePaymentSummary,
+    PartyPaymentSummary,
+} from '@/types/transport';
 import { Head, Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 
 type InvoiceShowData = {
     invoice: FreightInvoice;
     paymentSummary: InvoicePaymentSummary;
+    partySummary: PartyPaymentSummary;
 };
 
 export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
-    const { data, loading, error } = useAppQuery(`invoice-show:${invoiceId}`, async () => {
+    const [paymentOpen, setPaymentOpen] = useState(false);
+
+    const { data, loading, error, refresh } = useAppQuery(`invoice-show:${invoiceId}`, async () => {
         const res = await appApiPost<ApiEnvelope<InvoiceShowData>>('/invoices/invoice-show', {
             id: invoiceId,
         });
@@ -30,6 +41,7 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
 
     const invoice = data?.invoice;
     const paymentSummary = data?.paymentSummary;
+    const partySummary = data?.partySummary;
     const payments = invoice?.payments ?? [];
 
     const destroy = async (id: number) => {
@@ -54,12 +66,10 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
             </h2>
             {invoice && (
                 <div className="flex flex-wrap gap-2">
-                    {paymentSummary && paymentSummary.outstanding > 0 && (
-                        <Link
-                            href={route('invoice-payments.create', { invoice: invoice.id })}
-                        >
-                            <PrimaryButton>Record Payment</PrimaryButton>
-                        </Link>
+                    {partySummary && partySummary.outstanding > 0 && (
+                        <PrimaryButton type="button" onClick={() => setPaymentOpen(true)}>
+                            Record Payment
+                        </PrimaryButton>
                     )}
                     <Link href={route('invoices.print', invoice.id)} target="_blank">
                         <SecondaryButton>Print</SecondaryButton>
@@ -73,7 +83,7 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                 </div>
             )}
         </div>,
-        [invoice?.id, invoice?.bill_number, paymentSummary?.outstanding],
+        [invoice?.id, invoice?.bill_number, partySummary?.outstanding],
     );
 
     return (
@@ -128,15 +138,31 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                                     {paymentSummary && (
                                         <>
                                             <div>
-                                                <dt className="text-gray-500">Received</dt>
+                                                <dt className="text-gray-500">Received (this bill)</dt>
                                                 <dd className="font-medium text-green-700">
                                                     ₹ {formatMoney(paymentSummary.received)}
                                                 </dd>
                                             </div>
                                             <div>
-                                                <dt className="text-gray-500">Outstanding</dt>
-                                                <dd className="text-lg font-semibold text-indigo-700">
+                                                <dt className="text-gray-500">Outstanding (this bill)</dt>
+                                                <dd className="font-semibold text-indigo-700">
                                                     ₹ {formatMoney(paymentSummary.outstanding)}
+                                                </dd>
+                                            </div>
+                                        </>
+                                    )}
+                                    {partySummary && (
+                                        <>
+                                            <div>
+                                                <dt className="text-gray-500">Party received</dt>
+                                                <dd className="font-medium text-green-700">
+                                                    ₹ {formatMoney(partySummary.received)}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-gray-500">Party outstanding</dt>
+                                                <dd className="font-semibold text-indigo-700">
+                                                    ₹ {formatMoney(partySummary.outstanding)}
                                                 </dd>
                                             </div>
                                         </>
@@ -148,7 +174,9 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                             {payments.length > 0 && (
                                 <div className="overflow-hidden rounded-lg bg-white shadow">
                                     <div className="border-b px-6 py-4">
-                                        <h3 className="font-semibold text-gray-800">Received Payments</h3>
+                                        <h3 className="font-semibold text-gray-800">
+                                            Party Payments (allocated to this bill)
+                                        </h3>
                                     </div>
                                     <table className="min-w-full divide-y divide-gray-200 text-sm">
                                         <thead className="bg-gray-50">
@@ -204,6 +232,25 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                     ) : null}
                 </div>
             </div>
+
+            <Modal show={paymentOpen} onClose={() => setPaymentOpen(false)} maxWidth="2xl">
+                <div className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900">Record Payment</h3>
+                    {invoice && (
+                        <div className="mt-4">
+                            <RecordPaymentForm
+                                key={invoice.party_id}
+                                partyId={invoice.party_id}
+                                onSuccess={() => {
+                                    setPaymentOpen(false);
+                                    void refresh();
+                                }}
+                                onCancel={() => setPaymentOpen(false)}
+                            />
+                        </div>
+                    )}
+                </div>
+            </Modal>
         </>
     );
 }

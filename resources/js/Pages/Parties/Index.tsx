@@ -175,6 +175,17 @@ export default function PartiesIndex() {
                                                     >
                                                         Manage
                                                     </Link>
+                                                    {Number(party.outstanding ?? 0) > 0 && (
+                                                        <>
+                                                            <span className="mx-2 text-gray-300">|</span>
+                                                            <Link
+                                                                href={`${route('invoice-payments.create')}?party=${party.id}`}
+                                                                className="text-green-700 hover:underline"
+                                                            >
+                                                                Record Payment
+                                                            </Link>
+                                                        </>
+                                                    )}
                                                     <span className="mx-2 text-gray-300">|</span>
                                                     <Link
                                                         href={route('parties.edit', party.id)}

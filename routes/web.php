@@ -70,10 +70,19 @@ Route::get('/invoices/{id}/print', fn (int $id) => Inertia::render('Invoices/Pri
 
 Route::get('/invoice-payments', fn () => Inertia::render('InvoicePayments/Index'))->name('invoice-payments.index');
 Route::get('/invoice-payments/create', function (Request $request) {
+    $party = $request->query('party');
     $invoice = $request->query('invoice');
 
+    $partyId = is_numeric($party) ? (int) $party : null;
+
+    if ($partyId === null && is_numeric($invoice)) {
+        $partyId = \App\Models\FreightInvoice::query()
+            ->whereKey((int) $invoice)
+            ->value('party_id');
+    }
+
     return Inertia::render('InvoicePayments/Form', [
-        'invoiceId' => is_numeric($invoice) ? (int) $invoice : null,
+        'partyId' => $partyId,
     ]);
 })->name('invoice-payments.create');
 Route::get('/invoice-payments/{id}/edit', fn (int $id) => Inertia::render('InvoicePayments/Form', ['invoicePaymentId' => $id]))->name('invoice-payments.edit');
