@@ -25,6 +25,7 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/profile/profile-destroy', [ProfileApiController::class, 'postProfileDestroy']);
 
     Route::post('/dashboard/dashboard-summary', [DashboardApiController::class, 'postDashboardSummary']);
+    Route::post('/dashboard/dashboard-chart', [DashboardApiController::class, 'postDashboardChart']);
 
     Route::post('/company/company-show', [CompanyApiController::class, 'postCompanyShow']);
     Route::post('/company/company-update', [CompanyApiController::class, 'postCompanyUpdate']);

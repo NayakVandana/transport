@@ -28,6 +28,7 @@
     },
     "dependencies": {
         "dayjs": "^1.11.21",
-        "react-tailwindcss-datepicker": "^1.7.3"
+        "react-tailwindcss-datepicker": "^1.7.3",
+        "recharts": "^3.8.1"
     }
 }
