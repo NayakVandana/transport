@@ -1,7 +1,7 @@
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import SecondaryButton from '@/Components/SecondaryButton';
-import { appApiPost, appApiPostFormData, type ApiEnvelope } from '@/api/appClient';
+import { appApiPostFormData, type ApiEnvelope } from '@/api/appClient';
 import { formatAppDateTime } from '@/lib/dateUtils';
 import { formControlClass } from '@/Components/FormPage';
 import type { EntityDocument, ExpenseOption } from '@/types/transport';
@@ -67,27 +67,11 @@ export async function uploadDocumentDrafts(
     return true;
 }
 
-export async function deleteEntityDocuments(
-    destroyPath: string,
-    ids: number[],
-): Promise<boolean> {
-    for (const id of ids) {
-        const res = await appApiPost<ApiEnvelope<null>>(destroyPath, { id });
-        if (!res.success) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 type EntityDocumentsSectionProps = {
     documentTypes: ExpenseOption[];
     drafts: DocumentDraft[];
     onDraftsChange: (drafts: DocumentDraft[]) => void;
     savedDocuments?: EntityDocument[];
-    documentsToDelete?: number[];
-    onDocumentsToDeleteChange?: (ids: number[]) => void;
 };
 
 export default function EntityDocumentsSection({
@@ -95,8 +79,6 @@ export default function EntityDocumentsSection({
     drafts,
     onDraftsChange,
     savedDocuments = [],
-    documentsToDelete = [],
-    onDocumentsToDeleteChange,
 }: EntityDocumentsSectionProps) {
     const typeLabels = Object.fromEntries(documentTypes.map((item) => [item.value, item.label]));
 
@@ -110,21 +92,7 @@ export default function EntityDocumentsSection({
         onDraftsChange(drafts.filter((draft) => draft.id !== id));
     };
 
-    const toggleDeleteSaved = (id: number) => {
-        if (!onDocumentsToDeleteChange) {
-            return;
-        }
-
-        if (documentsToDelete.includes(id)) {
-            onDocumentsToDeleteChange(documentsToDelete.filter((item) => item !== id));
-        } else {
-            onDocumentsToDeleteChange([...documentsToDelete, id]);
-        }
-    };
-
     const selectClass = formControlClass;
-
-    const visibleSaved = savedDocuments.filter((doc) => !documentsToDelete.includes(doc.id));
 
     return (
         <div className="space-y-4 border-t border-gray-200 pt-6">
@@ -145,7 +113,7 @@ export default function EntityDocumentsSection({
                 </SecondaryButton>
             </div>
 
-            {visibleSaved.length > 0 && (
+            {savedDocuments.length > 0 && (
                 <div className="overflow-x-auto rounded-lg border border-gray-200">
                     <table className="min-w-full divide-y divide-gray-200 text-sm">
                         <thead className="bg-gray-50">
@@ -153,11 +121,11 @@ export default function EntityDocumentsSection({
                                 <th className="px-4 py-2 text-left font-medium text-gray-500">Type</th>
                                 <th className="px-4 py-2 text-left font-medium text-gray-500">Title</th>
                                 <th className="px-4 py-2 text-left font-medium text-gray-500">Expiry</th>
-                                <th className="px-4 py-2 text-right font-medium text-gray-500">Actions</th>
+                                <th className="px-4 py-2 text-right font-medium text-gray-500">File</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 bg-white">
-                            {visibleSaved.map((document) => (
+                            {savedDocuments.map((document) => (
                                 <tr key={document.id}>
                                     <td className="px-4 py-2">
                                         {typeLabels[document.document_type] ?? document.document_type}
@@ -168,8 +136,8 @@ export default function EntityDocumentsSection({
                                     <td className="px-4 py-2 text-gray-600">
                                         {formatAppDateTime(document.expiry_date)}
                                     </td>
-                                    <td className="space-x-3 px-4 py-2 text-right">
-                                        {document.file_url && (
+                                    <td className="px-4 py-2 text-right">
+                                        {document.file_url ? (
                                             <a
                                                 href={document.file_url}
                                                 target="_blank"
@@ -178,14 +146,9 @@ export default function EntityDocumentsSection({
                                             >
                                                 View
                                             </a>
+                                        ) : (
+                                            '—'
                                         )}
-                                        <button
-                                            type="button"
-                                            onClick={() => toggleDeleteSaved(document.id)}
-                                            className="text-red-600 hover:underline"
-                                        >
-                                            Remove
-                                        </button>
                                     </td>
                                 </tr>
                             ))}
@@ -194,7 +157,7 @@ export default function EntityDocumentsSection({
                 </div>
             )}
 
-            {drafts.length === 0 && visibleSaved.length === 0 && (
+            {drafts.length === 0 && savedDocuments.length === 0 && (
                 <p className="text-sm text-gray-500">No documents added.</p>
             )}
 

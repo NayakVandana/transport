@@ -72,7 +72,6 @@ export default function EntrybooksIndex() {
         applySearch,
         updateField,
         clearFilters,
-        fetchList,
     } = useFilteredList<EntrybooksListData, EntrybookFilters>({
         defaultFilters,
         extraFilterKeys: ['vehicle_id', 'party_id', 'route_from'],
@@ -94,21 +93,6 @@ export default function EntrybooksIndex() {
 
     const entries = data?.entrybooks.data ?? [];
     const totals = data?.totals ?? { count: 0, freight: 0, advance: 0, balance: 0 };
-
-    const destroy = async (id: number) => {
-        if (!confirm('Remove this entry?')) {
-            return;
-        }
-
-        const res = await appApiPost<ApiEnvelope<null>>('/entrybooks/entrybook-destroy', { id });
-
-        if (!res.success) {
-            setActionError(res.message || 'Could not remove entry.');
-            return;
-        }
-
-        await fetchList();
-    };
 
     const displayError = actionError ?? error;
 
@@ -264,13 +248,6 @@ export default function EntrybooksIndex() {
                                                         >
                                                             Edit
                                                         </Link>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => void destroy(entry.id)}
-                                                            className="text-red-600 hover:underline"
-                                                        >
-                                                            Delete
-                                                        </button>
                                                     </td>
                                                 </tr>
                                             ))

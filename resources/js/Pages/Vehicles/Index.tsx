@@ -94,7 +94,6 @@ export default function VehiclesIndex() {
         applySearch,
         updateField,
         clearFilters,
-        fetchList,
     } = useFilteredList<VehiclesListData, VehicleFilters>({
         defaultFilters,
         extraFilterKeys: ['status'],
@@ -115,21 +114,6 @@ export default function VehiclesIndex() {
     });
 
     const vehicles = data?.vehicles.data ?? [];
-
-    const destroy = async (id: number) => {
-        if (!confirm('Remove this vehicle from the list?')) {
-            return;
-        }
-
-        const res = await appApiPost<ApiEnvelope<null>>('/vehicles/vehicle-destroy', { id });
-
-        if (!res.success) {
-            setActionError(res.message || 'Could not remove vehicle.');
-            return;
-        }
-
-        await fetchList();
-    };
 
     const displayError = actionError ?? error;
 
@@ -275,13 +259,6 @@ export default function VehiclesIndex() {
                                                     >
                                                         Edit
                                                     </Link>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => void destroy(v.id)}
-                                                        className="text-red-600 hover:underline"
-                                                    >
-                                                        Remove
-                                                    </button>
                                                 </td>
                                             </tr>
                                         ))

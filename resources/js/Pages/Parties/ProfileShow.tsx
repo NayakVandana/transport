@@ -5,7 +5,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import type { Party } from '@/types/transport';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { PartyTabs } from './PartyTabs';
 
@@ -55,21 +55,6 @@ export default function PartyProfileShow({ partyId }: { partyId: number }) {
         [party?.name, party?.mobile],
     );
 
-    const destroyParty = async () => {
-        if (!confirm('Delete this party?')) {
-            return;
-        }
-
-        const res = await appApiPost<ApiEnvelope<null>>('/parties/party-destroy', { id: partyId });
-
-        if (!res.success) {
-            setError(res.message || 'Could not delete party.');
-            return;
-        }
-
-        router.visit(route('parties.index'));
-    };
-
     const editHref = `${route('parties.edit', partyId)}?return=profile`;
 
     return (
@@ -116,9 +101,6 @@ export default function PartyProfileShow({ partyId }: { partyId: number }) {
                                     <Link href={editHref}>
                                         <SecondaryButton type="button">Edit Profile</SecondaryButton>
                                     </Link>
-                                    <SecondaryButton type="button" onClick={() => void destroyParty()}>
-                                        Delete Party
-                                    </SecondaryButton>
                                 </div>
                             </FormPage>
                         </div>

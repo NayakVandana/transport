@@ -8,7 +8,7 @@ import InvoicePaymentStatusBadge, {
 import RecordPaymentForm from '@/Components/RecordPaymentForm';
 import TaxInvoiceDocument from '@/invoices/TaxInvoiceDocument';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import { invalidateAppQuery, useAppQuery } from '@/hooks/useAppQuery';
+import { useAppQuery } from '@/hooks/useAppQuery';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
@@ -18,7 +18,7 @@ import type {
     InvoicePaymentSummary,
     PartyPaymentSummary,
 } from '@/types/transport';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 
 type InvoiceShowData = {
@@ -47,21 +47,6 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
     const partySummary = data?.partySummary;
     const payments = invoice?.payments ?? [];
 
-    const destroy = async (id: number) => {
-        if (!confirm('Delete this invoice?')) {
-            return;
-        }
-
-        const res = await appApiPost<ApiEnvelope<null>>('/invoices/invoice-destroy', { id });
-
-        if (!res.success) {
-            return;
-        }
-
-        invalidateAppQuery('invoices-list');
-        router.visit(route('invoices.index'));
-    };
-
     usePageHeader(
         <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-xl font-semibold text-gray-800">
@@ -80,9 +65,6 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                     <Link href={route('invoices.edit', invoice.id)}>
                         <SecondaryButton>Edit</SecondaryButton>
                     </Link>
-                    <SecondaryButton onClick={() => void destroy(invoice.id)}>
-                        Delete
-                    </SecondaryButton>
                 </div>
             )}
         </div>,

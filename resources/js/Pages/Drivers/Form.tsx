@@ -2,7 +2,6 @@ import FormPage, { FormActions, FormCard, FormGrid } from '@/Components/FormPage
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import EntityDocumentsSection, {
-    deleteEntityDocuments,
     uploadDocumentDrafts,
     type DocumentDraft,
 } from '@/Components/EntityDocumentsSection';
@@ -43,7 +42,6 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
     const [documentTypes, setDocumentTypes] = useState<ExpenseOption[]>([]);
     const [documents, setDocuments] = useState<EntityDocument[]>([]);
     const [documentDrafts, setDocumentDrafts] = useState<DocumentDraft[]>([]);
-    const [documentsToDelete, setDocumentsToDelete] = useState<number[]>([]);
     const [data, setData] = useState({
         name: '',
         mobile: '',
@@ -75,7 +73,6 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                     setDocumentTypes(res.data.document_types ?? []);
                     setDocuments(driver.documents ?? []);
                     setDocumentDrafts([]);
-                    setDocumentsToDelete([]);
                     setData({
                         name: driver.name ?? '',
                         mobile: driver.mobile ?? '',
@@ -160,18 +157,6 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
             const savedId = res.data?.driver?.id;
             if (!savedId) {
                 return;
-            }
-
-            if (documentsToDelete.length > 0) {
-                const deleted = await deleteEntityDocuments(
-                    '/drivers/driver-document-destroy',
-                    documentsToDelete,
-                );
-
-                if (!deleted) {
-                    setLoadError('Driver saved, but some documents could not be removed.');
-                    return;
-                }
             }
 
             if (documentDrafts.length > 0) {
@@ -310,8 +295,6 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                                     drafts={documentDrafts}
                                     onDraftsChange={setDocumentDrafts}
                                     savedDocuments={documents}
-                                    documentsToDelete={documentsToDelete}
-                                    onDocumentsToDeleteChange={setDocumentsToDelete}
                                 />
                             )}
 

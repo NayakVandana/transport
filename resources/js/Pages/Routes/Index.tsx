@@ -78,7 +78,6 @@ export default function RoutesIndex() {
         applyDateChange,
         applySearch,
         clearFilters,
-        fetchList,
     } = useFilteredList<RoutesListData, RouteFilters>({
         defaultFilters,
         load: async (activeFilters) => {
@@ -98,21 +97,6 @@ export default function RoutesIndex() {
     });
 
     const routes = data?.routes.data ?? [];
-
-    const destroy = async (id: number) => {
-        if (!confirm('Remove this route from the list?')) {
-            return;
-        }
-
-        const res = await appApiPost<ApiEnvelope<null>>('/routes/route-destroy', { id });
-
-        if (!res.success) {
-            setActionError(res.message || 'Could not remove route.');
-            return;
-        }
-
-        await fetchList();
-    };
 
     const displayError = actionError ?? error;
 
@@ -174,16 +158,13 @@ export default function RoutesIndex() {
                                     <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
                                         Created
                                     </th>
-                                    <th className="px-3 py-2 text-right font-medium text-gray-500 sm:px-6 sm:py-3">
-                                        Actions
-                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
                                 {routes.length === 0 ? (
                                     <tr>
                                         <td
-                                            colSpan={3}
+                                            colSpan={2}
                                             className="px-6 py-8 text-center text-gray-500"
                                         >
                                             {hasActiveFilters
@@ -197,15 +178,6 @@ export default function RoutesIndex() {
                                             <td className="px-3 py-2 sm:px-6 sm:py-3">{r.name}</td>
                                             <td className="whitespace-nowrap px-3 py-2 text-gray-600 sm:px-6 sm:py-3">
                                                 {formatAppCreatedAt(r.created_at)}
-                                            </td>
-                                            <td className="px-3 py-2 text-right sm:px-6 sm:py-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => void destroy(r.id)}
-                                                    className="text-red-600 hover:underline"
-                                                >
-                                                    Remove
-                                                </button>
                                             </td>
                                         </tr>
                                     ))

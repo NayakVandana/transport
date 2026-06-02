@@ -8,7 +8,7 @@ import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
-import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
+import { formatAppCreatedAt } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
 import type { Party } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
@@ -51,7 +51,6 @@ export default function PartiesIndex() {
         applyDateChange,
         applySearch,
         clearFilters,
-        fetchList,
     } = useFilteredList<PartiesListData, PartyFilters>({
         defaultFilters,
         load: async (activeFilters) => {
@@ -71,21 +70,6 @@ export default function PartiesIndex() {
     });
 
     const parties = data?.parties.data ?? [];
-
-    const destroy = async (id: number) => {
-        if (!confirm('Delete this party?')) {
-            return;
-        }
-
-        const res = await appApiPost<ApiEnvelope<null>>('/parties/party-destroy', { id });
-
-        if (!res.success) {
-            setActionError(res.message || 'Could not delete party.');
-            return;
-        }
-
-        await fetchList();
-    };
 
     const displayError = actionError ?? error;
 
@@ -194,14 +178,6 @@ export default function PartiesIndex() {
                                                     >
                                                         Edit
                                                     </Link>
-                                                    <span className="mx-2 text-gray-300">|</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => void destroy(party.id)}
-                                                        className="text-red-600 hover:underline"
-                                                    >
-                                                        Delete
-                                                    </button>
                                                 </td>
                                             </tr>
                                         ))

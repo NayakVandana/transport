@@ -75,7 +75,6 @@ export default function VehicleExpensesIndex() {
         applySearch,
         updateField,
         clearFilters,
-        fetchList,
     } = useFilteredList<VehicleExpensesListData, VehicleExpenseFilters>({
         defaultFilters,
         extraFilterKeys: ['vehicle_id'],
@@ -97,23 +96,6 @@ export default function VehicleExpensesIndex() {
 
     const rows = data?.vehicleExpenses.data ?? [];
     const totals = data?.totals ?? emptyTotals;
-
-    const destroy = async (id: number) => {
-        if (!confirm('Remove this vehicle expense?')) {
-            return;
-        }
-
-        const res = await appApiPost<ApiEnvelope<null>>('/vehicle-expenses/vehicle-expense-destroy', {
-            id,
-        });
-
-        if (!res.success) {
-            setActionError(res.message || 'Could not remove vehicle expense.');
-            return;
-        }
-
-        await fetchList();
-    };
 
     const displayError = actionError ?? error;
 
@@ -252,13 +234,6 @@ export default function VehicleExpensesIndex() {
                                                         >
                                                             Edit
                                                         </Link>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => void destroy(row.id)}
-                                                            className="text-red-600 hover:underline"
-                                                        >
-                                                            Delete
-                                                        </button>
                                                     </td>
                                                 </tr>
                                             ))

@@ -54,7 +54,6 @@ export default function DriversIndex() {
         applySearch,
         updateField,
         clearFilters,
-        fetchList,
     } = useFilteredList<DriversListData, DriverFilters>({
         defaultFilters,
         extraFilterKeys: ['status'],
@@ -75,21 +74,6 @@ export default function DriversIndex() {
     });
 
     const drivers = data?.drivers.data ?? [];
-
-    const destroy = async (id: number) => {
-        if (!confirm('Delete this driver?')) {
-            return;
-        }
-
-        const res = await appApiPost<ApiEnvelope<null>>('/drivers/driver-destroy', { id });
-
-        if (!res.success) {
-            setActionError(res.message || 'Could not delete driver.');
-            return;
-        }
-
-        await fetchList();
-    };
 
     const displayError = actionError ?? error;
 
@@ -206,13 +190,6 @@ export default function DriversIndex() {
                                                     >
                                                         Edit
                                                     </Link>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => void destroy(driver.id)}
-                                                        className="text-red-600 hover:underline"
-                                                    >
-                                                        Delete
-                                                    </button>
                                                 </td>
                                             </tr>
                                         ))

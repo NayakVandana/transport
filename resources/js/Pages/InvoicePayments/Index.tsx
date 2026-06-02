@@ -76,7 +76,6 @@ export default function InvoicePaymentsIndex() {
         applySearch,
         updateField,
         clearFilters,
-        fetchList,
     } = useFilteredList<InvoicePaymentsListData, InvoicePaymentFilters>({
         defaultFilters,
         extraFilterKeys: ['party_id'],
@@ -99,23 +98,6 @@ export default function InvoicePaymentsIndex() {
     const rows = data?.invoicePayments.data ?? [];
     const totals = data?.totals ?? emptyTotals;
     const totalOutstanding = data?.totalOutstanding ?? 0;
-
-    const destroy = async (id: number) => {
-        if (!confirm('Remove this payment record?')) {
-            return;
-        }
-
-        const res = await appApiPost<ApiEnvelope<null>>('/invoice-payments/invoice-payment-destroy', {
-            id,
-        });
-
-        if (!res.success) {
-            setActionError(res.message || 'Could not remove payment.');
-            return;
-        }
-
-        await fetchList();
-    };
 
     const displayError = actionError ?? error;
 
@@ -251,14 +233,6 @@ export default function InvoicePaymentsIndex() {
                                                     >
                                                         Edit
                                                     </Link>
-                                                    <span className="mx-2 text-gray-300">|</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => void destroy(row.id)}
-                                                        className="text-red-600 hover:underline"
-                                                    >
-                                                        Delete
-                                                    </button>
                                                 </td>
                                             </tr>
                                         ))

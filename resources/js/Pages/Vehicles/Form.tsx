@@ -2,7 +2,6 @@ import FormPage, { FormCard } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import EntityDocumentsSection, {
-    deleteEntityDocuments,
     uploadDocumentDrafts,
     type DocumentDraft,
 } from '@/Components/EntityDocumentsSection';
@@ -58,7 +57,6 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
     const [documentTypes, setDocumentTypes] = useState<ExpenseOption[]>([]);
     const [documents, setDocuments] = useState<EntityDocument[]>([]);
     const [documentDrafts, setDocumentDrafts] = useState<DocumentDraft[]>([]);
-    const [documentsToDelete, setDocumentsToDelete] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
@@ -102,7 +100,6 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                     setDocumentTypes(res.data.document_types ?? []);
                     setDocuments(vehicle.documents ?? []);
                     setDocumentDrafts([]);
-                    setDocumentsToDelete([]);
                     setData({
                         vehicle_number: vehicle.vehicle_number ?? '',
                         vehicle_type: vehicle.vehicle_type ?? '',
@@ -209,18 +206,6 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
             const savedId = res.data?.vehicle?.id;
             if (!savedId) {
                 return;
-            }
-
-            if (documentsToDelete.length > 0) {
-                const deleted = await deleteEntityDocuments(
-                    '/vehicles/vehicle-document-destroy',
-                    documentsToDelete,
-                );
-
-                if (!deleted) {
-                    setLoadError('Vehicle saved, but some documents could not be removed.');
-                    return;
-                }
             }
 
             if (documentDrafts.length > 0) {
@@ -466,8 +451,6 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                                     drafts={documentDrafts}
                                     onDraftsChange={setDocumentDrafts}
                                     savedDocuments={documents}
-                                    documentsToDelete={documentsToDelete}
-                                    onDocumentsToDeleteChange={setDocumentsToDelete}
                                 />
                             )}
 

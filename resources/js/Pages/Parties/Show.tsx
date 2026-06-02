@@ -20,7 +20,7 @@ import type {
     PartyLedgerEntry,
 } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { PartyAccountTabId, PartyTabs, partyTabs } from './PartyTabs';
 
 type TabId = PartyAccountTabId;
@@ -99,9 +99,6 @@ export default function PartyShow({
     );
 
     const overview = account?.overview;
-    const recentLedger = useMemo(() => account?.ledger.slice(0, 8) ?? [], [account?.ledger]);
-    const recentInvoices = useMemo(() => account?.invoices.slice(0, 5) ?? [], [account?.invoices]);
-    const recentEntries = useMemo(() => account?.entrybooks.slice(0, 5) ?? [], [account?.entrybooks]);
 
     const dateFilters = dateFiltersFromPicker(dateValue);
     const hasDateFilters = dateFilters.date_range !== 'all';
@@ -184,70 +181,6 @@ export default function PartyShow({
                                                     </PrimaryButton>
                                                 </div>
                                             )}
-
-                                            <div className="grid gap-4 lg:grid-cols-3">
-                                                <section className="rounded-lg border border-gray-200">
-                                                    <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-                                                        <h3 className="font-semibold text-gray-800">
-                                                            Recent Ledger
-                                                        </h3>
-                                                        <Link
-                                                            href={route('parties.ledger', partyId)}
-                                                            className="text-sm text-indigo-600 hover:underline"
-                                                        >
-                                                            View all
-                                                        </Link>
-                                                    </div>
-                                                    <LedgerTable rows={recentLedger} compact />
-                                                </section>
-
-                                                <section className="rounded-lg border border-gray-200">
-                                                    <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-                                                        <h3 className="font-semibold text-gray-800">
-                                                            Recent Invoices
-                                                        </h3>
-                                                        <Link
-                                                            href={route('parties.invoices', partyId)}
-                                                            className="text-sm text-indigo-600 hover:underline"
-                                                        >
-                                                            View all
-                                                        </Link>
-                                                    </div>
-                                                    <InvoicesTable rows={recentInvoices} compact />
-                                                </section>
-
-                                                <section className="rounded-lg border border-gray-200">
-                                                    <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-                                                        <h3 className="font-semibold text-gray-800">
-                                                            Recent Entries
-                                                        </h3>
-                                                        <Link
-                                                            href={route('parties.entries', partyId)}
-                                                            className="text-sm text-indigo-600 hover:underline"
-                                                        >
-                                                            View all
-                                                        </Link>
-                                                    </div>
-                                                    <EntrybooksTable rows={recentEntries} compact />
-                                                </section>
-
-                                                <section className="rounded-lg border border-gray-200 p-4 lg:col-span-3">
-                                                    <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                                                        <div>
-                                                            <dt className="text-gray-500">Last invoice</dt>
-                                                            <dd>{formatAppDateTime(overview.last_invoice_date)}</dd>
-                                                        </div>
-                                                        <div>
-                                                            <dt className="text-gray-500">Last payment</dt>
-                                                            <dd>{formatAppDateTime(overview.last_payment_date)}</dd>
-                                                        </div>
-                                                        <div className="sm:col-span-2">
-                                                            <dt className="text-gray-500">Address</dt>
-                                                            <dd>{account.party.address ?? '—'}</dd>
-                                                        </div>
-                                                    </dl>
-                                                </section>
-                                            </div>
                                         </div>
                                     )}
 
@@ -361,7 +294,7 @@ export default function PartyShow({
     );
 }
 
-function LedgerTable({ rows, compact = false }: { rows: PartyLedgerEntry[]; compact?: boolean }) {
+function LedgerTable({ rows }: { rows: PartyLedgerEntry[] }) {
     return (
         <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -372,18 +305,13 @@ function LedgerTable({ rows, compact = false }: { rows: PartyLedgerEntry[]; comp
                         <th className="px-4 py-3 text-left font-medium text-gray-500">Reference</th>
                         <th className="px-4 py-3 text-right font-medium text-gray-500">Debit</th>
                         <th className="px-4 py-3 text-right font-medium text-gray-500">Credit</th>
-                        {!compact && (
-                            <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
-                        )}
+                        <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                     {rows.length === 0 ? (
                         <tr>
-                            <td
-                                colSpan={compact ? 5 : 6}
-                                className="px-6 py-8 text-center text-gray-500"
-                            >
+                            <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                                 No ledger entries yet.
                             </td>
                         </tr>
@@ -418,11 +346,9 @@ function LedgerTable({ rows, compact = false }: { rows: PartyLedgerEntry[]; comp
                                 <td className="px-4 py-3 text-right text-green-700">
                                     {row.credit > 0 ? `₹ ${formatMoney(row.credit)}` : '—'}
                                 </td>
-                                {!compact && (
-                                    <td className="px-4 py-3 text-right font-medium">
-                                        ₹ {formatMoney(row.balance)}
-                                    </td>
-                                )}
+                                <td className="px-4 py-3 text-right font-medium">
+                                    ₹ {formatMoney(row.balance)}
+                                </td>
                             </tr>
                         ))
                     )}
@@ -432,13 +358,7 @@ function LedgerTable({ rows, compact = false }: { rows: PartyLedgerEntry[]; comp
     );
 }
 
-function EntrybooksTable({
-    rows,
-    compact = false,
-}: {
-    rows: PartyEntrybookRow[];
-    compact?: boolean;
-}) {
+function EntrybooksTable({ rows }: { rows: PartyEntrybookRow[] }) {
     return (
         <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -446,27 +366,18 @@ function EntrybooksTable({
                     <tr>
                         <th className="px-4 py-3 text-left font-medium text-gray-500">Entry No.</th>
                         <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
-                        {!compact && (
-                            <th className="px-4 py-3 text-left font-medium text-gray-500">Vehicle</th>
-                        )}
+                        <th className="px-4 py-3 text-left font-medium text-gray-500">Vehicle</th>
                         <th className="px-4 py-3 text-left font-medium text-gray-500">From</th>
                         <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
-                        {!compact && (
-                            <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
-                        )}
+                        <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
                         <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
-                        {!compact && (
-                            <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
-                        )}
+                        <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                     {rows.length === 0 ? (
                         <tr>
-                            <td
-                                colSpan={compact ? 5 : 8}
-                                className="px-6 py-8 text-center text-gray-500"
-                            >
+                            <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                                 No entrybook records for this party.
                             </td>
                         </tr>
@@ -475,31 +386,25 @@ function EntrybooksTable({
                             <tr key={row.id}>
                                 <td className="px-4 py-3 font-mono font-medium">{row.entry_number}</td>
                                 <td className="px-4 py-3">{formatAppDateTime(row.entry_date)}</td>
-                                {!compact && (
-                                    <td className="px-4 py-3 font-mono">{row.vehicle_number || '—'}</td>
-                                )}
+                                <td className="px-4 py-3 font-mono">{row.vehicle_number || '—'}</td>
                                 <td className="px-4 py-3">{row.route_from || '—'}</td>
                                 <td className="px-4 py-3 text-right">
                                     ₹ {formatMoney(row.freight)}
                                 </td>
-                                {!compact && (
-                                    <td className="px-4 py-3 text-right">
-                                        ₹ {formatMoney(row.advance)}
-                                    </td>
-                                )}
+                                <td className="px-4 py-3 text-right">
+                                    ₹ {formatMoney(row.advance)}
+                                </td>
                                 <td className="px-4 py-3 text-right font-medium">
                                     ₹ {formatMoney(row.balance)}
                                 </td>
-                                {!compact && (
-                                    <td className="px-4 py-3 text-right">
-                                        <Link
-                                            href={route('entrybooks.edit', row.id)}
-                                            className="text-indigo-600 hover:underline"
-                                        >
-                                            Edit
-                                        </Link>
-                                    </td>
-                                )}
+                                <td className="px-4 py-3 text-right">
+                                    <Link
+                                        href={route('entrybooks.edit', row.id)}
+                                        className="text-indigo-600 hover:underline"
+                                    >
+                                        Edit
+                                    </Link>
+                                </td>
                             </tr>
                         ))
                     )}
@@ -509,13 +414,7 @@ function EntrybooksTable({
     );
 }
 
-function InvoicesTable({
-    rows,
-    compact = false,
-}: {
-    rows: PartyInvoiceRow[];
-    compact?: boolean;
-}) {
+function InvoicesTable({ rows }: { rows: PartyInvoiceRow[] }) {
     return (
         <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -524,24 +423,17 @@ function InvoicesTable({
                         <th className="px-4 py-3 text-left font-medium text-gray-500">Bill No</th>
                         <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
                         <th className="px-4 py-3 text-left font-medium text-gray-500">Payment</th>
-                        {!compact && (
-                            <th className="px-4 py-3 text-right font-medium text-gray-500">Net Value</th>
-                        )}
+                        <th className="px-4 py-3 text-right font-medium text-gray-500">Net Value</th>
                         <th className="px-4 py-3 text-right font-medium text-gray-500">Due</th>
                         <th className="px-4 py-3 text-right font-medium text-gray-500">Received</th>
                         <th className="px-4 py-3 text-right font-medium text-gray-500">Outstanding</th>
-                        {!compact && (
-                            <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
-                        )}
+                        <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                     {rows.length === 0 ? (
                         <tr>
-                            <td
-                                colSpan={compact ? 6 : 8}
-                                className="px-6 py-8 text-center text-gray-500"
-                            >
+                            <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                                 No invoices for this party.
                             </td>
                         </tr>
@@ -568,11 +460,9 @@ function InvoicesTable({
                                         }
                                     />
                                 </td>
-                                {!compact && (
-                                    <td className="px-4 py-3 text-right">
-                                        ₹ {formatMoney(row.net_value)}
-                                    </td>
-                                )}
+                                <td className="px-4 py-3 text-right">
+                                    ₹ {formatMoney(row.net_value)}
+                                </td>
                                 <td className="px-4 py-3 text-right">
                                     ₹ {formatMoney(row.balance_amount)}
                                 </td>
@@ -582,16 +472,14 @@ function InvoicesTable({
                                 <td className="px-4 py-3 text-right font-medium text-indigo-700">
                                     ₹ {formatMoney(row.outstanding)}
                                 </td>
-                                {!compact && (
-                                    <td className="whitespace-nowrap px-4 py-3 text-right">
-                                        <Link
-                                            href={route('invoices.show', row.id)}
-                                            className="text-indigo-600 hover:underline"
-                                        >
-                                            View
-                                        </Link>
-                                    </td>
-                                )}
+                                <td className="whitespace-nowrap px-4 py-3 text-right">
+                                    <Link
+                                        href={route('invoices.show', row.id)}
+                                        className="text-indigo-600 hover:underline"
+                                    >
+                                        View
+                                    </Link>
+                                </td>
                             </tr>
                         ))
                     )}
