@@ -1,3 +1,4 @@
+import { FormPageHeader } from '@/Components/ListPageHeader';
 import FormPage, { FormActions, FormCard, FormGrid } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -33,9 +34,10 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
     const isEdit = Boolean(vehicleExpenseId);
 
     usePageHeader(
-        <h2 className="text-xl font-semibold text-gray-800">
-            {isEdit ? 'Edit Vehicle Expense' : 'Add Vehicle Expense'}
-        </h2>,
+        <FormPageHeader
+            title={isEdit ? 'Edit Vehicle Expense' : 'Add Vehicle Expense'}
+            backHref={route('vehicle-expenses.index')}
+        />,
     );
 
     const [vehicles, setVehicles] = useState<Pick<Vehicle, 'id' | 'vehicle_number'>[]>([]);

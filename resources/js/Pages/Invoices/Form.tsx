@@ -1,4 +1,4 @@
-import { DetailPageHeader, HeaderSecondaryButton } from '@/Components/ListPageHeader';
+import { FormPageHeader } from '@/Components/ListPageHeader';
 import FormPage, { FormActions, FormCard, FormGrid, FormSectionHeader } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -368,15 +368,9 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
     const entrybooksHref = route('entrybooks.create', invoiceReturnQuery(isEdit, invoiceId));
 
     usePageHeader(
-        <DetailPageHeader
+        <FormPageHeader
             title={isEdit ? `Edit ${billNumber}` : 'New Tax Invoice'}
-            actions={
-                <HeaderSecondaryButton
-                    href={route('invoices.index')}
-                    label="Back to list"
-                    mobileLabel="Back"
-                />
-            }
+            backHref={route('invoices.index')}
         />,
         [isEdit, billNumber],
     );

@@ -1,18 +1,17 @@
+import { FormPageHeader } from '@/Components/ListPageHeader';
 import FormPage, { FormCard } from '@/Components/FormPage';
-import SecondaryButton from '@/Components/SecondaryButton';
 import { usePageHeader } from '@/hooks/usePageHeader';
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 
 export default function ProfileEdit() {
     usePageHeader(
-        <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">Edit Profile</h2>
-            <Link href={route('profile.show')}>
-                <SecondaryButton type="button">Back to profile</SecondaryButton>
-            </Link>
-        </div>,
+        <FormPageHeader
+            title="Edit Profile"
+            backHref={route('profile.show')}
+            backLabel="Back to profile"
+        />,
     );
 
     return (

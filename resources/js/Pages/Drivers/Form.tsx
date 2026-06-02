@@ -1,3 +1,4 @@
+import { FormPageHeader } from '@/Components/ListPageHeader';
 import FormPage, { FormActions, FormCard, FormGrid } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -25,14 +26,10 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
     const isEdit = Boolean(driverId);
 
     usePageHeader(
-        <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">
-                {isEdit ? 'Edit Driver' : 'New Driver'}
-            </h2>
-            <Link href={route('drivers.index')}>
-                <SecondaryButton type="button">Back to list</SecondaryButton>
-            </Link>
-        </div>,
+        <FormPageHeader
+            title={isEdit ? 'Edit Driver' : 'New Driver'}
+            backHref={route('drivers.index')}
+        />,
     );
 
     const [loading, setLoading] = useState(true);

@@ -87,6 +87,7 @@ export default function PartyShow({
 
     usePageHeader(
         <PageHeaderBar
+            layout="compact"
             title={account?.party.name ?? 'Party'}
             subtitle={account?.party.mobile}
             actions={

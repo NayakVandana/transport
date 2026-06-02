@@ -41,6 +41,7 @@ export default function PartyProfileShow({ partyId }: { partyId: number }) {
 
     usePageHeader(
         <PageHeaderBar
+            layout="compact"
             title={party?.name ?? 'Party'}
             subtitle={party?.mobile}
             actions={

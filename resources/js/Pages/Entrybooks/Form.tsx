@@ -1,3 +1,4 @@
+import { FormPageHeader } from '@/Components/ListPageHeader';
 import FormPage, { FormActions, FormCard, FormField, FormGrid, formControlClass, formSelectClass } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -40,9 +41,10 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
     const isEdit = Boolean(entrybookId);
 
     usePageHeader(
-        <h2 className="text-xl font-semibold text-gray-800">
-            {isEdit ? 'Edit Entry' : 'Add Entry'}
-        </h2>,
+        <FormPageHeader
+            title={isEdit ? 'Edit Entry' : 'Add Entry'}
+            backHref={route('entrybooks.index')}
+        />,
     );
 
     const [vehicles, setVehicles] = useState<Pick<Vehicle, 'id' | 'vehicle_number'>[]>([]);

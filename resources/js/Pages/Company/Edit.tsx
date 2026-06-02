@@ -1,3 +1,4 @@
+import { FormPageHeader } from '@/Components/ListPageHeader';
 import FormPage, {
     FormActions,
     FormCard,
@@ -63,12 +64,11 @@ function companyToFormData(company: Company): CompanyFormData {
 
 export default function CompanyEdit() {
     usePageHeader(
-        <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">Edit Company Profile</h2>
-            <Link href={route('company.show')}>
-                <SecondaryButton type="button">Back to profile</SecondaryButton>
-            </Link>
-        </div>,
+        <FormPageHeader
+            title="Edit Company Profile"
+            backHref={route('company.show')}
+            backLabel="Back to profile"
+        />,
     );
 
     const [loading, setLoading] = useState(true);

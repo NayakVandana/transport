@@ -1,3 +1,4 @@
+import { FormPageHeader } from '@/Components/ListPageHeader';
 import FormPage, {
     FormActions,
     FormCard,
@@ -37,16 +38,12 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
         : route('parties.index');
 
     usePageHeader(
-        <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">
-                {isEdit ? (backToProfile ? 'Edit Party Profile' : 'Edit Party') : 'New Party'}
-            </h2>
-            <Link href={backHref}>
-                <SecondaryButton type="button">
-                    {backToProfile ? 'Back to profile' : 'Back to list'}
-                </SecondaryButton>
-            </Link>
-        </div>,
+        <FormPageHeader
+            title={isEdit ? (backToProfile ? 'Edit Party Profile' : 'Edit Party') : 'New Party'}
+            backHref={backHref}
+            backLabel={backToProfile ? 'Back to profile' : 'Back to list'}
+        />,
+        [isEdit, backToProfile, backHref],
     );
 
     const [loading, setLoading] = useState(Boolean(partyId));

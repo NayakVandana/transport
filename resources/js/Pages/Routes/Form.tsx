@@ -1,3 +1,4 @@
+import { FormPageHeader } from '@/Components/ListPageHeader';
 import FormPage, { FormActions, FormCard, FormField, formControlClass } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -34,20 +35,17 @@ export default function RouteForm() {
 
     const backHref = resolveReturnHref(return_route, return_id) ?? route('routes.index');
 
+    const backLabel =
+        return_label ??
+        (return_route?.startsWith('entrybooks.')
+            ? 'Back to entry'
+            : return_route?.startsWith('invoices.')
+              ? 'Back to invoice'
+              : 'Back to list');
+
     usePageHeader(
-        <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">Add Route</h2>
-            <Link href={backHref}>
-                <SecondaryButton type="button">
-                    {return_label ??
-                        (return_route?.startsWith('entrybooks.')
-                            ? 'Back to entry'
-                            : return_route?.startsWith('invoices.')
-                              ? 'Back to invoice'
-                              : 'Back to list')}
-                </SecondaryButton>
-            </Link>
-        </div>,
+        <FormPageHeader title="Add Route" backHref={backHref} backLabel={backLabel} />,
+        [backHref, backLabel],
     );
 
     const setRouteName = (value: string) => {

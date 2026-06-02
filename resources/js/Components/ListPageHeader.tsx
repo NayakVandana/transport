@@ -56,13 +56,42 @@ export function DetailPageHeader({
     actions,
 }: {
     title: string;
-    subtitle?: string;
+    subtitle?: ReactNode;
     actions?: ReactNode;
 }) {
     return (
         <PageHeaderBar layout="compact" title={title} subtitle={subtitle} actions={actions} />
     );
 }
+
+/** Compact header for create/edit form pages with a back action. */
+export function FormPageHeader({
+    title,
+    backHref,
+    backLabel = 'Back to list',
+    backMobileLabel = 'Back',
+}: {
+    title: string;
+    backHref: string;
+    backLabel?: string;
+    backMobileLabel?: string;
+}) {
+    return (
+        <DetailPageHeader
+            title={title}
+            actions={
+                <HeaderSecondaryButton
+                    href={backHref}
+                    label={backLabel}
+                    mobileLabel={backMobileLabel}
+                />
+            }
+        />
+    );
+}
+
+export const headerCompactPrimaryClass = headerPrimaryBtnClass;
+export const headerCompactSecondaryClass = headerSecondaryBtnClass;
 
 type ListPageHeaderProps = {
     title: string;

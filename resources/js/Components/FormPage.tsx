@@ -88,10 +88,10 @@ export function FormGrid({
 }) {
     const colsClass =
         cols === 4
-            ? 'grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-4'
+            ? 'grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-4'
             : cols === 3
-              ? 'grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3'
-              : 'grid gap-x-4 gap-y-5 sm:grid-cols-2';
+              ? 'grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3'
+              : 'grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2';
 
     return <div className={`${colsClass} ${className}`}>{children}</div>;
 }

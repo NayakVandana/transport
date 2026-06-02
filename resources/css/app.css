@@ -33,4 +33,8 @@
     .app-page-header .page-header-bar--compact button {
         @apply w-auto;
     }
+
+    .app-page-header .page-header-bar--compact > div:first-child {
+        @apply min-w-0 flex-1;
+    }
 }

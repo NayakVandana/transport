@@ -1,8 +1,8 @@
+import { FormPageHeader } from '@/Components/ListPageHeader';
 import FormPage, { FormCard } from '@/Components/FormPage';
 import RecordPaymentForm from '@/Components/RecordPaymentForm';
-import SecondaryButton from '@/Components/SecondaryButton';
 import { usePageHeader } from '@/hooks/usePageHeader';
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 
 export default function InvoicePaymentForm({
     invoicePaymentId,
@@ -14,14 +14,12 @@ export default function InvoicePaymentForm({
     const isEdit = Boolean(invoicePaymentId);
 
     usePageHeader(
-        <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">
-                {isEdit ? 'Edit Payment' : 'Record Payment'}
-            </h2>
-            <Link href={route('invoice-payments.index')}>
-                <SecondaryButton type="button">Back to list</SecondaryButton>
-            </Link>
-        </div>,
+        <FormPageHeader
+            title={isEdit ? 'Edit Payment' : 'Record Payment'}
+            backHref={route('invoice-payments.index')}
+            backLabel="Back to list"
+            backMobileLabel="Back"
+        />,
     );
 
     return (

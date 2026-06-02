@@ -12,6 +12,7 @@ import PartyLink from '@/Components/PartyLink';
 import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
 import { useAppQuery } from '@/hooks/useAppQuery';
+import { DetailPageHeader } from '@/Components/ListPageHeader';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import type { FreightInvoice } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
@@ -63,11 +64,7 @@ const accentStyles: Record<
 };
 
 export default function Dashboard() {
-    usePageHeader(
-        <h2 className="text-xl font-semibold leading-tight text-gray-800">
-            Transport Dashboard
-        </h2>,
-    );
+    usePageHeader(<DetailPageHeader title="Transport Dashboard" />);
 
     const { data, loading, error } = useAppQuery('dashboard-summary', async () => {
         const res = await appApiPost<ApiEnvelope<DashboardData>>(

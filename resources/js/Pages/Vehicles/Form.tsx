@@ -1,3 +1,4 @@
+import { FormPageHeader } from '@/Components/ListPageHeader';
 import FormPage, { FormCard } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -266,16 +267,12 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
         }`;
 
     usePageHeader(
-        <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">
-                {isEdit ? 'Edit Vehicle' : 'Add Vehicle'}
-            </h2>
-            <Link href={backHref}>
-                <SecondaryButton type="button">
-                    {return_label ?? (isEdit ? 'Back to list' : 'Cancel')}
-                </SecondaryButton>
-            </Link>
-        </div>,
+        <FormPageHeader
+            title={isEdit ? 'Edit Vehicle' : 'Add Vehicle'}
+            backHref={backHref}
+            backLabel={return_label ?? (isEdit ? 'Back to list' : 'Cancel')}
+        />,
+        [isEdit, backHref, return_label],
     );
 
     return (
