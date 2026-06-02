@@ -1,7 +1,6 @@
 import FormPage from '@/Components/FormPage';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { Head } from '@inertiajs/react';
-import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 
@@ -23,10 +22,6 @@ export default function Edit() {
 
                 <div className="rounded-lg bg-white p-4 shadow sm:p-6 lg:p-8">
                     <UpdatePasswordForm className="w-full max-w-none" />
-                </div>
-
-                <div className="rounded-lg bg-white p-4 shadow sm:p-6 lg:p-8">
-                    <DeleteUserForm className="w-full max-w-none" />
                 </div>
             </FormPage>
         </>
