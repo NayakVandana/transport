@@ -73,7 +73,7 @@ const actionShellClass =
     'flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end [&_.header-link-compact]:!w-auto [&_a]:w-full sm:[&_a]:w-auto [&_button]:w-full sm:[&_button]:w-auto';
 
 const compactActionShellClass =
-    'flex shrink-0 flex-row items-center gap-2 [&_.header-link-compact]:!w-auto [&_a]:!w-auto [&_button]:!w-auto';
+    'flex shrink-0 flex-row flex-wrap items-center justify-end gap-1.5 sm:gap-2 [&_.header-link-compact]:!w-auto [&_a]:!w-auto [&_button]:!w-auto';
 
 export default function PageHeaderBar({
     title,

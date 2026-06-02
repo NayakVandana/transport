@@ -15,6 +15,7 @@ import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { useAppQuery } from '@/hooks/useAppQuery';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { formatAppDateTime } from '@/lib/dateUtils';
+import { downloadInvoicePdf } from '@/lib/invoicePdf';
 import { formatMoney } from '@/lib/freightCalculator';
 import type {
     FreightInvoice,
@@ -52,7 +53,11 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
     const payments = invoice?.payments ?? [];
 
 const headerBtnClass =
-    'whitespace-nowrap !px-2.5 !py-1.5 text-xs normal-case tracking-normal sm:!px-4 sm:!py-2 sm:uppercase sm:tracking-widest';
+    'whitespace-nowrap !px-2 !py-1.5 text-xs normal-case tracking-normal sm:!px-4 sm:!py-2 sm:uppercase sm:tracking-widest';
+
+    const handlePrint = () => {
+        window.print();
+    };
 
     usePageHeader(
         <DetailPageHeader
@@ -70,9 +75,22 @@ const headerBtnClass =
                                 <span className="hidden sm:inline">Record Payment</span>
                             </PrimaryButton>
                         )}
-                        <Link href={route('invoices.print', invoice.id)} target="_blank" className="shrink-0">
-                            <SecondaryButton className={headerBtnClass}>Print</SecondaryButton>
-                        </Link>
+                        <SecondaryButton
+                            type="button"
+                            className={headerBtnClass}
+                            onClick={() => void downloadInvoicePdf(invoice.id, invoice.bill_number)}
+                        >
+                            <span className="sm:hidden">PDF</span>
+                            <span className="hidden sm:inline">Download PDF</span>
+                        </SecondaryButton>
+                        <SecondaryButton
+                            type="button"
+                            className={`${headerBtnClass} no-print`}
+                            onClick={handlePrint}
+                        >
+                            <span className="sm:hidden">Print</span>
+                            <span className="hidden sm:inline">Print</span>
+                        </SecondaryButton>
                         <Link href={route('invoices.edit', invoice.id)} className="shrink-0">
                             <SecondaryButton className={headerBtnClass}>Edit</SecondaryButton>
                         </Link>
@@ -89,8 +107,19 @@ const headerBtnClass =
             <style>{`
                 @media print {
                     .no-print { display: none !important; }
-                    .invoice-show-page { padding: 0 !important; background: white !important; }
-                    .tax-invoice-document { box-shadow: none !important; }
+                    .invoice-show-page {
+                        padding: 0 !important;
+                        background: white !important;
+                        max-width: none !important;
+                    }
+                    .tax-invoice-document {
+                        box-shadow: none !important;
+                        border-radius: 0 !important;
+                        padding: 0 !important;
+                    }
+                    .tax-invoice-lines-scroll {
+                        overflow: visible !important;
+                    }
                 }
             `}</style>
 
@@ -136,9 +165,7 @@ const headerBtnClass =
                             )}
                         </div>
 
-                        <div className="-mx-3 overflow-x-auto sm:mx-0">
-                            <TaxInvoiceDocument invoice={invoice} />
-                        </div>
+                        <TaxInvoiceDocument invoice={invoice} />
 
                         {payments.length > 0 && (
                             <div className="no-print space-y-3">

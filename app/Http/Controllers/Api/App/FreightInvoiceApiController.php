@@ -14,6 +14,7 @@ use App\Support\EntryNumberGenerator;
 use App\Support\FreightInvoiceCalculator;
 use App\Support\InvoicePaymentCalculator;
 use App\Support\ListExport;
+use App\Support\TaxInvoicePdf;
 use App\Support\ListFilter;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
@@ -176,6 +177,38 @@ class FreightInvoiceApiController extends Controller
                     (int) $invoice->party_id,
                 ),
             ], 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postInvoiceDownloadPdf(Request $request)
+    {
+        try {
+            $validation = Validator::make($request->all(), [
+                'id' => ['required', 'integer'],
+            ]);
+
+            if ($validation->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validation->errors()->first(),
+                ], 422);
+            }
+
+            $invoice = FreightInvoice::query()
+                ->where('user_id', $request->user()->id)
+                ->with(['company', 'party', 'lines'])
+                ->findOrFail($request->input('id'));
+
+            if (! $invoice->company || ! $invoice->party) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invoice is missing company or party details.',
+                ], 422);
+            }
+
+            return TaxInvoicePdf::download($invoice);
         } catch (Exception $e) {
             return $this->sendError($e);
         }

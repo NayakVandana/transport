@@ -17,6 +17,7 @@ import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
+import { downloadInvoicePdf } from '@/lib/invoicePdf';
 import { formatMoney } from '@/lib/freightCalculator';
 import type { FreightInvoice, Party } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
@@ -236,10 +237,11 @@ export default function InvoicesIndex() {
                                                 View
                                             </ListingMobileAction>
                                             <ListingMobileAction
-                                                href={route('invoices.print', inv.id)}
-                                                target="_blank"
+                                                onClick={() =>
+                                                    void downloadInvoicePdf(inv.id, inv.bill_number)
+                                                }
                                             >
-                                                Print
+                                                PDF
                                             </ListingMobileAction>
                                             {Number(inv.outstanding ?? inv.balance_amount) > 0 && (
                                                 <ListingMobileAction
@@ -311,13 +313,15 @@ export default function InvoicesIndex() {
                                             View
                                         </Link>
                                         <span className="mx-2 text-gray-300">|</span>
-                                        <Link
-                                            href={route('invoices.print', inv.id)}
+                                        <button
+                                            type="button"
                                             className="text-gray-600 hover:underline"
-                                            target="_blank"
+                                            onClick={() =>
+                                                void downloadInvoicePdf(inv.id, inv.bill_number)
+                                            }
                                         >
-                                            Print
-                                        </Link>
+                                            PDF
+                                        </button>
                                         {Number(inv.outstanding ?? inv.balance_amount) > 0 && (
                                             <>
                                                 <span className="mx-2 text-gray-300">|</span>

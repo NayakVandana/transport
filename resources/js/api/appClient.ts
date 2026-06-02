@@ -50,6 +50,24 @@ export async function appApiDownload(
         responseType: 'blob',
     });
 
+    const contentType = String(res.headers['content-type'] ?? '');
+
+    if (contentType.includes('application/json')) {
+        const text = await (res.data as Blob).text();
+        let message = 'Download failed.';
+
+        try {
+            const json = JSON.parse(text) as { message?: string };
+            if (json.message) {
+                message = json.message;
+            }
+        } catch {
+            // Keep default message.
+        }
+
+        throw new Error(message);
+    }
+
     const url = window.URL.createObjectURL(res.data);
     const link = document.createElement('a');
     link.href = url;

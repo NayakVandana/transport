@@ -96,6 +96,7 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/invoices/invoices-export-pdf', [FreightInvoiceApiController::class, 'postInvoicesExportPdf']);
     Route::post('/invoices/invoice-meta', [FreightInvoiceApiController::class, 'postInvoiceMeta']);
     Route::post('/invoices/invoice-show', [FreightInvoiceApiController::class, 'postInvoiceShow']);
+    Route::post('/invoices/invoice-download-pdf', [FreightInvoiceApiController::class, 'postInvoiceDownloadPdf']);
     Route::post('/invoices/invoice-store', [FreightInvoiceApiController::class, 'postInvoiceStore']);
     Route::post('/invoices/invoice-update', [FreightInvoiceApiController::class, 'postInvoiceUpdate']);
     Route::post('/invoices/invoice-destroy', [FreightInvoiceApiController::class, 'postInvoiceDestroy']);

@@ -68,7 +68,6 @@ Route::get('/invoices', fn () => Inertia::render('Invoices/Index'))->name('invoi
 Route::get('/invoices/create', fn () => Inertia::render('Invoices/Form'))->name('invoices.create');
 Route::get('/invoices/{id}', fn (int $id) => Inertia::render('Invoices/Show', ['invoiceId' => $id]))->name('invoices.show');
 Route::get('/invoices/{id}/edit', fn (int $id) => Inertia::render('Invoices/Form', ['invoiceId' => $id]))->name('invoices.edit');
-Route::get('/invoices/{id}/print', fn (int $id) => Inertia::render('Invoices/Print', ['invoiceId' => $id]))->name('invoices.print');
 
 Route::get('/invoice-payments', fn () => Inertia::render('InvoicePayments/Index'))->name('invoice-payments.index');
 Route::get('/invoice-payments/create', function (Request $request) {

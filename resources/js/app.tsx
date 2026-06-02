@@ -19,7 +19,7 @@ const guestPages = new Set([
     'Auth/ConfirmPassword',
 ]);
 
-const noLayoutPages = new Set(['Invoices/Print']);
+const noLayoutPages = new Set<string>();
 
 type PageModule = {
     default: ComponentType<Record<string, unknown>> & {
