@@ -21,13 +21,13 @@ export function PartyTabs({
     activeTab: PartyTabId;
 }) {
     return (
-        <nav className="flex gap-1 overflow-x-auto border-b border-gray-200 px-2">
+        <nav className="-mx-4 flex gap-0 overflow-x-auto border-b border-gray-200 px-4 pb-px snap-x snap-mandatory sm:-mx-2 sm:px-2">
             {partyTabs.map((item) => (
                 <Link
                     key={item.id}
                     href={route(item.route, partyId)}
                     preserveScroll
-                    className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium ${
+                    className={`snap-start whitespace-nowrap border-b-2 px-2.5 py-2 text-xs font-medium sm:px-4 sm:py-3 sm:text-sm ${
                         activeTab === item.id
                             ? 'border-indigo-600 text-indigo-600'
                             : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'

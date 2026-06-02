@@ -1,3 +1,4 @@
+import { DetailPageHeader, HeaderSecondaryButton } from '@/Components/ListPageHeader';
 import FormPage, { FormActions, FormCard, FormGrid, FormSectionHeader } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
@@ -367,14 +368,16 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
     const entrybooksHref = route('entrybooks.create', invoiceReturnQuery(isEdit, invoiceId));
 
     usePageHeader(
-        <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">
-                {isEdit ? `Edit ${billNumber}` : 'New Tax Invoice'}
-            </h2>
-            <Link href={route('invoices.index')}>
-                <SecondaryButton type="button">Back to list</SecondaryButton>
-            </Link>
-        </div>,
+        <DetailPageHeader
+            title={isEdit ? `Edit ${billNumber}` : 'New Tax Invoice'}
+            actions={
+                <HeaderSecondaryButton
+                    href={route('invoices.index')}
+                    label="Back to list"
+                    mobileLabel="Back"
+                />
+            }
+        />,
         [isEdit, billNumber],
     );
 
@@ -484,7 +487,7 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                             </FormCard>
 
                             <FormCard>
-                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <FormSectionHeader
                                         title="Freight lines"
                                         description={
@@ -495,7 +498,11 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                                                 : 'Select a party first to see their entrybook entries.'
                                         }
                                     />
-                                    <SecondaryButton type="button" onClick={addLine} className="shrink-0">
+                                    <SecondaryButton
+                                        type="button"
+                                        onClick={addLine}
+                                        className="w-full shrink-0 sm:w-auto"
+                                    >
                                         + Add line
                                     </SecondaryButton>
                                 </div>
@@ -504,7 +511,7 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                                     {data.lines.map((line, i) => (
                                         <div
                                             key={i}
-                                            className="rounded-lg border border-gray-200 bg-gray-50/50 p-4"
+                                            className="rounded-lg border border-gray-200 bg-gray-50/50 p-3 sm:p-4"
                                         >
                                             <div className="mb-4 flex items-center justify-between gap-2">
                                                 <span className="text-sm font-medium text-gray-800">
@@ -537,7 +544,7 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                                                     />
                                                 </div>
 
-                                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                                     <div>
                                                         <InputLabel value="Date" />
                                                         <TextInput

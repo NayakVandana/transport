@@ -1,30 +1,30 @@
+import { DetailGrid, DetailItem } from '@/Components/DetailShow';
 import FormPage, { FormCard, FormSectionHeader } from '@/Components/FormPage';
-import PrimaryButton from '@/Components/PrimaryButton';
+import { DetailPageHeader, HeaderCreateButton } from '@/Components/ListPageHeader';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { useAuthUser } from '@/auth/useAuthUser';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { formatAppDateTime } from '@/lib/dateUtils';
 import { Head, Link } from '@inertiajs/react';
 
-function DetailItem({ label, value }: { label: string; value?: string | null }) {
-    return (
-        <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</dt>
-            <dd className="mt-1 text-sm text-gray-900">{value?.trim() ? value : '—'}</dd>
-        </div>
-    );
+function DetailItemLocal({ label, value }: { label: string; value?: string | null }) {
+    return <DetailItem label={label} value={value} />;
 }
 
 export default function ProfileShow() {
     const { user, loading } = useAuthUser();
 
     usePageHeader(
-        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">Profile</h2>
-            <Link href={route('profile.edit')}>
-                <PrimaryButton type="button">Edit Profile</PrimaryButton>
-            </Link>
-        </div>,
+        <DetailPageHeader
+            title="Profile"
+            actions={
+                <HeaderCreateButton
+                    href={route('profile.edit')}
+                    label="Edit Profile"
+                    mobileLabel="Edit"
+                />
+            }
+        />,
     );
 
     return (
@@ -42,10 +42,10 @@ export default function ProfileShow() {
                     <div className="space-y-5">
                         <FormCard>
                             <FormSectionHeader title="Account Information" />
-                            <dl className="grid gap-4 sm:grid-cols-2">
-                                <DetailItem label="Name" value={user.name} />
-                                <DetailItem label="Email" value={user.email} />
-                                <DetailItem
+                            <DetailGrid>
+                                <DetailItemLocal label="Name" value={user.name} />
+                                <DetailItemLocal label="Email" value={user.email} />
+                                <DetailItemLocal
                                     label="Email Status"
                                     value={
                                         user.email_verified_at
@@ -53,7 +53,7 @@ export default function ProfileShow() {
                                             : 'Not verified'
                                     }
                                 />
-                            </dl>
+                            </DetailGrid>
                         </FormCard>
 
                         <div className="flex flex-wrap gap-3">

@@ -1,3 +1,5 @@
+import ListingMobileCard from '@/Components/ListingMobileCard';
+import ListingTableShell from '@/Components/ListingTableShell';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import SecondaryButton from '@/Components/SecondaryButton';
@@ -114,47 +116,71 @@ export default function EntityDocumentsSection({
             </div>
 
             {savedDocuments.length > 0 && (
-                <div className="overflow-x-auto rounded-lg border border-gray-200">
-                    <table className="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-4 py-2 text-left font-medium text-gray-500">Type</th>
-                                <th className="px-4 py-2 text-left font-medium text-gray-500">Title</th>
-                                <th className="px-4 py-2 text-left font-medium text-gray-500">Expiry</th>
-                                <th className="px-4 py-2 text-right font-medium text-gray-500">File</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200 bg-white">
-                            {savedDocuments.map((document) => (
-                                <tr key={document.id}>
-                                    <td className="px-4 py-2">
-                                        {typeLabels[document.document_type] ?? document.document_type}
-                                    </td>
-                                    <td className="px-4 py-2 text-gray-600">
-                                        {document.title || '—'}
-                                    </td>
-                                    <td className="px-4 py-2 text-gray-600">
-                                        {formatAppDateTime(document.expiry_date)}
-                                    </td>
-                                    <td className="px-4 py-2 text-right">
-                                        {document.file_url ? (
-                                            <a
-                                                href={document.file_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-indigo-600 hover:underline"
-                                            >
-                                                View
-                                            </a>
-                                        ) : (
-                                            '—'
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                <ListingTableShell
+                    className="overflow-hidden rounded-lg border border-gray-200"
+                    isEmpty={false}
+                    mobileCountLabel={`${savedDocuments.length} saved document${savedDocuments.length === 1 ? '' : 's'}`}
+                    emptyMessage=""
+                    mobile={savedDocuments.map((document, index) => (
+                        <ListingMobileCard
+                            key={document.id}
+                            index={index + 1}
+                            title={typeLabels[document.document_type] ?? document.document_type}
+                            subtitle={document.title || 'Untitled'}
+                            fields={[
+                                {
+                                    label: 'Expiry',
+                                    value: formatAppDateTime(document.expiry_date),
+                                },
+                            ]}
+                            actions={
+                                document.file_url ? (
+                                    <a
+                                        href={document.file_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex min-h-[2.25rem] items-center justify-center rounded-lg border border-indigo-600 bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white no-underline hover:bg-indigo-700"
+                                    >
+                                        View file
+                                    </a>
+                                ) : undefined
+                            }
+                        />
+                    ))}
+                    thead={
+                        <tr>
+                            <th className="px-4 py-2 text-left font-medium text-gray-500">Type</th>
+                            <th className="px-4 py-2 text-left font-medium text-gray-500">Title</th>
+                            <th className="px-4 py-2 text-left font-medium text-gray-500">Expiry</th>
+                            <th className="px-4 py-2 text-right font-medium text-gray-500">File</th>
+                        </tr>
+                    }
+                    tbody={savedDocuments.map((document) => (
+                        <tr key={document.id}>
+                            <td className="px-4 py-2">
+                                {typeLabels[document.document_type] ?? document.document_type}
+                            </td>
+                            <td className="px-4 py-2 text-gray-600">{document.title || '—'}</td>
+                            <td className="px-4 py-2 text-gray-600">
+                                {formatAppDateTime(document.expiry_date)}
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                                {document.file_url ? (
+                                    <a
+                                        href={document.file_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-indigo-600 hover:underline"
+                                    >
+                                        View
+                                    </a>
+                                ) : (
+                                    '—'
+                                )}
+                            </td>
+                        </tr>
+                    ))}
+                />
             )}
 
             {drafts.length === 0 && savedDocuments.length === 0 && (

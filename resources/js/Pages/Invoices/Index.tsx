@@ -1,8 +1,11 @@
 import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
+import ListingMobileAction from '@/Components/ListingMobileAction';
+import ListingMobileCard from '@/Components/ListingMobileCard';
+import ListingTableShell from '@/Components/ListingTableShell';
 import Modal from '@/Components/Modal';
-import PrimaryButton from '@/Components/PrimaryButton';
+import ListPageHeader from '@/Components/ListPageHeader';
 import InvoicePaymentStatusBadge, {
     invoicePaymentStatusFromAmounts,
 } from '@/Components/InvoicePaymentStatusBadge';
@@ -46,12 +49,14 @@ export default function InvoicesIndex() {
     const [paymentPartyId, setPaymentPartyId] = useState<number | null>(null);
 
     usePageHeader(
-        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">Tax Invoices</h2>
-            <Link href={route('invoices.create')}>
-                <PrimaryButton>New Invoice</PrimaryButton>
-            </Link>
-        </div>,
+        <ListPageHeader
+            title="Tax Invoices"
+            create={{
+                href: route('invoices.create'),
+                label: 'New Invoice',
+                mobileLabel: 'New',
+            }}
+        />,
     );
 
     const {
@@ -179,107 +184,161 @@ export default function InvoicesIndex() {
                     {loading && !data ? (
                         <p className="text-center text-sm text-gray-500">Loading invoices…</p>
                     ) : (
-                        <div className="overflow-x-auto rounded-lg bg-white shadow">
-                            <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Bill No</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Party</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Date</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Payment</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Balance Due</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Received</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Outstanding</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Created</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {invoices.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
-                                                {hasActiveFilters
-                                                    ? 'No invoices match your filters.'
-                                                    : 'No invoices yet.'}
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        invoices.map((inv) => (
-                                            <tr key={inv.id} className="hover:bg-gray-50">
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3 font-medium">
-                                                    <Link
-                                                        href={route('invoices.show', inv.id)}
-                                                        className="text-indigo-600 hover:underline"
-                                                    >
-                                                        {inv.bill_number}
-                                                    </Link>
-                                                </td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3">
-                                                    <PartyLink partyId={inv.party_id} name={inv.party?.name} />
-                                                </td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(inv.invoice_date)}</td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3">
-                                                    <InvoicePaymentStatusBadge
-                                                        status={
-                                                            inv.payment_status ??
-                                                            invoicePaymentStatusFromAmounts(
-                                                                inv.received ?? 0,
-                                                                inv.outstanding ?? inv.balance_amount,
-                                                            )
-                                                        }
-                                                    />
-                                                </td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
-                                                    ₹ {formatMoney(inv.balance_amount)}
-                                                </td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3 text-right text-green-700">
-                                                    ₹ {formatMoney(inv.received ?? 0)}
-                                                </td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-indigo-700">
-                                                    ₹ {formatMoney(inv.outstanding ?? inv.balance_amount)}
-                                                </td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-gray-600">
-                                                    {formatAppCreatedAt(inv.created_at)}
-                                                </td>
-                                                <td className="whitespace-nowrap px-3 py-2 sm:px-6 sm:py-3 text-right">
-                                                    <Link
-                                                        href={route('invoices.show', inv.id)}
-                                                        className="text-indigo-600 hover:underline"
-                                                    >
-                                                        View
-                                                    </Link>
-                                                    <span className="mx-2 text-gray-300">|</span>
-                                                    <Link
-                                                        href={route('invoices.print', inv.id)}
-                                                        className="text-gray-600 hover:underline"
-                                                        target="_blank"
-                                                    >
-                                                        Print
-                                                    </Link>
-                                                    {Number(inv.outstanding ?? inv.balance_amount) > 0 && (
-                                                        <>
-                                                            <span className="mx-2 text-gray-300">|</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => openPaymentModal(inv)}
-                                                                className="text-green-700 hover:underline"
-                                                            >
-                                                                Record Payment
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                        <ListingTableShell
+                            isEmpty={invoices.length === 0}
+                            mobileCountLabel={`${invoices.length} invoice${invoices.length === 1 ? '' : 's'}`}
+                            emptyMessage={
+                                hasActiveFilters
+                                    ? 'No invoices match your filters.'
+                                    : 'No invoices yet.'
+                            }
+                            mobile={invoices.map((inv, index) => (
+                                <ListingMobileCard
+                                    key={inv.id}
+                                    index={index + 1}
+                                    title={inv.bill_number}
+                                    subtitle={<PartyLink partyId={inv.party_id} name={inv.party?.name} />}
+                                    headerRight={
+                                        <InvoicePaymentStatusBadge
+                                            status={
+                                                inv.payment_status ??
+                                                invoicePaymentStatusFromAmounts(
+                                                    inv.received ?? 0,
+                                                    inv.outstanding ?? inv.balance_amount,
+                                                )
+                                            }
+                                        />
+                                    }
+                                    metric={{
+                                        label: 'Outstanding',
+                                        value: `₹ ${formatMoney(inv.outstanding ?? inv.balance_amount)}`,
+                                    }}
+                                    fields={[
+                                        {
+                                            label: 'Date',
+                                            value: formatAppDateTime(inv.invoice_date),
+                                        },
+                                        {
+                                            label: 'Balance Due',
+                                            value: `₹ ${formatMoney(inv.balance_amount)}`,
+                                        },
+                                        {
+                                            label: 'Received',
+                                            value: `₹ ${formatMoney(inv.received ?? 0)}`,
+                                        },
+                                    ]}
+                                    actions={
+                                        <>
+                                            <ListingMobileAction
+                                                href={route('invoices.show', inv.id)}
+                                                variant="primary"
+                                            >
+                                                View
+                                            </ListingMobileAction>
+                                            <ListingMobileAction
+                                                href={route('invoices.print', inv.id)}
+                                                target="_blank"
+                                            >
+                                                Print
+                                            </ListingMobileAction>
+                                            {Number(inv.outstanding ?? inv.balance_amount) > 0 && (
+                                                <ListingMobileAction
+                                                    onClick={() => openPaymentModal(inv)}
+                                                    variant="success"
+                                                >
+                                                    Record Payment
+                                                </ListingMobileAction>
+                                            )}
+                                        </>
+                                    }
+                                />
+                            ))}
+                            thead={
+                                <tr>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Bill No</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Party</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Date</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Payment</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Balance Due</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Received</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Outstanding</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Created</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Actions</th>
+                                </tr>
+                            }
+                            tbody={invoices.map((inv) => (
+                                <tr key={inv.id} className="hover:bg-gray-50">
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3 font-medium">
+                                        <Link
+                                            href={route('invoices.show', inv.id)}
+                                            className="text-indigo-600 hover:underline"
+                                        >
+                                            {inv.bill_number}
+                                        </Link>
+                                    </td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3">
+                                        <PartyLink partyId={inv.party_id} name={inv.party?.name} />
+                                    </td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(inv.invoice_date)}</td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3">
+                                        <InvoicePaymentStatusBadge
+                                            status={
+                                                inv.payment_status ??
+                                                invoicePaymentStatusFromAmounts(
+                                                    inv.received ?? 0,
+                                                    inv.outstanding ?? inv.balance_amount,
+                                                )
+                                            }
+                                        />
+                                    </td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
+                                        ₹ {formatMoney(inv.balance_amount)}
+                                    </td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3 text-right text-green-700">
+                                        ₹ {formatMoney(inv.received ?? 0)}
+                                    </td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-indigo-700">
+                                        ₹ {formatMoney(inv.outstanding ?? inv.balance_amount)}
+                                    </td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-gray-600">
+                                        {formatAppCreatedAt(inv.created_at)}
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-2 sm:px-6 sm:py-3 text-right">
+                                        <Link
+                                            href={route('invoices.show', inv.id)}
+                                            className="text-indigo-600 hover:underline"
+                                        >
+                                            View
+                                        </Link>
+                                        <span className="mx-2 text-gray-300">|</span>
+                                        <Link
+                                            href={route('invoices.print', inv.id)}
+                                            className="text-gray-600 hover:underline"
+                                            target="_blank"
+                                        >
+                                            Print
+                                        </Link>
+                                        {Number(inv.outstanding ?? inv.balance_amount) > 0 && (
+                                            <>
+                                                <span className="mx-2 text-gray-300">|</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openPaymentModal(inv)}
+                                                    className="text-green-700 hover:underline"
+                                                >
+                                                    Record Payment
+                                                </button>
+                                            </>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        />
                     )}
             </PageContainer>
 
             <Modal show={paymentPartyId !== null} onClose={closePaymentModal} maxWidth="2xl">
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                     <h3 className="text-lg font-semibold text-gray-900">Record Payment</h3>
                     {paymentPartyId && (
                         <div className="mt-4">

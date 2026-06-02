@@ -1,8 +1,11 @@
 import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
+import ListingMobileAction from '@/Components/ListingMobileAction';
+import ListingMobileCard from '@/Components/ListingMobileCard';
+import ListingTableShell from '@/Components/ListingTableShell';
 import PartyLink from '@/Components/PartyLink';
-import PrimaryButton from '@/Components/PrimaryButton';
+import ListPageHeader from '@/Components/ListPageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
@@ -52,12 +55,10 @@ export default function EntrybooksIndex() {
     const [searchInput, setSearchInput] = useState('');
 
     usePageHeader(
-        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">Entrybook</h2>
-            <Link href={route('entrybooks.create')}>
-                <PrimaryButton>Add Entry</PrimaryButton>
-            </Link>
-        </div>,
+        <ListPageHeader
+            title="Entrybook"
+            create={{ href: route('entrybooks.create'), label: 'Add Entry', mobileLabel: 'Add' }}
+        />,
     );
 
     const {
@@ -183,78 +184,114 @@ export default function EntrybooksIndex() {
                                 </div>
                             )}
 
-                            <div className="overflow-x-auto rounded-lg bg-white shadow">
-                                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-500">
-                                                Entry No.
-                                            </th>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-500">Party</th>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-500">Vehicle</th>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-500">From</th>
-                                            <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
-                                            <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
-                                            <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
-                                            <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {entries.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={10} className="px-6 py-8 text-center text-gray-500">
-                                                    {hasActiveFilters
-                                                        ? 'No entries match your filters.'
-                                                        : 'No entries yet.'}
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            entries.map((entry) => (
-                                                <tr key={entry.id}>
-                                                    <td className="px-4 py-3 font-mono font-medium">
-                                                        {entry.entry_number}
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        {formatAppDateTime(entry.entry_date)}
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        <PartyLink
-                                                            partyId={entry.party_id ?? entry.party?.id}
-                                                            name={entry.party?.name}
-                                                        />
-                                                    </td>
-                                                    <td className="px-4 py-3 font-mono">
-                                                        {entry.vehicle?.vehicle_number ?? '—'}
-                                                    </td>
-                                                    <td className="px-4 py-3">{entry.route_from || '—'}</td>
-                                                    <td className="px-4 py-3 text-right">
-                                                        ₹ {formatMoney(entry.freight)}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right">
-                                                        ₹ {formatMoney(entry.advance)}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right font-medium">
-                                                        ₹ {formatMoney(entry.balance)}
-                                                    </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-gray-600">
-                                                        {formatAppCreatedAt(entry.created_at)}
-                                                    </td>
-                                                    <td className="space-x-3 px-4 py-3 text-right">
-                                                        <Link
-                                                            href={route('entrybooks.edit', entry.id)}
-                                                            className="text-indigo-600 hover:underline"
-                                                        >
-                                                            Edit
-                                                        </Link>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                            <ListingTableShell
+                                isEmpty={entries.length === 0}
+                                mobileCountLabel={`${entries.length} entr${entries.length === 1 ? 'y' : 'ies'}`}
+                                emptyMessage={
+                                    hasActiveFilters
+                                        ? 'No entries match your filters.'
+                                        : 'No entries yet.'
+                                }
+                                mobile={entries.map((entry, index) => (
+                                    <ListingMobileCard
+                                        key={entry.id}
+                                        index={index + 1}
+                                        title={
+                                            <span className="font-mono">{entry.entry_number}</span>
+                                        }
+                                        subtitle={
+                                            <PartyLink
+                                                partyId={entry.party_id ?? entry.party?.id}
+                                                name={entry.party?.name}
+                                            />
+                                        }
+                                        metric={{
+                                            label: 'Balance',
+                                            value: `₹ ${formatMoney(entry.balance)}`,
+                                        }}
+                                        fields={[
+                                            {
+                                                label: 'Date',
+                                                value: formatAppDateTime(entry.entry_date),
+                                            },
+                                            {
+                                                label: 'Vehicle',
+                                                value: entry.vehicle?.vehicle_number ?? '—',
+                                            },
+                                            {
+                                                label: 'From',
+                                                value: entry.route_from || '—',
+                                            },
+                                            {
+                                                label: 'Freight',
+                                                value: `₹ ${formatMoney(entry.freight)}`,
+                                            },
+                                        ]}
+                                        actions={
+                                            <ListingMobileAction
+                                                href={route('entrybooks.edit', entry.id)}
+                                                variant="primary"
+                                            >
+                                                Edit
+                                            </ListingMobileAction>
+                                        }
+                                    />
+                                ))}
+                                thead={
+                                    <tr>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Entry No.</th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Party</th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Vehicle</th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">From</th>
+                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
+                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
+                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
+                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
+                                    </tr>
+                                }
+                                tbody={entries.map((entry) => (
+                                    <tr key={entry.id}>
+                                        <td className="px-4 py-3 font-mono font-medium">
+                                            {entry.entry_number}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {formatAppDateTime(entry.entry_date)}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <PartyLink
+                                                partyId={entry.party_id ?? entry.party?.id}
+                                                name={entry.party?.name}
+                                            />
+                                        </td>
+                                        <td className="px-4 py-3 font-mono">
+                                            {entry.vehicle?.vehicle_number ?? '—'}
+                                        </td>
+                                        <td className="px-4 py-3">{entry.route_from || '—'}</td>
+                                        <td className="px-4 py-3 text-right">
+                                            ₹ {formatMoney(entry.freight)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            ₹ {formatMoney(entry.advance)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right font-medium">
+                                            ₹ {formatMoney(entry.balance)}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-gray-600">
+                                            {formatAppCreatedAt(entry.created_at)}
+                                        </td>
+                                        <td className="space-x-3 px-4 py-3 text-right">
+                                            <Link
+                                                href={route('entrybooks.edit', entry.id)}
+                                                className="text-indigo-600 hover:underline"
+                                            >
+                                                Edit
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            />
                         </>
                     )}
             </PageContainer>

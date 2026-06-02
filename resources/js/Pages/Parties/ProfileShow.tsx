@@ -1,6 +1,8 @@
+import { DetailGrid, DetailItem, PageToolbar, PageToolbarActions } from '@/Components/DetailShow';
 import PageContainer from '@/Components/PageContainer';
 import FormPage, { FormCard, FormSectionHeader } from '@/Components/FormPage';
 import PrimaryButton from '@/Components/PrimaryButton';
+import PageHeaderBar, { HeaderBackLink, InlineBackLink } from '@/Components/PageHeaderBar';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -9,13 +11,8 @@ import { Head, Link } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { PartyTabs } from './PartyTabs';
 
-function DetailItem({ label, value }: { label: string; value?: string | null }) {
-    return (
-        <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</dt>
-            <dd className="mt-1 text-sm text-gray-900">{value?.trim() ? value : '—'}</dd>
-        </div>
-    );
+function DetailItemLocal({ label, value }: { label: string; value?: string | null }) {
+    return <DetailItem label={label} value={value} />;
 }
 
 export default function PartyProfileShow({ partyId }: { partyId: number }) {
@@ -43,15 +40,15 @@ export default function PartyProfileShow({ partyId }: { partyId: number }) {
     }, [partyId]);
 
     usePageHeader(
-        <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-                <h2 className="text-xl font-semibold text-gray-800">{party?.name ?? 'Party'}</h2>
-                {party?.mobile && <p className="text-sm text-gray-500">{party.mobile}</p>}
-            </div>
-            <Link href={route('parties.index')}>
-                <SecondaryButton type="button">Back to Party</SecondaryButton>
-            </Link>
-        </div>,
+        <PageHeaderBar
+            title={party?.name ?? 'Party'}
+            subtitle={party?.mobile}
+            actions={
+                <div className="hidden shrink-0 sm:block">
+                    <HeaderBackLink href={route('parties.index')} />
+                </div>
+            }
+        />,
         [party?.name, party?.mobile],
     );
 
@@ -72,28 +69,33 @@ export default function PartyProfileShow({ partyId }: { partyId: number }) {
                     <p className="text-center text-sm text-gray-500">Loading party profile…</p>
                 ) : party ? (
                     <div className="rounded-lg bg-white shadow">
+                        <div className="px-3 pt-2 sm:hidden">
+                            <InlineBackLink href={route('parties.index')} />
+                        </div>
                         <PartyTabs partyId={partyId} activeTab="profile" />
 
                         <div className="p-4 sm:p-6">
                             <FormPage size="sm" className="!mx-0 !max-w-none space-y-5">
-                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                <PageToolbar>
                                     <h3 className="text-lg font-medium text-gray-900">Party Profile</h3>
-                                    <Link href={editHref}>
-                                        <PrimaryButton type="button">Edit Profile</PrimaryButton>
-                                    </Link>
-                                </div>
+                                    <PageToolbarActions>
+                                        <Link href={editHref}>
+                                            <PrimaryButton type="button">Edit Profile</PrimaryButton>
+                                        </Link>
+                                    </PageToolbarActions>
+                                </PageToolbar>
 
                                 <FormCard className="!shadow-none ring-1 ring-gray-200">
                                     <FormSectionHeader title="Contact Details" />
-                                    <dl className="grid gap-4 sm:grid-cols-2">
-                                        <DetailItem label="Name" value={party.name} />
-                                        <DetailItem label="Mobile" value={party.mobile} />
-                                        <DetailItem label="State Code" value={party.state_code} />
-                                    </dl>
+                                    <DetailGrid>
+                                        <DetailItemLocal label="Name" value={party.name} />
+                                        <DetailItemLocal label="Mobile" value={party.mobile} />
+                                        <DetailItemLocal label="State Code" value={party.state_code} />
+                                    </DetailGrid>
                                     {party.address?.trim() && (
-                                        <dl className="mt-4">
-                                            <DetailItem label="Address" value={party.address} />
-                                        </dl>
+                                        <DetailGrid className="mt-4">
+                                            <DetailItemLocal label="Address" value={party.address} />
+                                        </DetailGrid>
                                     )}
                                 </FormCard>
 

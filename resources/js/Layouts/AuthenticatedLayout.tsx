@@ -275,7 +275,7 @@ export default function Authenticated({
             </aside>
 
             <div className="app-main-shell flex min-h-screen min-w-0 flex-col lg:pl-64">
-                <header className="app-topbar sticky top-0 z-30 flex h-14 w-full shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-3 shadow-sm sm:h-16 sm:gap-4 sm:px-6 lg:px-8">
+                <header className="app-topbar sticky top-0 z-30 flex min-h-14 w-full shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-3 py-2 shadow-sm sm:h-16 sm:gap-4 sm:px-6 sm:py-0 lg:px-8">
                     <button
                         type="button"
                         onClick={() => setSidebarOpen(true)}
@@ -288,9 +288,7 @@ export default function Authenticated({
                     </button>
 
                     {header && (
-                        <div className="min-w-0 flex-1 [&>div]:min-w-0 [&>div]:w-full [&_h2]:leading-tight">
-                            {header}
-                        </div>
+                        <div className="app-page-header min-w-0 flex-1">{header}</div>
                     )}
                 </header>
 

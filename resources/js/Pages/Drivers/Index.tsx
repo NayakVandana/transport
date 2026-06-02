@@ -1,7 +1,10 @@
 import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
-import PrimaryButton from '@/Components/PrimaryButton';
+import ListingMobileAction from '@/Components/ListingMobileAction';
+import ListingMobileCard from '@/Components/ListingMobileCard';
+import ListingTableShell from '@/Components/ListingTableShell';
+import ListPageHeader from '@/Components/ListPageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -34,12 +37,10 @@ export default function DriversIndex() {
     const [searchInput, setSearchInput] = useState('');
 
     usePageHeader(
-        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">Drivers</h2>
-            <Link href={route('drivers.create')}>
-                <PrimaryButton>Add Driver</PrimaryButton>
-            </Link>
-        </div>,
+        <ListPageHeader
+            title="Drivers"
+            create={{ href: route('drivers.create'), label: 'Add Driver', mobileLabel: 'Add' }}
+        />,
     );
 
     const {
@@ -132,71 +133,101 @@ export default function DriversIndex() {
                     {loading && !data ? (
                         <p className="text-center text-sm text-gray-500">Loading drivers…</p>
                     ) : (
-                        <div className="overflow-x-auto rounded-lg bg-white shadow">
-                            <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Name</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Mobile</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Joining Date</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Salary</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">License No</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">License Expiry</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Status</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Created</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {drivers.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
-                                                {hasActiveFilters
-                                                    ? 'No drivers match your filters.'
-                                                    : 'No drivers yet.'}
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        drivers.map((driver) => (
-                                            <tr key={driver.id}>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3 font-medium">{driver.name}</td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{driver.mobile ?? '—'}</td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(driver.joining_date)}</td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
-                                                    {driver.salary != null && driver.salary !== ''
-                                                        ? `₹ ${formatMoney(driver.salary)}`
-                                                        : '—'}
-                                                </td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{driver.license_number ?? '—'}</td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(driver.license_expiry)}</td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3">
-                                                    <span
-                                                        className={
-                                                            driver.status === 'active'
-                                                                ? 'text-green-700'
-                                                                : 'text-gray-500'
-                                                        }
-                                                    >
-                                                        {driver.status === 'active' ? 'Active' : 'Inactive'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-gray-600">
-                                                    {formatAppCreatedAt(driver.created_at)}
-                                                </td>
-                                                <td className="space-x-3 px-3 py-2 sm:px-6 sm:py-3 text-right">
-                                                    <Link
-                                                        href={route('drivers.edit', driver.id)}
-                                                        className="text-indigo-600 hover:underline"
-                                                    >
-                                                        Edit
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                        <ListingTableShell
+                            isEmpty={drivers.length === 0}
+                            mobileCountLabel={`${drivers.length} driver${drivers.length === 1 ? '' : 's'}`}
+                            emptyMessage={
+                                hasActiveFilters
+                                    ? 'No drivers match your filters.'
+                                    : 'No drivers yet.'
+                            }
+                            mobile={drivers.map((driver, index) => (
+                                <ListingMobileCard
+                                    key={driver.id}
+                                    index={index + 1}
+                                    title={driver.name}
+                                    subtitle={driver.mobile ? `Mobile: ${driver.mobile}` : 'No mobile'}
+                                    headerRight={
+                                        <span
+                                            className={
+                                                driver.status === 'active'
+                                                    ? 'rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800'
+                                                    : 'rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600'
+                                            }
+                                        >
+                                            {driver.status === 'active' ? 'Active' : 'Inactive'}
+                                        </span>
+                                    }
+                                    fields={[
+                                        {
+                                            label: 'License',
+                                            value: driver.license_number ?? '—',
+                                        },
+                                        {
+                                            label: 'Expiry',
+                                            value: formatAppDateTime(driver.license_expiry),
+                                        },
+                                    ]}
+                                    actions={
+                                        <ListingMobileAction
+                                            href={route('drivers.edit', driver.id)}
+                                            variant="primary"
+                                        >
+                                            Edit
+                                        </ListingMobileAction>
+                                    }
+                                />
+                            ))}
+                            thead={
+                                <tr>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Name</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Mobile</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Joining Date</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Salary</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">License No</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">License Expiry</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Status</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Created</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Actions</th>
+                                </tr>
+                            }
+                            tbody={drivers.map((driver) => (
+                                <tr key={driver.id}>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3 font-medium">{driver.name}</td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3">{driver.mobile ?? '—'}</td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(driver.joining_date)}</td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
+                                        {driver.salary != null && driver.salary !== ''
+                                            ? `₹ ${formatMoney(driver.salary)}`
+                                            : '—'}
+                                    </td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3">{driver.license_number ?? '—'}</td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(driver.license_expiry)}</td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3">
+                                        <span
+                                            className={
+                                                driver.status === 'active'
+                                                    ? 'text-green-700'
+                                                    : 'text-gray-500'
+                                            }
+                                        >
+                                            {driver.status === 'active' ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-gray-600">
+                                        {formatAppCreatedAt(driver.created_at)}
+                                    </td>
+                                    <td className="space-x-3 px-3 py-2 sm:px-6 sm:py-3 text-right">
+                                        <Link
+                                            href={route('drivers.edit', driver.id)}
+                                            className="text-indigo-600 hover:underline"
+                                        >
+                                            Edit
+                                        </Link>
+                                    </td>
+                                </tr>
+                            ))}
+                        />
                     )}
             </PageContainer>
         </>

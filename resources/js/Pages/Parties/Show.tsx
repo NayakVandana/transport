@@ -1,9 +1,13 @@
+import { PageToolbar, PageToolbarActions } from '@/Components/DetailShow';
 import PageContainer from '@/Components/PageContainer';
 import ListFilterBar from '@/Components/ListFilterBar';
+import ListingMobileAction from '@/Components/ListingMobileAction';
+import ListingMobileCard from '@/Components/ListingMobileCard';
+import ListingTableShell from '@/Components/ListingTableShell';
 import Modal from '@/Components/Modal';
 import PrimaryButton from '@/Components/PrimaryButton';
 import RecordPaymentForm, { type LockedPaymentParty } from '@/Components/RecordPaymentForm';
-import SecondaryButton from '@/Components/SecondaryButton';
+import PageHeaderBar, { HeaderBackLink, InlineBackLink } from '@/Components/PageHeaderBar';
 import InvoicePaymentStatusBadge, {
     invoicePaymentStatusFromAmounts,
 } from '@/Components/InvoicePaymentStatusBadge';
@@ -82,19 +86,15 @@ export default function PartyShow({
     }, [loadAccount]);
 
     usePageHeader(
-        <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-                <h2 className="text-xl font-semibold text-gray-800">
-                    {account?.party.name ?? 'Party'}
-                </h2>
-                {account?.party.mobile && (
-                    <p className="text-sm text-gray-500">{account.party.mobile}</p>
-                )}
-            </div>
-            <Link href={route('parties.index')}>
-                <SecondaryButton>Back to Party</SecondaryButton>
-            </Link>
-        </div>,
+        <PageHeaderBar
+            title={account?.party.name ?? 'Party'}
+            subtitle={account?.party.mobile}
+            actions={
+                <div className="hidden shrink-0 sm:block">
+                    <HeaderBackLink href={route('parties.index')} />
+                </div>
+            }
+        />,
         [account?.party.name, account?.party.mobile],
     );
 
@@ -141,9 +141,12 @@ export default function PartyShow({
                     ) : account && overview ? (
                         <>
                             <div className="rounded-lg bg-white shadow">
+                                <div className="px-3 pt-2 sm:hidden">
+                                    <InlineBackLink href={route('parties.index')} />
+                                </div>
                                 <PartyTabs partyId={partyId} activeTab={tab} />
 
-                                <div className="p-4 sm:p-6">
+                                <div className={tab === 'overview' ? 'p-4 sm:p-6' : 'py-3 sm:p-6'}>
                                     {tab === 'overview' && (
                                         <div className="space-y-4">
                                             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -172,9 +175,10 @@ export default function PartyShow({
                                             </div>
 
                                             {(overview.outstanding ?? 0) > 0 && (
-                                                <div className="flex justify-end">
+                                                <div className="flex justify-stretch sm:justify-end">
                                                     <PrimaryButton
                                                         type="button"
+                                                        className="w-full sm:w-auto"
                                                         onClick={openPartyPaymentModal}
                                                     >
                                                         Record Payment
@@ -185,25 +189,28 @@ export default function PartyShow({
                                     )}
 
                                     {tab === 'ledger' && (
-                                        <div className="space-y-4">
-                                            <ListFilterBar
-                                                dateValue={dateValue}
-                                                onDateChange={applyDateChange}
-                                                filterSummary={account.filterSummary}
-                                                hasActiveFilters={hasDateFilters}
-                                                onClear={clearDateFilters}
-                                            />
-                                            <div className="overflow-x-auto rounded-lg border border-gray-200">
-                                                <LedgerTable rows={account.ledger} />
+                                        <div className="space-y-3">
+                                            <div className="px-3 sm:px-0">
+                                                <ListFilterBar
+                                                    embedded
+                                                    dateValue={dateValue}
+                                                    onDateChange={applyDateChange}
+                                                    filterSummary={account.filterSummary}
+                                                    hasActiveFilters={hasDateFilters}
+                                                    onClear={clearDateFilters}
+                                                />
                                             </div>
+                                            <LedgerTable rows={account.ledger} />
                                         </div>
                                     )}
 
                                     {tab === 'invoices' && (
-                                        <div className="overflow-x-auto rounded-lg border border-gray-200">
-                                            <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-                                                <h3 className="font-semibold text-gray-800">Tax Invoices</h3>
-                                                <div className="flex flex-wrap gap-2">
+                                        <div>
+                                            <PageToolbar className="border-b px-3 py-2 sm:px-4 sm:py-3">
+                                                <h3 className="text-sm font-semibold text-gray-800 sm:text-base">
+                                                    Tax Invoices
+                                                </h3>
+                                                <PageToolbarActions>
                                                     {(overview?.outstanding ?? 0) > 0 && (
                                                         <PrimaryButton
                                                             type="button"
@@ -215,47 +222,56 @@ export default function PartyShow({
                                                     <Link href={route('invoices.create')}>
                                                         <PrimaryButton>New Invoice</PrimaryButton>
                                                     </Link>
-                                                </div>
-                                            </div>
+                                                </PageToolbarActions>
+                                            </PageToolbar>
                                             <InvoicesTable rows={account.invoices} />
                                         </div>
                                     )}
 
                                     {tab === 'entries' && (
-                                        <div className="overflow-x-auto rounded-lg border border-gray-200">
-                                            <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-                                                <h3 className="font-semibold text-gray-800">Entrybook</h3>
-                                                <Link href={route('entrybooks.create')}>
-                                                    <PrimaryButton>Add Entry</PrimaryButton>
-                                                </Link>
-                                            </div>
+                                        <div>
+                                            <PageToolbar className="border-b px-3 py-2 sm:px-4 sm:py-3">
+                                                <h3 className="text-sm font-semibold text-gray-800 sm:text-base">
+                                                    Entrybook
+                                                </h3>
+                                                <PageToolbarActions>
+                                                    <Link href={route('entrybooks.create')}>
+                                                        <PrimaryButton>Add Entry</PrimaryButton>
+                                                    </Link>
+                                                </PageToolbarActions>
+                                            </PageToolbar>
                                             <EntrybooksTable rows={account.entrybooks} />
                                         </div>
                                     )}
 
                                     {tab === 'payments' && (
-                                        <div className="space-y-4">
-                                            <ListFilterBar
-                                                dateValue={dateValue}
-                                                onDateChange={applyDateChange}
-                                                filterSummary={account.filterSummary}
-                                                hasActiveFilters={hasDateFilters}
-                                                onClear={clearDateFilters}
-                                            />
-                                            <div className="overflow-x-auto rounded-lg border border-gray-200">
-                                                <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-                                                    <h3 className="font-semibold text-gray-800">
+                                        <div className="space-y-3">
+                                            <div className="px-3 sm:px-0">
+                                                <ListFilterBar
+                                                    embedded
+                                                    dateValue={dateValue}
+                                                    onDateChange={applyDateChange}
+                                                    filterSummary={account.filterSummary}
+                                                    hasActiveFilters={hasDateFilters}
+                                                    onClear={clearDateFilters}
+                                                />
+                                            </div>
+                                            <div>
+                                                <PageToolbar className="border-b px-3 py-2 sm:px-4 sm:py-3">
+                                                    <h3 className="text-sm font-semibold text-gray-800 sm:text-base">
                                                         Received Payments
                                                     </h3>
                                                     {(overview?.outstanding ?? 0) > 0 && (
-                                                        <PrimaryButton
-                                                            type="button"
-                                                            onClick={openPartyPaymentModal}
-                                                        >
-                                                            Record Payment
-                                                        </PrimaryButton>
+                                                        <PageToolbarActions>
+                                                            <PrimaryButton
+                                                                type="button"
+                                                                onClick={openPartyPaymentModal}
+                                                            >
+                                                                Record Payment
+                                                            </PrimaryButton>
+                                                        </PageToolbarActions>
                                                     )}
-                                                </div>
+                                                </PageToolbar>
                                                 <PaymentsTable rows={account.payments} />
                                             </div>
                                         </div>
@@ -272,7 +288,7 @@ export default function PartyShow({
                 onClose={() => setPaymentParty(null)}
                 maxWidth="2xl"
             >
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                     <h3 className="text-lg font-semibold text-gray-900">Record Payment</h3>
                     {paymentParty && (
                         <div className="mt-4">
@@ -296,254 +312,375 @@ export default function PartyShow({
 
 function LedgerTable({ rows }: { rows: PartyLedgerEntry[] }) {
     return (
-        <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
-                    <tr>
-                        <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-500">Particulars</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-500">Reference</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-500">Debit</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-500">Credit</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                    {rows.length === 0 ? (
-                        <tr>
-                            <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                                No ledger entries yet.
-                            </td>
-                        </tr>
-                    ) : (
-                        rows.map((row, index) => (
-                            <tr
-                                key={
-                                    row.payment_id != null
-                                        ? `payment-${row.payment_id}`
-                                        : row.invoice_id != null
-                                          ? `invoice-${row.invoice_id}-${row.type}`
-                                          : `${row.type}-${row.date}-${index}`
-                                }
+        <ListingTableShell
+            embedded
+            className="overflow-hidden"
+            isEmpty={rows.length === 0}
+            mobileCountLabel={`${rows.length} ledger entr${rows.length === 1 ? 'y' : 'ies'}`}
+            emptyMessage="No ledger entries yet."
+            mobile={rows.map((row, index) => (
+                <ListingMobileCard
+                    key={
+                        row.payment_id != null
+                            ? `payment-${row.payment_id}`
+                            : row.invoice_id != null
+                              ? `invoice-${row.invoice_id}-${row.type}`
+                              : `${row.type}-${row.date}-${index}`
+                    }
+                    variant="flat"
+                    index={index + 1}
+                    title={row.particulars}
+                    subtitle={formatAppDateTime(row.date)}
+                    metric={{
+                        label: 'Balance',
+                        value: `₹ ${formatMoney(row.balance)}`,
+                    }}
+                    fields={[
+                        ...(row.debit > 0
+                            ? [
+                                  {
+                                      label: 'Debit',
+                                      value: `₹ ${formatMoney(row.debit)}`,
+                                  },
+                              ]
+                            : row.credit > 0
+                              ? [
+                                    {
+                                        label: 'Credit',
+                                        value: `₹ ${formatMoney(row.credit)}`,
+                                    },
+                                ]
+                              : []),
+                    ]}
+                />
+            ))}
+            thead={
+                <tr>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Particulars</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Reference</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Debit</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Credit</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
+                </tr>
+            }
+            tbody={rows.map((row, index) => (
+                <tr
+                    key={
+                        row.payment_id != null
+                            ? `payment-${row.payment_id}`
+                            : row.invoice_id != null
+                              ? `invoice-${row.invoice_id}-${row.type}`
+                              : `${row.type}-${row.date}-${index}`
+                    }
+                >
+                    <td className="px-4 py-3">{formatAppDateTime(row.date)}</td>
+                    <td className="px-4 py-3">{row.particulars}</td>
+                    <td className="px-4 py-3">
+                        {row.invoice_id ? (
+                            <Link
+                                href={route('invoices.show', row.invoice_id)}
+                                className="text-indigo-600 hover:underline"
                             >
-                                <td className="px-4 py-3">{formatAppDateTime(row.date)}</td>
-                                <td className="px-4 py-3">{row.particulars}</td>
-                                <td className="px-4 py-3">
-                                    {row.invoice_id ? (
-                                        <Link
-                                            href={route('invoices.show', row.invoice_id)}
-                                            className="text-indigo-600 hover:underline"
-                                        >
-                                            {row.reference}
-                                        </Link>
-                                    ) : (
-                                        row.reference || '—'
-                                    )}
-                                </td>
-                                <td className="px-4 py-3 text-right">
-                                    {row.debit > 0 ? `₹ ${formatMoney(row.debit)}` : '—'}
-                                </td>
-                                <td className="px-4 py-3 text-right text-green-700">
-                                    {row.credit > 0 ? `₹ ${formatMoney(row.credit)}` : '—'}
-                                </td>
-                                <td className="px-4 py-3 text-right font-medium">
-                                    ₹ {formatMoney(row.balance)}
-                                </td>
-                            </tr>
-                        ))
-                    )}
-                </tbody>
-            </table>
-        </div>
+                                {row.reference}
+                            </Link>
+                        ) : (
+                            row.reference || '—'
+                        )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                        {row.debit > 0 ? `₹ ${formatMoney(row.debit)}` : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right text-green-700">
+                        {row.credit > 0 ? `₹ ${formatMoney(row.credit)}` : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right font-medium">
+                        ₹ {formatMoney(row.balance)}
+                    </td>
+                </tr>
+            ))}
+        />
     );
 }
 
 function EntrybooksTable({ rows }: { rows: PartyEntrybookRow[] }) {
     return (
-        <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
-                    <tr>
-                        <th className="px-4 py-3 text-left font-medium text-gray-500">Entry No.</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-500">Vehicle</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-500">From</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                    {rows.length === 0 ? (
-                        <tr>
-                            <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                                No entrybook records for this party.
-                            </td>
-                        </tr>
-                    ) : (
-                        rows.map((row) => (
-                            <tr key={row.id}>
-                                <td className="px-4 py-3 font-mono font-medium">{row.entry_number}</td>
-                                <td className="px-4 py-3">{formatAppDateTime(row.entry_date)}</td>
-                                <td className="px-4 py-3 font-mono">{row.vehicle_number || '—'}</td>
-                                <td className="px-4 py-3">{row.route_from || '—'}</td>
-                                <td className="px-4 py-3 text-right">
-                                    ₹ {formatMoney(row.freight)}
-                                </td>
-                                <td className="px-4 py-3 text-right">
-                                    ₹ {formatMoney(row.advance)}
-                                </td>
-                                <td className="px-4 py-3 text-right font-medium">
-                                    ₹ {formatMoney(row.balance)}
-                                </td>
-                                <td className="px-4 py-3 text-right">
-                                    <Link
-                                        href={route('entrybooks.edit', row.id)}
-                                        className="text-indigo-600 hover:underline"
-                                    >
-                                        Edit
-                                    </Link>
-                                </td>
-                            </tr>
-                        ))
-                    )}
-                </tbody>
-            </table>
-        </div>
+        <ListingTableShell
+            embedded
+            className="overflow-hidden"
+            isEmpty={rows.length === 0}
+            mobileCountLabel={`${rows.length} entr${rows.length === 1 ? 'y' : 'ies'}`}
+            emptyMessage="No entrybook records for this party."
+            mobile={rows.map((row, index) => (
+                <ListingMobileCard
+                    key={row.id}
+                    variant="flat"
+                    index={index + 1}
+                    title={<span className="font-mono">{row.entry_number}</span>}
+                    subtitle={formatAppDateTime(row.entry_date)}
+                    metric={{
+                        label: 'Balance',
+                        value: `₹ ${formatMoney(row.balance)}`,
+                    }}
+                    fields={[
+                        {
+                            label: 'Vehicle',
+                            value: row.vehicle_number || '—',
+                        },
+                        {
+                            label: 'From',
+                            value: row.route_from || '—',
+                        },
+                        {
+                            label: 'Freight',
+                            value: `₹ ${formatMoney(row.freight)}`,
+                        },
+                    ]}
+                    actions={
+                        <ListingMobileAction
+                            href={route('entrybooks.edit', row.id)}
+                            variant="primary"
+                        >
+                            Edit
+                        </ListingMobileAction>
+                    }
+                />
+            ))}
+            thead={
+                <tr>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Entry No.</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Vehicle</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">From</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
+                </tr>
+            }
+            tbody={rows.map((row) => (
+                <tr key={row.id}>
+                    <td className="px-4 py-3 font-mono font-medium">{row.entry_number}</td>
+                    <td className="px-4 py-3">{formatAppDateTime(row.entry_date)}</td>
+                    <td className="px-4 py-3 font-mono">{row.vehicle_number || '—'}</td>
+                    <td className="px-4 py-3">{row.route_from || '—'}</td>
+                    <td className="px-4 py-3 text-right">₹ {formatMoney(row.freight)}</td>
+                    <td className="px-4 py-3 text-right">₹ {formatMoney(row.advance)}</td>
+                    <td className="px-4 py-3 text-right font-medium">
+                        ₹ {formatMoney(row.balance)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                        <Link
+                            href={route('entrybooks.edit', row.id)}
+                            className="text-indigo-600 hover:underline"
+                        >
+                            Edit
+                        </Link>
+                    </td>
+                </tr>
+            ))}
+        />
     );
 }
 
 function InvoicesTable({ rows }: { rows: PartyInvoiceRow[] }) {
     return (
-        <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
-                    <tr>
-                        <th className="px-4 py-3 text-left font-medium text-gray-500">Bill No</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-500">Payment</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-500">Net Value</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-500">Due</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-500">Received</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-500">Outstanding</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                    {rows.length === 0 ? (
-                        <tr>
-                            <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                                No invoices for this party.
-                            </td>
-                        </tr>
-                    ) : (
-                        rows.map((row) => (
-                            <tr key={row.id}>
-                                <td className="px-4 py-3 font-medium">
-                                    <Link
-                                        href={route('invoices.show', row.id)}
-                                        className="text-indigo-600 hover:underline"
-                                    >
-                                        {row.bill_number}
-                                    </Link>
-                                </td>
-                                <td className="px-4 py-3">{formatAppDateTime(row.invoice_date)}</td>
-                                <td className="px-4 py-3">
-                                    <InvoicePaymentStatusBadge
-                                        status={
-                                            row.payment_status ??
-                                            invoicePaymentStatusFromAmounts(
-                                                row.received,
-                                                row.outstanding,
-                                            )
-                                        }
-                                    />
-                                </td>
-                                <td className="px-4 py-3 text-right">
-                                    ₹ {formatMoney(row.net_value)}
-                                </td>
-                                <td className="px-4 py-3 text-right">
-                                    ₹ {formatMoney(row.balance_amount)}
-                                </td>
-                                <td className="px-4 py-3 text-right text-green-700">
-                                    ₹ {formatMoney(row.received)}
-                                </td>
-                                <td className="px-4 py-3 text-right font-medium text-indigo-700">
-                                    ₹ {formatMoney(row.outstanding)}
-                                </td>
-                                <td className="whitespace-nowrap px-4 py-3 text-right">
-                                    <Link
-                                        href={route('invoices.show', row.id)}
-                                        className="text-indigo-600 hover:underline"
-                                    >
-                                        View
-                                    </Link>
-                                </td>
-                            </tr>
-                        ))
-                    )}
-                </tbody>
-            </table>
-        </div>
+        <ListingTableShell
+            embedded
+            className="overflow-hidden"
+            isEmpty={rows.length === 0}
+            mobileCountLabel={`${rows.length} invoice${rows.length === 1 ? '' : 's'}`}
+            emptyMessage="No invoices for this party."
+            mobile={rows.map((row, index) => (
+                <ListingMobileCard
+                    key={row.id}
+                    variant="flat"
+                    index={index + 1}
+                    title={row.bill_number}
+                    subtitle={formatAppDateTime(row.invoice_date)}
+                    headerRight={
+                        <InvoicePaymentStatusBadge
+                            status={
+                                row.payment_status ??
+                                invoicePaymentStatusFromAmounts(
+                                    row.received,
+                                    row.outstanding,
+                                )
+                            }
+                        />
+                    }
+                    metric={{
+                        label: 'Outstanding',
+                        value: `₹ ${formatMoney(row.outstanding)}`,
+                    }}
+                    fields={[
+                        {
+                            label: 'Received',
+                            value: `₹ ${formatMoney(row.received)}`,
+                        },
+                        {
+                            label: 'Due',
+                            value: `₹ ${formatMoney(row.balance_amount)}`,
+                        },
+                    ]}
+                    actions={
+                        <ListingMobileAction
+                            href={route('invoices.show', row.id)}
+                            variant="primary"
+                        >
+                            View
+                        </ListingMobileAction>
+                    }
+                />
+            ))}
+            thead={
+                <tr>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Bill No</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Payment</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Net Value</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Due</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Received</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Outstanding</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
+                </tr>
+            }
+            tbody={rows.map((row) => (
+                <tr key={row.id}>
+                    <td className="px-4 py-3 font-medium">
+                        <Link
+                            href={route('invoices.show', row.id)}
+                            className="text-indigo-600 hover:underline"
+                        >
+                            {row.bill_number}
+                        </Link>
+                    </td>
+                    <td className="px-4 py-3">{formatAppDateTime(row.invoice_date)}</td>
+                    <td className="px-4 py-3">
+                        <InvoicePaymentStatusBadge
+                            status={
+                                row.payment_status ??
+                                invoicePaymentStatusFromAmounts(
+                                    row.received,
+                                    row.outstanding,
+                                )
+                            }
+                        />
+                    </td>
+                    <td className="px-4 py-3 text-right">₹ {formatMoney(row.net_value)}</td>
+                    <td className="px-4 py-3 text-right">
+                        ₹ {formatMoney(row.balance_amount)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-green-700">
+                        ₹ {formatMoney(row.received)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-medium text-indigo-700">
+                        ₹ {formatMoney(row.outstanding)}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right">
+                        <Link
+                            href={route('invoices.show', row.id)}
+                            className="text-indigo-600 hover:underline"
+                        >
+                            View
+                        </Link>
+                    </td>
+                </tr>
+            ))}
+        />
     );
 }
 
 function PaymentsTable({ rows }: { rows: PartyAccountData['payments'] }) {
     return (
-        <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
-                    <tr>
-                        <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-500">Bill No</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-500">Amount</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-500">Mode</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-500">Reference</th>
-                        <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                    {rows.length === 0 ? (
-                        <tr>
-                            <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                                No payments recorded for this party.
-                            </td>
-                        </tr>
-                    ) : (
-                        rows.map((row) => (
-                            <tr key={row.id}>
-                                <td className="px-4 py-3">{formatAppDateTime(row.payment_date)}</td>
-                                <td className="px-4 py-3">
-                                    {row.freight_invoice_id ? (
-                                        <Link
-                                            href={route('invoices.show', row.freight_invoice_id)}
-                                            className="text-indigo-600 hover:underline"
-                                        >
-                                            {row.bill_number}
-                                        </Link>
-                                    ) : (
-                                        <span className="text-gray-500">Party account</span>
-                                    )}
-                                </td>
-                                <td className="px-4 py-3 text-right font-medium">
-                                    ₹ {formatMoney(row.amount)}
-                                </td>
-                                <td className="px-4 py-3 capitalize">{row.payment_mode ?? '—'}</td>
-                                <td className="px-4 py-3">{row.reference_no ?? '—'}</td>
-                                <td className="px-4 py-3 text-right">
-                                    <Link
-                                        href={route('invoice-payments.edit', row.id)}
-                                        className="text-indigo-600 hover:underline"
-                                    >
-                                        Edit
-                                    </Link>
-                                </td>
-                            </tr>
-                        ))
-                    )}
-                </tbody>
-            </table>
-        </div>
+        <ListingTableShell
+            embedded
+            className="overflow-hidden"
+            isEmpty={rows.length === 0}
+            mobileCountLabel={`${rows.length} payment${rows.length === 1 ? '' : 's'}`}
+            emptyMessage="No payments recorded for this party."
+            mobile={rows.map((row, index) => (
+                <ListingMobileCard
+                    key={row.id}
+                    variant="flat"
+                    index={index + 1}
+                    title={formatAppDateTime(row.payment_date)}
+                    subtitle={
+                        row.freight_invoice_id ? (
+                            <Link
+                                href={route('invoices.show', row.freight_invoice_id)}
+                                className="text-indigo-600 hover:underline"
+                            >
+                                Bill: {row.bill_number}
+                            </Link>
+                        ) : (
+                            'Party account payment'
+                        )
+                    }
+                    metric={{
+                        label: 'Amount',
+                        value: `₹ ${formatMoney(row.amount)}`,
+                    }}
+                    fields={[
+                        {
+                            label: 'Mode',
+                            value: row.payment_mode ?? '—',
+                        },
+                        {
+                            label: 'Reference',
+                            value: row.reference_no ?? '—',
+                        },
+                    ]}
+                    actions={
+                        <ListingMobileAction
+                            href={route('invoice-payments.edit', row.id)}
+                            variant="primary"
+                        >
+                            Edit
+                        </ListingMobileAction>
+                    }
+                />
+            ))}
+            thead={
+                <tr>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Bill No</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Amount</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Mode</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Reference</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
+                </tr>
+            }
+            tbody={rows.map((row) => (
+                <tr key={row.id}>
+                    <td className="px-4 py-3">{formatAppDateTime(row.payment_date)}</td>
+                    <td className="px-4 py-3">
+                        {row.freight_invoice_id ? (
+                            <Link
+                                href={route('invoices.show', row.freight_invoice_id)}
+                                className="text-indigo-600 hover:underline"
+                            >
+                                {row.bill_number}
+                            </Link>
+                        ) : (
+                            <span className="text-gray-500">Party account</span>
+                        )}
+                    </td>
+                    <td className="px-4 py-3 text-right font-medium">
+                        ₹ {formatMoney(row.amount)}
+                    </td>
+                    <td className="px-4 py-3 capitalize">{row.payment_mode ?? '—'}</td>
+                    <td className="px-4 py-3">{row.reference_no ?? '—'}</td>
+                    <td className="px-4 py-3 text-right">
+                        <Link
+                            href={route('invoice-payments.edit', row.id)}
+                            className="text-indigo-600 hover:underline"
+                        >
+                            Edit
+                        </Link>
+                    </td>
+                </tr>
+            ))}
+        />
     );
 }

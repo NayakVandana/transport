@@ -97,7 +97,11 @@ export function FormGrid({
 }
 
 export function FormActions({ children }: { children: ReactNode }) {
-    return <div className="flex flex-wrap items-center gap-3">{children}</div>;
+    return (
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center [&_a]:w-full sm:[&_a]:w-auto [&_button]:w-full sm:[&_button]:w-auto">
+            {children}
+        </div>
+    );
 }
 
 export const formControlClass =

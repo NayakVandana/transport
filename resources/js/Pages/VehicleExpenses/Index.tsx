@@ -1,7 +1,10 @@
 import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
-import PrimaryButton from '@/Components/PrimaryButton';
+import ListingMobileAction from '@/Components/ListingMobileAction';
+import ListingMobileCard from '@/Components/ListingMobileCard';
+import ListingTableShell from '@/Components/ListingTableShell';
+import ListPageHeader from '@/Components/ListPageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -55,12 +58,14 @@ export default function VehicleExpensesIndex() {
     const [searchInput, setSearchInput] = useState('');
 
     usePageHeader(
-        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">Vehicle Expenses</h2>
-            <Link href={route('vehicle-expenses.create')}>
-                <PrimaryButton>Add Expense</PrimaryButton>
-            </Link>
-        </div>,
+        <ListPageHeader
+            title="Vehicle Expenses"
+            create={{
+                href: route('vehicle-expenses.create'),
+                label: 'Add Expense',
+                mobileLabel: 'Add',
+            }}
+        />,
     );
 
     const {
@@ -170,77 +175,110 @@ export default function VehicleExpensesIndex() {
                                 </div>
                             )}
 
-                            <div className="overflow-x-auto rounded-lg bg-white shadow">
-                                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-500">Vehicle</th>
-                                            <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
-                                            <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
-                                            <th className="px-4 py-3 text-right font-medium text-gray-500">Empty</th>
-                                            <th className="px-4 py-3 text-right font-medium text-gray-500">Toll</th>
-                                            <th className="px-4 py-3 text-right font-medium text-gray-500">
-                                                Maintenance
-                                            </th>
-                                            <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
-                                            <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {rows.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={10} className="px-6 py-8 text-center text-gray-500">
-                                                    {hasActiveFilters
-                                                        ? 'No vehicle expenses match your filters.'
-                                                        : 'No vehicle expenses yet.'}
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            rows.map((row) => (
-                                                <tr key={row.id}>
-                                                    <td className="px-4 py-3">
-                                                        {formatAppDateTime(row.expense_date)}
-                                                    </td>
-                                                    <td className="px-4 py-3 font-mono">
-                                                        {row.vehicle?.vehicle_number ?? '—'}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right">
-                                                        ₹ {formatMoney(row.freight)}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right">
-                                                        ₹ {formatMoney(row.advance)}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right">
-                                                        ₹ {formatMoney(row.empty_charge)}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right">
-                                                        ₹ {formatMoney(row.toll)}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right">
-                                                        ₹ {formatMoney(row.maintenance)}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right font-medium">
-                                                        ₹ {formatMoney(row.balance)}
-                                                    </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-gray-600">
-                                                        {formatAppCreatedAt(row.created_at)}
-                                                    </td>
-                                                    <td className="space-x-3 px-4 py-3 text-right">
-                                                        <Link
-                                                            href={route('vehicle-expenses.edit', row.id)}
-                                                            className="text-indigo-600 hover:underline"
-                                                        >
-                                                            Edit
-                                                        </Link>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                            <ListingTableShell
+                                isEmpty={rows.length === 0}
+                                mobileCountLabel={`${rows.length} record${rows.length === 1 ? '' : 's'}`}
+                                emptyMessage={
+                                    hasActiveFilters
+                                        ? 'No vehicle expenses match your filters.'
+                                        : 'No vehicle expenses yet.'
+                                }
+                                mobile={rows.map((row, index) => (
+                                    <ListingMobileCard
+                                        key={row.id}
+                                        index={index + 1}
+                                        title={
+                                            <span className="font-mono">
+                                                {row.vehicle?.vehicle_number ?? '—'}
+                                            </span>
+                                        }
+                                        subtitle={formatAppDateTime(row.expense_date)}
+                                        metric={{
+                                            label: 'Balance',
+                                            value: `₹ ${formatMoney(row.balance)}`,
+                                        }}
+                                        fields={[
+                                            {
+                                                label: 'Freight',
+                                                value: `₹ ${formatMoney(row.freight)}`,
+                                            },
+                                            {
+                                                label: 'Advance',
+                                                value: `₹ ${formatMoney(row.advance)}`,
+                                            },
+                                            {
+                                                label: 'Toll',
+                                                value: `₹ ${formatMoney(row.toll)}`,
+                                            },
+                                            {
+                                                label: 'Maintenance',
+                                                value: `₹ ${formatMoney(row.maintenance)}`,
+                                            },
+                                        ]}
+                                        actions={
+                                            <ListingMobileAction
+                                                href={route('vehicle-expenses.edit', row.id)}
+                                                variant="primary"
+                                            >
+                                                Edit
+                                            </ListingMobileAction>
+                                        }
+                                    />
+                                ))}
+                                thead={
+                                    <tr>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Vehicle</th>
+                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
+                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
+                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Empty</th>
+                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Toll</th>
+                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Maintenance</th>
+                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
+                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
+                                    </tr>
+                                }
+                                tbody={rows.map((row) => (
+                                    <tr key={row.id}>
+                                        <td className="px-4 py-3">
+                                            {formatAppDateTime(row.expense_date)}
+                                        </td>
+                                        <td className="px-4 py-3 font-mono">
+                                            {row.vehicle?.vehicle_number ?? '—'}
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            ₹ {formatMoney(row.freight)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            ₹ {formatMoney(row.advance)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            ₹ {formatMoney(row.empty_charge)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            ₹ {formatMoney(row.toll)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            ₹ {formatMoney(row.maintenance)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right font-medium">
+                                            ₹ {formatMoney(row.balance)}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-gray-600">
+                                            {formatAppCreatedAt(row.created_at)}
+                                        </td>
+                                        <td className="space-x-3 px-4 py-3 text-right">
+                                            <Link
+                                                href={route('vehicle-expenses.edit', row.id)}
+                                                className="text-indigo-600 hover:underline"
+                                            >
+                                                Edit
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            />
                         </>
                     )}
             </PageContainer>

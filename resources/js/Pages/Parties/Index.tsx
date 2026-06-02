@@ -1,8 +1,11 @@
 import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
+import ListingMobileAction from '@/Components/ListingMobileAction';
+import ListingMobileCard from '@/Components/ListingMobileCard';
+import ListingTableShell from '@/Components/ListingTableShell';
 import PartyLink from '@/Components/PartyLink';
-import PrimaryButton from '@/Components/PrimaryButton';
+import ListPageHeader from '@/Components/ListPageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -32,12 +35,14 @@ export default function PartiesIndex() {
     const [searchInput, setSearchInput] = useState('');
 
     usePageHeader(
-        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">Party</h2>
-            <Link href={route('parties.create')}>
-                <PrimaryButton>Add Party</PrimaryButton>
-            </Link>
-        </div>,
+        <ListPageHeader
+            title="Party"
+            create={{
+                href: route('parties.create'),
+                label: 'Add Party',
+                mobileLabel: 'Add',
+            }}
+        />,
     );
 
     const {
@@ -116,75 +121,111 @@ export default function PartiesIndex() {
                     {loading && !data ? (
                         <p className="text-center text-sm text-gray-500">Loading party…</p>
                     ) : (
-                        <div className="overflow-x-auto rounded-lg bg-white shadow">
-                            <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Name</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Mobile</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Invoices</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Outstanding</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Created</th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {parties.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                                                {hasActiveFilters
-                                                    ? 'No party match your filters.'
-                                                    : 'No party yet.'}
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        parties.map((party) => (
-                                            <tr key={party.id} className="hover:bg-gray-50">
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3 font-medium">
-                                                    <PartyLink partyId={party.id} name={party.name} />
-                                                </td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{party.mobile ?? '—'}</td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
-                                                    {party.invoice_count ?? 0}
-                                                </td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-indigo-700">
-                                                    ₹ {formatMoney(party.outstanding ?? 0)}
-                                                </td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-gray-600">
-                                                    {formatAppCreatedAt(party.created_at)}
-                                                </td>
-                                                <td className="whitespace-nowrap px-3 py-2 sm:px-6 sm:py-3 text-right">
-                                                    <Link
-                                                        href={route('parties.overview', party.id)}
-                                                        className="text-indigo-600 hover:underline"
-                                                    >
-                                                        Manage
-                                                    </Link>
-                                                    {Number(party.outstanding ?? 0) > 0 && (
-                                                        <>
-                                                            <span className="mx-2 text-gray-300">|</span>
-                                                            <Link
-                                                                href={`${route('invoice-payments.create')}?party=${party.id}`}
-                                                                className="text-green-700 hover:underline"
-                                                            >
-                                                                Record Payment
-                                                            </Link>
-                                                        </>
-                                                    )}
-                                                    <span className="mx-2 text-gray-300">|</span>
-                                                    <Link
-                                                        href={`${route('parties.edit', party.id)}?return=profile`}
-                                                        className="text-gray-600 hover:underline"
-                                                    >
-                                                        Edit
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                        <ListingTableShell
+                            isEmpty={parties.length === 0}
+                            mobileCountLabel={`${parties.length} part${parties.length === 1 ? 'y' : 'ies'}`}
+                            emptyMessage={
+                                hasActiveFilters
+                                    ? 'No party match your filters.'
+                                    : 'No party yet.'
+                            }
+                            mobile={parties.map((party, index) => (
+                                <ListingMobileCard
+                                    key={party.id}
+                                    index={index + 1}
+                                    title={
+                                        <PartyLink partyId={party.id} name={party.name} />
+                                    }
+                                    subtitle={party.mobile ? `Mobile: ${party.mobile}` : 'No mobile'}
+                                    metric={{
+                                        label: 'Outstanding',
+                                        value: `₹ ${formatMoney(party.outstanding ?? 0)}`,
+                                    }}
+                                    fields={[
+                                        {
+                                            label: 'Invoices',
+                                            value: party.invoice_count ?? 0,
+                                        },
+                                    ]}
+                                    actions={
+                                        <>
+                                            <ListingMobileAction
+                                                href={route('parties.overview', party.id)}
+                                                variant="primary"
+                                            >
+                                                Manage
+                                            </ListingMobileAction>
+                                            {Number(party.outstanding ?? 0) > 0 && (
+                                                <ListingMobileAction
+                                                    href={`${route('invoice-payments.create')}?party=${party.id}`}
+                                                    variant="success"
+                                                >
+                                                    Record Payment
+                                                </ListingMobileAction>
+                                            )}
+                                            <ListingMobileAction
+                                                href={`${route('parties.edit', party.id)}?return=profile`}
+                                            >
+                                                Edit
+                                            </ListingMobileAction>
+                                        </>
+                                    }
+                                />
+                            ))}
+                            thead={
+                                <tr>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Name</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Mobile</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Invoices</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Outstanding</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Created</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Actions</th>
+                                </tr>
+                            }
+                            tbody={parties.map((party) => (
+                                <tr key={party.id} className="hover:bg-gray-50">
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3 font-medium">
+                                        <PartyLink partyId={party.id} name={party.name} />
+                                    </td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3">{party.mobile ?? '—'}</td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
+                                        {party.invoice_count ?? 0}
+                                    </td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-indigo-700">
+                                        ₹ {formatMoney(party.outstanding ?? 0)}
+                                    </td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-gray-600">
+                                        {formatAppCreatedAt(party.created_at)}
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-2 sm:px-6 sm:py-3 text-right">
+                                        <Link
+                                            href={route('parties.overview', party.id)}
+                                            className="text-indigo-600 hover:underline"
+                                        >
+                                            Manage
+                                        </Link>
+                                        {Number(party.outstanding ?? 0) > 0 && (
+                                            <>
+                                                <span className="mx-2 text-gray-300">|</span>
+                                                <Link
+                                                    href={`${route('invoice-payments.create')}?party=${party.id}`}
+                                                    className="text-green-700 hover:underline"
+                                                >
+                                                    Record Payment
+                                                </Link>
+                                            </>
+                                        )}
+                                        <span className="mx-2 text-gray-300">|</span>
+                                        <Link
+                                            href={`${route('parties.edit', party.id)}?return=profile`}
+                                            className="text-gray-600 hover:underline"
+                                        >
+                                            Edit
+                                        </Link>
+                                    </td>
+                                </tr>
+                            ))}
+                        />
                     )}
             </PageContainer>
         </>

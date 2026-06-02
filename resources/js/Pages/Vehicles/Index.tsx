@@ -1,7 +1,11 @@
 import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
-import PrimaryButton from '@/Components/PrimaryButton';
+import ListingMobileAction from '@/Components/ListingMobileAction';
+import ListingMobileCard from '@/Components/ListingMobileCard';
+import ListingTableShell from '@/Components/ListingTableShell';
+import { HeaderCreateButton } from '@/Components/ListPageHeader';
+import PageHeaderBar from '@/Components/PageHeaderBar';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
@@ -65,21 +69,26 @@ export default function VehiclesIndex() {
     );
 
     usePageHeader(
-        <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-xl font-semibold text-gray-800">Vehicles</h2>
-                {backHref && (
-                    <Link href={backHref}>
-                        <SecondaryButton type="button">
-                            {return_label ?? 'Back to invoice'}
-                        </SecondaryButton>
-                    </Link>
-                )}
-            </div>
-            <Link href={createHref}>
-                <PrimaryButton>Add Vehicle</PrimaryButton>
-            </Link>
-        </div>,
+        <PageHeaderBar
+            layout="compact"
+            title="Vehicles"
+            actions={
+                <>
+                    {backHref ? (
+                        <Link href={backHref} className="hidden shrink-0 sm:inline-flex">
+                            <SecondaryButton type="button">
+                                {return_label ?? 'Back to invoice'}
+                            </SecondaryButton>
+                        </Link>
+                    ) : null}
+                    <HeaderCreateButton
+                        href={createHref}
+                        label="Add Vehicle"
+                        mobileLabel="Add"
+                    />
+                </>
+            }
+        />,
     );
 
     const {
@@ -177,95 +186,102 @@ export default function VehiclesIndex() {
                     {loading && !data ? (
                         <p className="text-center text-sm text-gray-500">Loading vehicles…</p>
                     ) : (
-                        <div className="overflow-x-auto rounded-lg bg-white shadow">
-                            <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-500">
-                                            Number
-                                        </th>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-500">
-                                            Type
-                                        </th>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-500">
-                                            Brand / Model
-                                        </th>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-500">
-                                            Insurance Expiry
-                                        </th>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-500">
-                                            Permit Expiry
-                                        </th>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-500">
-                                            Status
-                                        </th>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-500">
-                                            Created
-                                        </th>
-                                        <th className="px-4 py-3 text-right font-medium text-gray-500">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {vehicles.length === 0 ? (
-                                        <tr>
-                                            <td
-                                                colSpan={8}
-                                                className="px-6 py-8 text-center text-gray-500"
-                                            >
-                                                {hasActiveFilters
-                                                    ? 'No vehicles match your filters.'
-                                                    : 'No vehicles yet.'}
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        vehicles.map((v) => (
-                                            <tr key={v.id}>
-                                                <td className="px-4 py-3 font-mono font-medium">
-                                                    {v.vehicle_number}
-                                                </td>
-                                                <td className="px-4 py-3 text-gray-600">
-                                                    {v.vehicle_type ?? '—'}
-                                                </td>
-                                                <td className="px-4 py-3 text-gray-600">
-                                                    {[v.brand, v.model].filter(Boolean).join(' ') ||
-                                                        '—'}
-                                                </td>
-                                                <td className="px-4 py-3 text-gray-600">
-                                                    {formatAppDateTime(v.insurance_expiry)}
-                                                </td>
-                                                <td className="px-4 py-3 text-gray-600">
-                                                    {formatAppDateTime(v.permit_expiry)}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <span
-                                                        className={
-                                                            v.status === 'active'
-                                                                ? 'text-green-700'
-                                                                : 'text-gray-500'
-                                                        }
-                                                    >
-                                                        {v.status === 'active' ? 'Active' : 'Inactive'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3 whitespace-nowrap text-gray-600">
-                                                    {formatAppCreatedAt(v.created_at)}
-                                                </td>
-                                                <td className="space-x-3 px-4 py-3 text-right">
-                                                    <Link
-                                                        href={route('vehicles.edit', v.id)}
-                                                        className="text-indigo-600 hover:underline"
-                                                    >
-                                                        Edit
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                        <ListingTableShell
+                            isEmpty={vehicles.length === 0}
+                            mobileCountLabel={`${vehicles.length} vehicle${vehicles.length === 1 ? '' : 's'}`}
+                            emptyMessage={
+                                hasActiveFilters
+                                    ? 'No vehicles match your filters.'
+                                    : 'No vehicles yet.'
+                            }
+                            mobile={vehicles.map((v, index) => (
+                                <ListingMobileCard
+                                    key={v.id}
+                                    index={index + 1}
+                                    title={<span className="font-mono">{v.vehicle_number}</span>}
+                                    subtitle={
+                                        [v.vehicle_type, v.brand, v.model].filter(Boolean).join(' · ') ||
+                                        'No details'
+                                    }
+                                    headerRight={
+                                        <span
+                                            className={
+                                                v.status === 'active'
+                                                    ? 'rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800'
+                                                    : 'rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600'
+                                            }
+                                        >
+                                            {v.status === 'active' ? 'Active' : 'Inactive'}
+                                        </span>
+                                    }
+                                    fields={[
+                                        {
+                                            label: 'Insurance',
+                                            value: formatAppDateTime(v.insurance_expiry),
+                                        },
+                                        {
+                                            label: 'Permit',
+                                            value: formatAppDateTime(v.permit_expiry),
+                                        },
+                                    ]}
+                                    actions={
+                                        <ListingMobileAction
+                                            href={route('vehicles.edit', v.id)}
+                                            variant="primary"
+                                        >
+                                            Edit
+                                        </ListingMobileAction>
+                                    }
+                                />
+                            ))}
+                            thead={
+                                <tr>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Number</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Type</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Brand / Model</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Insurance Expiry</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Permit Expiry</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Status</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
+                                    <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
+                                </tr>
+                            }
+                            tbody={vehicles.map((v) => (
+                                <tr key={v.id}>
+                                    <td className="px-4 py-3 font-mono font-medium">{v.vehicle_number}</td>
+                                    <td className="px-4 py-3 text-gray-600">{v.vehicle_type ?? '—'}</td>
+                                    <td className="px-4 py-3 text-gray-600">
+                                        {[v.brand, v.model].filter(Boolean).join(' ') || '—'}
+                                    </td>
+                                    <td className="px-4 py-3 text-gray-600">
+                                        {formatAppDateTime(v.insurance_expiry)}
+                                    </td>
+                                    <td className="px-4 py-3 text-gray-600">
+                                        {formatAppDateTime(v.permit_expiry)}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <span
+                                            className={
+                                                v.status === 'active' ? 'text-green-700' : 'text-gray-500'
+                                            }
+                                        >
+                                            {v.status === 'active' ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-gray-600">
+                                        {formatAppCreatedAt(v.created_at)}
+                                    </td>
+                                    <td className="space-x-3 px-4 py-3 text-right">
+                                        <Link
+                                            href={route('vehicles.edit', v.id)}
+                                            className="text-indigo-600 hover:underline"
+                                        >
+                                            Edit
+                                        </Link>
+                                    </td>
+                                </tr>
+                            ))}
+                        />
                     )}
             </PageContainer>
         </>

@@ -1,8 +1,11 @@
 import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
+import ListingMobileAction from '@/Components/ListingMobileAction';
+import ListingMobileCard from '@/Components/ListingMobileCard';
+import ListingTableShell from '@/Components/ListingTableShell';
 import PartyLink from '@/Components/PartyLink';
-import PrimaryButton from '@/Components/PrimaryButton';
+import ListPageHeader from '@/Components/ListPageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -56,12 +59,14 @@ export default function InvoicePaymentsIndex() {
     const [searchInput, setSearchInput] = useState('');
 
     usePageHeader(
-        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">Received Payments</h2>
-            <Link href={route('invoice-payments.create')}>
-                <PrimaryButton>Record Payment</PrimaryButton>
-            </Link>
-        </div>,
+        <ListPageHeader
+            title="Received Payments"
+            create={{
+                href: route('invoice-payments.create'),
+                label: 'Record Payment',
+                mobileLabel: 'Record',
+            }}
+        />,
     );
 
     const {
@@ -168,78 +173,108 @@ export default function InvoicePaymentsIndex() {
                     {loading && !data ? (
                         <p className="text-center text-sm text-gray-500">Loading payments…</p>
                     ) : (
-                        <div className="overflow-x-auto rounded-lg bg-white shadow">
-                            <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Party</th>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Bill No.</th>
-                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Amount</th>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Mode</th>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Reference</th>
-                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
-                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {rows.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                                                {hasActiveFilters
-                                                    ? 'No payments match your filters.'
-                                                    : 'No payments recorded yet.'}
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        rows.map((row) => (
-                                            <tr key={row.id} className="hover:bg-gray-50">
-                                                <td className="px-4 py-3">{formatAppDateTime(row.payment_date)}</td>
-                                                <td className="px-4 py-3 font-medium">
-                                                    <PartyLink
-                                                        partyId={row.party_id}
-                                                        name={row.party?.name}
-                                                    />
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    {row.freight_invoice ? (
-                                                        <Link
-                                                            href={route(
-                                                                'invoices.show',
-                                                                row.freight_invoice_id!,
-                                                            )}
-                                                            className="text-indigo-600 hover:underline"
-                                                        >
-                                                            {row.freight_invoice.bill_number}
-                                                        </Link>
-                                                    ) : (
-                                                        <span className="text-gray-500">Party account</span>
+                        <ListingTableShell
+                            isEmpty={rows.length === 0}
+                            mobileCountLabel={`${rows.length} payment${rows.length === 1 ? '' : 's'}`}
+                            emptyMessage={
+                                hasActiveFilters
+                                    ? 'No payments match your filters.'
+                                    : 'No payments recorded yet.'
+                            }
+                            mobile={rows.map((row, index) => (
+                                <ListingMobileCard
+                                    key={row.id}
+                                    index={index + 1}
+                                    title={
+                                        <PartyLink partyId={row.party_id} name={row.party?.name} />
+                                    }
+                                    subtitle={formatAppDateTime(row.payment_date)}
+                                    metric={{
+                                        label: 'Amount',
+                                        value: `₹ ${formatMoney(row.amount)}`,
+                                    }}
+                                    fields={[
+                                        {
+                                            label: 'Bill No.',
+                                            value: row.freight_invoice ? (
+                                                <Link
+                                                    href={route(
+                                                        'invoices.show',
+                                                        row.freight_invoice_id!,
                                                     )}
-                                                </td>
-                                                <td className="px-4 py-3 text-right font-medium">
-                                                    ₹ {formatMoney(row.amount)}
-                                                </td>
-                                                <td className="px-4 py-3 capitalize">
-                                                    {row.payment_mode ?? '—'}
-                                                </td>
-                                                <td className="px-4 py-3">{row.reference_no ?? '—'}</td>
-                                                <td className="px-4 py-3 whitespace-nowrap text-gray-600">
-                                                    {formatAppCreatedAt(row.created_at)}
-                                                </td>
-                                                <td className="px-4 py-3 text-right whitespace-nowrap">
-                                                    <Link
-                                                        href={route('invoice-payments.edit', row.id)}
-                                                        className="text-indigo-600 hover:underline"
-                                                    >
-                                                        Edit
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                                    className="text-indigo-600 hover:underline"
+                                                >
+                                                    {row.freight_invoice.bill_number}
+                                                </Link>
+                                            ) : (
+                                                'Party account'
+                                            ),
+                                            fullWidth: true,
+                                        },
+                                        {
+                                            label: 'Mode',
+                                            value: row.payment_mode ?? '—',
+                                        },
+                                    ]}
+                                    actions={
+                                        <ListingMobileAction
+                                            href={route('invoice-payments.edit', row.id)}
+                                            variant="primary"
+                                        >
+                                            Edit
+                                        </ListingMobileAction>
+                                    }
+                                />
+                            ))}
+                            thead={
+                                <tr>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Party</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Bill No.</th>
+                                    <th className="px-4 py-3 text-right font-medium text-gray-500">Amount</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Mode</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Reference</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
+                                    <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
+                                </tr>
+                            }
+                            tbody={rows.map((row) => (
+                                <tr key={row.id} className="hover:bg-gray-50">
+                                    <td className="px-4 py-3">{formatAppDateTime(row.payment_date)}</td>
+                                    <td className="px-4 py-3 font-medium">
+                                        <PartyLink partyId={row.party_id} name={row.party?.name} />
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        {row.freight_invoice ? (
+                                            <Link
+                                                href={route('invoices.show', row.freight_invoice_id!)}
+                                                className="text-indigo-600 hover:underline"
+                                            >
+                                                {row.freight_invoice.bill_number}
+                                            </Link>
+                                        ) : (
+                                            <span className="text-gray-500">Party account</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-medium">
+                                        ₹ {formatMoney(row.amount)}
+                                    </td>
+                                    <td className="px-4 py-3 capitalize">{row.payment_mode ?? '—'}</td>
+                                    <td className="px-4 py-3">{row.reference_no ?? '—'}</td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-gray-600">
+                                        {formatAppCreatedAt(row.created_at)}
+                                    </td>
+                                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                                        <Link
+                                            href={route('invoice-payments.edit', row.id)}
+                                            className="text-indigo-600 hover:underline"
+                                        >
+                                            Edit
+                                        </Link>
+                                    </td>
+                                </tr>
+                            ))}
+                        />
                     )}
             </PageContainer>
         </>

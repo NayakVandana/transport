@@ -1,7 +1,10 @@
 import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
-import PrimaryButton from '@/Components/PrimaryButton';
+import ListingMobileCard from '@/Components/ListingMobileCard';
+import ListingTableShell from '@/Components/ListingTableShell';
+import { HeaderCreateButton } from '@/Components/ListPageHeader';
+import PageHeaderBar from '@/Components/PageHeaderBar';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
@@ -47,24 +50,29 @@ export default function RoutesIndex() {
     const backHref = resolveReturnHref(return_route, return_id);
 
     usePageHeader(
-        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-xl font-semibold text-gray-800">Routes (From)</h2>
-                {backHref && (
-                    <Link href={backHref}>
-                        <SecondaryButton type="button">
-                            {return_label ??
-                                (return_route?.startsWith('entrybooks.')
-                                    ? 'Back to entry'
-                                    : 'Back to invoice')}
-                        </SecondaryButton>
-                    </Link>
-                )}
-            </div>
-            <Link href={route('routes.create')}>
-                <PrimaryButton>Add Route</PrimaryButton>
-            </Link>
-        </div>,
+        <PageHeaderBar
+            layout="compact"
+            title="Routes (From)"
+            actions={
+                <>
+                    {backHref ? (
+                        <Link href={backHref} className="hidden shrink-0 sm:inline-flex">
+                            <SecondaryButton type="button">
+                                {return_label ??
+                                    (return_route?.startsWith('entrybooks.')
+                                        ? 'Back to entry'
+                                        : 'Back to invoice')}
+                            </SecondaryButton>
+                        </Link>
+                    ) : null}
+                    <HeaderCreateButton
+                        href={route('routes.create')}
+                        label="Add Route"
+                        mobileLabel="Add"
+                    />
+                </>
+            }
+        />,
     );
 
     const {
@@ -148,43 +156,47 @@ export default function RoutesIndex() {
                 {loading && !data ? (
                     <p className="text-center text-sm text-gray-500">Loading routes…</p>
                 ) : (
-                    <div className="overflow-x-auto rounded-lg bg-white shadow">
-                        <table className="min-w-full divide-y divide-gray-200 text-sm">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
-                                        Name
-                                    </th>
-                                    <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
-                                        Created
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {routes.length === 0 ? (
-                                    <tr>
-                                        <td
-                                            colSpan={2}
-                                            className="px-6 py-8 text-center text-gray-500"
-                                        >
-                                            {hasActiveFilters
-                                                ? 'No routes match your filters.'
-                                                : 'No routes yet.'}
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    routes.map((r) => (
-                                        <tr key={r.id}>
-                                            <td className="px-3 py-2 sm:px-6 sm:py-3">{r.name}</td>
-                                            <td className="whitespace-nowrap px-3 py-2 text-gray-600 sm:px-6 sm:py-3">
-                                                {formatAppCreatedAt(r.created_at)}
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                    <ListingTableShell
+                        isEmpty={routes.length === 0}
+                        mobileCountLabel={`${routes.length} route${routes.length === 1 ? '' : 's'}`}
+                        emptyMessage={
+                            hasActiveFilters
+                                ? 'No routes match your filters.'
+                                : 'No routes yet.'
+                        }
+                        mobile={routes.map((r, index) => (
+                            <ListingMobileCard
+                                key={r.id}
+                                index={index + 1}
+                                title={r.name}
+                                fields={[
+                                    {
+                                        label: 'Created',
+                                        value: formatAppCreatedAt(r.created_at),
+                                        fullWidth: true,
+                                    },
+                                ]}
+                            />
+                        ))}
+                        thead={
+                            <tr>
+                                <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
+                                    Name
+                                </th>
+                                <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
+                                    Created
+                                </th>
+                            </tr>
+                        }
+                        tbody={routes.map((r) => (
+                            <tr key={r.id}>
+                                <td className="px-3 py-2 sm:px-6 sm:py-3">{r.name}</td>
+                                <td className="whitespace-nowrap px-3 py-2 text-gray-600 sm:px-6 sm:py-3">
+                                    {formatAppCreatedAt(r.created_at)}
+                                </td>
+                            </tr>
+                        ))}
+                    />
                 )}
             </PageContainer>
         </>

@@ -401,7 +401,7 @@ export default function RecordPaymentForm({
                     <InputError message={errors.notes} className="mt-1" />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 pt-2">
+                <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:flex-wrap sm:items-center [&_a]:w-full sm:[&_a]:w-auto [&_button]:w-full sm:[&_button]:w-auto">
                     <PrimaryButton disabled={processing}>
                         {isEdit ? 'Update Payment' : 'Save Payment'}
                     </PrimaryButton>

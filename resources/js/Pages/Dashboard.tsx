@@ -1,5 +1,8 @@
 import PageContainer from '@/Components/PageContainer';
 import DashboardChartSection from '@/Components/DashboardChartSection';
+import ListingMobileAction from '@/Components/ListingMobileAction';
+import ListingMobileCard from '@/Components/ListingMobileCard';
+import ListingTableShell from '@/Components/ListingTableShell';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import InvoicePaymentStatusBadge, {
@@ -143,9 +146,9 @@ export default function Dashboard() {
                             />
                         </div>
 
-                        <div className="flex justify-end">
-                            <Link href={route('invoices.create')}>
-                                <PrimaryButton className="inline-flex items-center gap-2">
+                        <div className="flex justify-stretch sm:justify-end">
+                            <Link href={route('invoices.create')} className="w-full sm:w-auto">
+                                <PrimaryButton className="inline-flex w-full items-center justify-center gap-2 sm:w-auto">
                                     <PlusIcon className="h-5 w-5" />
                                     New Tax Invoice
                                 </PrimaryButton>
@@ -177,107 +180,140 @@ export default function Dashboard() {
                                     <ChevronRightIcon className="h-4 w-4" />
                                 </Link>
                             </div>
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-100 text-sm">
-                                    <thead className="bg-gray-50/80">
-                                        <tr>
-                                            <th className="px-3 py-3 text-left font-medium text-gray-500 sm:px-6">
-                                                Bill No
-                                            </th>
-                                            <th className="px-3 py-3 text-left font-medium text-gray-500 sm:px-6">
-                                                Party
-                                            </th>
-                                            <th className="px-3 py-3 text-left font-medium text-gray-500 sm:px-6">
-                                                Date
-                                            </th>
-                                            <th className="px-3 py-3 text-left font-medium text-gray-500 sm:px-6">
-                                                Payment
-                                            </th>
-                                            <th className="px-3 py-3 text-right font-medium text-gray-500 sm:px-6">
-                                                Balance Due
-                                            </th>
-                                            <th className="px-3 py-3 text-right font-medium text-gray-500 sm:px-6">
-                                                Received
-                                            </th>
-                                            <th className="px-3 py-3 text-right font-medium text-gray-500 sm:px-6">
-                                                Outstanding
-                                            </th>
-                                            <th className="px-3 py-3 text-left font-medium text-gray-500 sm:px-6">
-                                                Created
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {data.recentInvoices.length === 0 ? (
-                                            <tr>
-                                                <td
-                                                    colSpan={8}
-                                                    className="px-6 py-12 text-center text-gray-500"
-                                                >
-                                                    <div className="mx-auto flex max-w-xs flex-col items-center gap-2">
-                                                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
-                                                            <DocumentIcon className="h-6 w-6" />
-                                                        </div>
-                                                        <p>No invoices yet.</p>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ) : (
-                                            data.recentInvoices.map((inv) => (
-                                                <tr
-                                                    key={inv.id}
-                                                    className="transition-colors hover:bg-gray-50/80"
-                                                >
-                                                    <td className="px-3 py-3 font-medium sm:px-6">
-                                                        <Link
-                                                            href={route('invoices.show', inv.id)}
-                                                            className="text-indigo-600 hover:underline"
-                                                        >
-                                                            {inv.bill_number}
-                                                        </Link>
-                                                    </td>
-                                                    <td className="px-3 py-3 sm:px-6">
-                                                        <PartyLink
-                                                            partyId={inv.party_id}
-                                                            name={inv.party?.name}
-                                                        />
-                                                    </td>
-                                                    <td className="whitespace-nowrap px-3 py-3 sm:px-6">
-                                                        {formatAppDateTime(inv.invoice_date)}
-                                                    </td>
-                                                    <td className="px-3 py-3 sm:px-6">
-                                                        <InvoicePaymentStatusBadge
-                                                            status={
-                                                                inv.payment_status ??
-                                                                invoicePaymentStatusFromAmounts(
-                                                                    inv.received ?? 0,
-                                                                    inv.outstanding ??
-                                                                        inv.balance_amount,
-                                                                )
-                                                            }
-                                                        />
-                                                    </td>
-                                                    <td className="px-3 py-3 text-right sm:px-6">
-                                                        ₹ {formatMoney(inv.balance_amount)}
-                                                    </td>
-                                                    <td className="px-3 py-3 text-right text-green-700 sm:px-6">
-                                                        ₹ {formatMoney(inv.received ?? 0)}
-                                                    </td>
-                                                    <td className="px-3 py-3 text-right font-medium text-indigo-700 sm:px-6">
-                                                        ₹{' '}
-                                                        {formatMoney(
-                                                            inv.outstanding ?? inv.balance_amount,
-                                                        )}
-                                                    </td>
-                                                    <td className="whitespace-nowrap px-3 py-3 text-gray-600 sm:px-6">
-                                                        {formatAppCreatedAt(inv.created_at)}
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                            <ListingTableShell
+                                className="overflow-hidden"
+                                isEmpty={data.recentInvoices.length === 0}
+                                mobileCountLabel={`${data.recentInvoices.length} recent invoice${data.recentInvoices.length === 1 ? '' : 's'}`}
+                                emptyMessage={
+                                    <span className="mx-auto flex max-w-xs flex-col items-center gap-2">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                                            <DocumentIcon className="h-6 w-6" />
+                                        </div>
+                                        <span>No invoices yet.</span>
+                                    </span>
+                                }
+                                mobile={data.recentInvoices.map((inv, index) => (
+                                    <ListingMobileCard
+                                        key={inv.id}
+                                        index={index + 1}
+                                        title={inv.bill_number}
+                                        subtitle={
+                                            <PartyLink
+                                                partyId={inv.party_id}
+                                                name={inv.party?.name}
+                                            />
+                                        }
+                                        headerRight={
+                                            <InvoicePaymentStatusBadge
+                                                status={
+                                                    inv.payment_status ??
+                                                    invoicePaymentStatusFromAmounts(
+                                                        inv.received ?? 0,
+                                                        inv.outstanding ??
+                                                            inv.balance_amount,
+                                                    )
+                                                }
+                                            />
+                                        }
+                                        metric={{
+                                            label: 'Outstanding',
+                                            value: `₹ ${formatMoney(inv.outstanding ?? inv.balance_amount)}`,
+                                        }}
+                                        fields={[
+                                            {
+                                                label: 'Received',
+                                                value: `₹ ${formatMoney(inv.received ?? 0)}`,
+                                            },
+                                        ]}
+                                        actions={
+                                            <ListingMobileAction
+                                                href={route('invoices.show', inv.id)}
+                                                variant="primary"
+                                            >
+                                                View
+                                            </ListingMobileAction>
+                                        }
+                                    />
+                                ))}
+                                thead={
+                                    <tr>
+                                        <th className="px-3 py-3 text-left font-medium text-gray-500 sm:px-6">
+                                            Bill No
+                                        </th>
+                                        <th className="px-3 py-3 text-left font-medium text-gray-500 sm:px-6">
+                                            Party
+                                        </th>
+                                        <th className="px-3 py-3 text-left font-medium text-gray-500 sm:px-6">
+                                            Date
+                                        </th>
+                                        <th className="px-3 py-3 text-left font-medium text-gray-500 sm:px-6">
+                                            Payment
+                                        </th>
+                                        <th className="px-3 py-3 text-right font-medium text-gray-500 sm:px-6">
+                                            Balance Due
+                                        </th>
+                                        <th className="px-3 py-3 text-right font-medium text-gray-500 sm:px-6">
+                                            Received
+                                        </th>
+                                        <th className="px-3 py-3 text-right font-medium text-gray-500 sm:px-6">
+                                            Outstanding
+                                        </th>
+                                        <th className="px-3 py-3 text-left font-medium text-gray-500 sm:px-6">
+                                            Created
+                                        </th>
+                                    </tr>
+                                }
+                                tbody={data.recentInvoices.map((inv) => (
+                                    <tr
+                                        key={inv.id}
+                                        className="transition-colors hover:bg-gray-50/80"
+                                    >
+                                        <td className="px-3 py-3 font-medium sm:px-6">
+                                            <Link
+                                                href={route('invoices.show', inv.id)}
+                                                className="text-indigo-600 hover:underline"
+                                            >
+                                                {inv.bill_number}
+                                            </Link>
+                                        </td>
+                                        <td className="px-3 py-3 sm:px-6">
+                                            <PartyLink
+                                                partyId={inv.party_id}
+                                                name={inv.party?.name}
+                                            />
+                                        </td>
+                                        <td className="whitespace-nowrap px-3 py-3 sm:px-6">
+                                            {formatAppDateTime(inv.invoice_date)}
+                                        </td>
+                                        <td className="px-3 py-3 sm:px-6">
+                                            <InvoicePaymentStatusBadge
+                                                status={
+                                                    inv.payment_status ??
+                                                    invoicePaymentStatusFromAmounts(
+                                                        inv.received ?? 0,
+                                                        inv.outstanding ?? inv.balance_amount,
+                                                    )
+                                                }
+                                            />
+                                        </td>
+                                        <td className="px-3 py-3 text-right sm:px-6">
+                                            ₹ {formatMoney(inv.balance_amount)}
+                                        </td>
+                                        <td className="px-3 py-3 text-right text-green-700 sm:px-6">
+                                            ₹ {formatMoney(inv.received ?? 0)}
+                                        </td>
+                                        <td className="px-3 py-3 text-right font-medium text-indigo-700 sm:px-6">
+                                            ₹{' '}
+                                            {formatMoney(
+                                                inv.outstanding ?? inv.balance_amount,
+                                            )}
+                                        </td>
+                                        <td className="whitespace-nowrap px-3 py-3 text-gray-600 sm:px-6">
+                                            {formatAppCreatedAt(inv.created_at)}
+                                        </td>
+                                    </tr>
+                                ))}
+                            />
                         </div>
                     </>
                 ) : null}

@@ -1,4 +1,8 @@
+import ListingMobileAction from '@/Components/ListingMobileAction';
+import ListingMobileCard from '@/Components/ListingMobileCard';
+import ListingTableShell from '@/Components/ListingTableShell';
 import PageContainer from '@/Components/PageContainer';
+import { DetailPageHeader } from '@/Components/ListPageHeader';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import Modal from '@/Components/Modal';
@@ -47,27 +51,35 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
     const partySummary = data?.partySummary;
     const payments = invoice?.payments ?? [];
 
+const headerBtnClass =
+    'whitespace-nowrap !px-2.5 !py-1.5 text-xs normal-case tracking-normal sm:!px-4 sm:!py-2 sm:uppercase sm:tracking-widest';
+
     usePageHeader(
-        <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-xl font-semibold text-gray-800">
-                Invoice {invoice?.bill_number ?? ''}
-            </h2>
-            {invoice && (
-                <div className="flex flex-wrap gap-2">
-                    {partySummary && partySummary.outstanding > 0 && (
-                        <PrimaryButton type="button" onClick={() => setPaymentOpen(true)}>
-                            Record Payment
-                        </PrimaryButton>
-                    )}
-                    <Link href={route('invoices.print', invoice.id)} target="_blank">
-                        <SecondaryButton>Print</SecondaryButton>
-                    </Link>
-                    <Link href={route('invoices.edit', invoice.id)}>
-                        <SecondaryButton>Edit</SecondaryButton>
-                    </Link>
-                </div>
-            )}
-        </div>,
+        <DetailPageHeader
+            title={`Invoice ${invoice?.bill_number ?? ''}`}
+            actions={
+                invoice ? (
+                    <>
+                        {partySummary && partySummary.outstanding > 0 && (
+                            <PrimaryButton
+                                type="button"
+                                className={headerBtnClass}
+                                onClick={() => setPaymentOpen(true)}
+                            >
+                                <span className="sm:hidden">Record</span>
+                                <span className="hidden sm:inline">Record Payment</span>
+                            </PrimaryButton>
+                        )}
+                        <Link href={route('invoices.print', invoice.id)} target="_blank" className="shrink-0">
+                            <SecondaryButton className={headerBtnClass}>Print</SecondaryButton>
+                        </Link>
+                        <Link href={route('invoices.edit', invoice.id)} className="shrink-0">
+                            <SecondaryButton className={headerBtnClass}>Edit</SecondaryButton>
+                        </Link>
+                    </>
+                ) : undefined
+            }
+        />,
         [invoice?.id, invoice?.bill_number, partySummary?.outstanding],
     );
 
@@ -91,7 +103,7 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                     </p>
                 ) : invoice ? (
                     <>
-                        <div className="no-print flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm">
+                        <div className="no-print grid gap-3 rounded-lg border border-gray-200 bg-white p-4 text-sm shadow-sm sm:flex sm:flex-wrap sm:items-center sm:gap-3">
                             {paymentSummary && (
                                 <InvoicePaymentStatusBadge
                                     status={
@@ -107,7 +119,7 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                             <span className="text-gray-500 capitalize">Status: {invoice.status}</span>
                             {paymentSummary && (
                                 <>
-                                    <span className="text-gray-400">|</span>
+                                    <span className="hidden text-gray-400 sm:inline">|</span>
                                     <span>
                                         Received:{' '}
                                         <strong className="text-green-700">
@@ -124,64 +136,94 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
                             )}
                         </div>
 
-                        <div className="overflow-x-auto">
+                        <div className="-mx-3 overflow-x-auto sm:mx-0">
                             <TaxInvoiceDocument invoice={invoice} />
                         </div>
 
                         {payments.length > 0 && (
-                            <div className="no-print overflow-x-auto rounded-lg bg-white shadow">
-                                <div className="border-b px-4 py-4 sm:px-6">
-                                    <h3 className="font-semibold text-gray-800">
-                                        Party Payments (allocated to this bill)
-                                    </h3>
-                                </div>
-                                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
-                                                Date
-                                            </th>
-                                            <th className="px-3 py-2 text-right font-medium text-gray-500 sm:px-6 sm:py-3">
-                                                Amount
-                                            </th>
-                                            <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
-                                                Mode
-                                            </th>
-                                            <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
-                                                Reference
-                                            </th>
-                                            <th className="px-3 py-2 text-right font-medium text-gray-500 sm:px-6 sm:py-3">
-                                                Actions
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {payments.map((payment: InvoicePayment) => (
-                                            <tr key={payment.id}>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3">
-                                                    {formatAppDateTime(payment.payment_date)}
-                                                </td>
-                                                <td className="px-3 py-2 text-right font-medium sm:px-6 sm:py-3">
-                                                    ₹ {formatMoney(payment.amount)}
-                                                </td>
-                                                <td className="px-3 py-2 capitalize sm:px-6 sm:py-3">
-                                                    {payment.payment_mode ?? '—'}
-                                                </td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3">
-                                                    {payment.reference_no ?? '—'}
-                                                </td>
-                                                <td className="px-3 py-2 text-right sm:px-6 sm:py-3">
-                                                    <Link
-                                                        href={route('invoice-payments.edit', payment.id)}
-                                                        className="text-indigo-600 hover:underline"
-                                                    >
-                                                        Edit
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                            <div className="no-print space-y-3">
+                                <h3 className="px-1 text-base font-semibold text-gray-800 sm:px-0">
+                                    Party Payments (allocated to this bill)
+                                </h3>
+                                <ListingTableShell
+                                className="no-print overflow-hidden rounded-lg bg-white shadow"
+                                isEmpty={false}
+                                mobileCountLabel={`${payments.length} payment${payments.length === 1 ? '' : 's'}`}
+                                emptyMessage=""
+                                mobile={payments.map((payment: InvoicePayment, index) => (
+                                    <ListingMobileCard
+                                        key={payment.id}
+                                        index={index + 1}
+                                        title={formatAppDateTime(payment.payment_date)}
+                                        metric={{
+                                            label: 'Amount',
+                                            value: `₹ ${formatMoney(payment.amount)}`,
+                                        }}
+                                        fields={[
+                                            {
+                                                label: 'Mode',
+                                                value: payment.payment_mode ?? '—',
+                                            },
+                                            {
+                                                label: 'Reference',
+                                                value: payment.reference_no ?? '—',
+                                                fullWidth: true,
+                                            },
+                                        ]}
+                                        actions={
+                                            <ListingMobileAction
+                                                href={route('invoice-payments.edit', payment.id)}
+                                                variant="primary"
+                                            >
+                                                Edit
+                                            </ListingMobileAction>
+                                        }
+                                    />
+                                ))}
+                                thead={
+                                    <tr>
+                                        <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
+                                            Date
+                                        </th>
+                                        <th className="px-3 py-2 text-right font-medium text-gray-500 sm:px-6 sm:py-3">
+                                            Amount
+                                        </th>
+                                        <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
+                                            Mode
+                                        </th>
+                                        <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
+                                            Reference
+                                        </th>
+                                        <th className="px-3 py-2 text-right font-medium text-gray-500 sm:px-6 sm:py-3">
+                                            Actions
+                                        </th>
+                                    </tr>
+                                }
+                                tbody={payments.map((payment: InvoicePayment) => (
+                                    <tr key={payment.id}>
+                                        <td className="px-3 py-2 sm:px-6 sm:py-3">
+                                            {formatAppDateTime(payment.payment_date)}
+                                        </td>
+                                        <td className="px-3 py-2 text-right font-medium sm:px-6 sm:py-3">
+                                            ₹ {formatMoney(payment.amount)}
+                                        </td>
+                                        <td className="px-3 py-2 capitalize sm:px-6 sm:py-3">
+                                            {payment.payment_mode ?? '—'}
+                                        </td>
+                                        <td className="px-3 py-2 sm:px-6 sm:py-3">
+                                            {payment.reference_no ?? '—'}
+                                        </td>
+                                        <td className="px-3 py-2 text-right sm:px-6 sm:py-3">
+                                            <Link
+                                                href={route('invoice-payments.edit', payment.id)}
+                                                className="text-indigo-600 hover:underline"
+                                            >
+                                                Edit
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            />
                             </div>
                         )}
                     </>
@@ -189,7 +231,7 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
             </PageContainer>
 
             <Modal show={paymentOpen} onClose={() => setPaymentOpen(false)} maxWidth="2xl">
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                     <h3 className="text-lg font-semibold text-gray-900">Record Payment</h3>
                     {invoice && (
                         <div className="mt-4">

@@ -26,6 +26,8 @@ type ListFilterBarProps = {
     hasActiveFilters: boolean;
     onClear: () => void;
     actions?: ReactNode;
+    /** Inside a parent card (party tabs) — no shadow, lighter styling. */
+    embedded?: boolean;
 };
 
 export default function ListFilterBar({
@@ -37,9 +39,16 @@ export default function ListFilterBar({
     hasActiveFilters,
     onClear,
     actions,
+    embedded = false,
 }: ListFilterBarProps) {
     return (
-        <div className="rounded-lg bg-white p-3 shadow">
+        <div
+            className={
+                embedded
+                    ? 'border-b border-gray-100 bg-gray-50/80 p-3 sm:rounded-lg sm:border sm:border-gray-200'
+                    : 'rounded-lg bg-white p-3 shadow'
+            }
+        >
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap">
                 <div className="w-full min-w-0 sm:w-auto sm:max-w-xs lg:max-w-none">
                     <FormDatePicker
@@ -51,8 +60,11 @@ export default function ListFilterBar({
                 </div>
 
                 {search && (
-                    <div className="flex w-full min-w-0 flex-1 items-center gap-1.5 sm:border-l sm:border-gray-200 sm:pl-2">
-                        <label className="sr-only" htmlFor="list_filter_search">
+                    <div className="flex w-full min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-1.5 sm:border-l sm:border-gray-200 sm:pl-2">
+                        <label
+                            htmlFor="list_filter_search"
+                            className="text-xs font-medium text-gray-600 sm:sr-only"
+                        >
                             Search
                         </label>
                         <input
@@ -75,9 +87,12 @@ export default function ListFilterBar({
                 {selects.map((select) => (
                     <div
                         key={select.name}
-                        className="flex w-full min-w-0 items-center gap-1.5 sm:w-auto sm:shrink-0 sm:border-l sm:border-gray-200 sm:pl-2"
+                        className="flex w-full min-w-0 flex-col gap-1 sm:w-auto sm:shrink-0 sm:border-l sm:border-gray-200 sm:pl-2"
                     >
-                        <label htmlFor={select.name} className="sr-only">
+                        <label
+                            htmlFor={select.name}
+                            className="text-xs font-medium text-gray-600 sm:sr-only"
+                        >
                             {select.label}
                         </label>
                         <select
@@ -97,28 +112,36 @@ export default function ListFilterBar({
                     </div>
                 ))}
 
-                <div className="flex h-8 shrink-0 items-center sm:w-[3.25rem]">
+                <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
                     <SecondaryButton
                         type="button"
                         onClick={onClear}
                         tabIndex={hasActiveFilters ? 0 : -1}
-                        className={`!px-2.5 !py-1 normal-case tracking-normal ${
+                        className={`w-full sm:w-auto !px-2.5 !py-1 normal-case tracking-normal ${
                             hasActiveFilters ? '' : 'pointer-events-none invisible'
                         }`}
                     >
-                        Clear
+                        Clear filters
                     </SecondaryButton>
                 </div>
 
                 {(actions || filterSummary) && (
-                    <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:ml-auto sm:w-auto lg:min-w-[12rem] lg:justify-end">
+                    <div className="flex w-full shrink-0 flex-col gap-2 sm:ml-auto sm:w-auto sm:flex-row sm:flex-wrap sm:items-center lg:min-w-[12rem] lg:justify-end">
                         <span className="hidden text-xs text-gray-500 sm:inline">{filterSummary}</span>
-                        {actions}
+                        {actions ? (
+                            <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+                                {actions}
+                            </div>
+                        ) : null}
                     </div>
                 )}
             </div>
 
-            <p className="mt-1.5 text-xs text-gray-500 sm:hidden">{filterSummary}</p>
+            {filterSummary ? (
+                <p className="mt-2 rounded-md bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600 sm:hidden">
+                    {filterSummary}
+                </p>
+            ) : null}
         </div>
     );
 }

@@ -1,4 +1,6 @@
+import { DetailGrid, DetailItem } from '@/Components/DetailShow';
 import FormPage, { FormCard, FormSectionHeader } from '@/Components/FormPage';
+import { DetailPageHeader, HeaderCreateButton } from '@/Components/ListPageHeader';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -8,13 +10,8 @@ import type { Company } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
-function DetailItem({ label, value }: { label: string; value?: string | null }) {
-    return (
-        <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</dt>
-            <dd className="mt-1 text-sm text-gray-900">{value?.trim() ? value : '—'}</dd>
-        </div>
-    );
+function DetailItemLocal({ label, value }: { label: string; value?: string | null }) {
+    return <DetailItem label={label} value={value} />;
 }
 
 export default function CompanyShow() {
@@ -23,14 +20,17 @@ export default function CompanyShow() {
     const [company, setCompany] = useState<Company | null>(null);
 
     usePageHeader(
-        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">Company Profile</h2>
-            <Link href={route('company.edit')}>
-                <PrimaryButton type="button">
-                    {company ? 'Edit Profile' : 'Set Up Profile'}
-                </PrimaryButton>
-            </Link>
-        </div>,
+        <DetailPageHeader
+            title="Company Profile"
+            actions={
+                <HeaderCreateButton
+                    href={route('company.edit')}
+                    label={company ? 'Edit Profile' : 'Set Up Profile'}
+                    mobileLabel={company ? 'Edit' : 'Set Up'}
+                />
+            }
+        />,
+        [company],
     );
 
     useEffect(() => {
@@ -83,12 +83,12 @@ export default function CompanyShow() {
                     <div className="space-y-5">
                         <FormCard>
                             <FormSectionHeader title="Business Details" />
-                            <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                <DetailItem label="Company Name" value={company.name} />
-                                <DetailItem label="PAN" value={company.pan} />
-                                <DetailItem label="GST" value={company.gst} />
-                                <DetailItem label="Udyam Reg No" value={company.udyam_reg_no} />
-                                <DetailItem
+                            <DetailGrid cols={3}>
+                                <DetailItemLocal label="Company Name" value={company.name} />
+                                <DetailItemLocal label="PAN" value={company.pan} />
+                                <DetailItemLocal label="GST" value={company.gst} />
+                                <DetailItemLocal label="Udyam Reg No" value={company.udyam_reg_no} />
+                                <DetailItemLocal
                                     label="Udyam Date"
                                     value={
                                         company.udyam_date
@@ -96,19 +96,19 @@ export default function CompanyShow() {
                                             : null
                                     }
                                 />
-                                <DetailItem label="Jurisdiction" value={company.jurisdiction} />
-                                <DetailItem label="SAC Code" value={company.sac_code} />
-                                <DetailItem
+                                <DetailItemLocal label="Jurisdiction" value={company.jurisdiction} />
+                                <DetailItemLocal label="SAC Code" value={company.sac_code} />
+                                <DetailItemLocal
                                     label="IGST Rate"
                                     value={
                                         company.igst_rate != null ? `${company.igst_rate}%` : null
                                     }
                                 />
-                            </dl>
+                            </DetailGrid>
                             {company.address?.trim() && (
-                                <dl className="mt-4">
-                                    <DetailItem label="Address" value={company.address} />
-                                </dl>
+                                <DetailGrid className="mt-4">
+                                    <DetailItemLocal label="Address" value={company.address} />
+                                </DetailGrid>
                             )}
                         </FormCard>
 
@@ -117,9 +117,9 @@ export default function CompanyShow() {
                                 title="Entry Number Settings"
                                 description="Consignment entry numbers are auto-generated as PREFIX-SEQUENCE."
                             />
-                            <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                <DetailItem label="Entry Prefix" value={company.entry_number_prefix} />
-                                <DetailItem
+                            <DetailGrid cols={3}>
+                                <DetailItemLocal label="Entry Prefix" value={company.entry_number_prefix} />
+                                <DetailItemLocal
                                     label="Next Sequence Number"
                                     value={
                                         company.entry_next_sequence != null
@@ -127,19 +127,19 @@ export default function CompanyShow() {
                                             : null
                                     }
                                 />
-                                <DetailItem label="Next Entry Preview" value={entryPreview} />
-                            </dl>
+                                <DetailItemLocal label="Next Entry Preview" value={entryPreview} />
+                            </DetailGrid>
                         </FormCard>
 
                         <FormCard>
                             <FormSectionHeader title="Bank Details" />
-                            <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                <DetailItem label="Account Name" value={company.bank_account_name} />
-                                <DetailItem label="Account No" value={company.bank_account_no} />
-                                <DetailItem label="IFSC" value={company.bank_ifsc} />
-                                <DetailItem label="Bank Name" value={company.bank_name} />
-                                <DetailItem label="Branch" value={company.bank_branch} />
-                            </dl>
+                            <DetailGrid cols={3}>
+                                <DetailItemLocal label="Account Name" value={company.bank_account_name} />
+                                <DetailItemLocal label="Account No" value={company.bank_account_no} />
+                                <DetailItemLocal label="IFSC" value={company.bank_ifsc} />
+                                <DetailItemLocal label="Bank Name" value={company.bank_name} />
+                                <DetailItemLocal label="Branch" value={company.bank_branch} />
+                            </DetailGrid>
                         </FormCard>
 
                         <div>

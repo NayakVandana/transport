@@ -1,3 +1,36 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+    .app-page-header > div {
+        @apply flex w-full flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3;
+    }
+
+    .app-page-header h2 {
+        @apply text-lg font-semibold leading-tight text-gray-800 sm:text-xl;
+    }
+
+    .app-page-header > div > a,
+    .app-page-header > div > button {
+        @apply w-full sm:w-auto;
+    }
+
+    .app-page-header > div > div > a:not(.header-link-compact),
+    .app-page-header > div > div > button {
+        @apply w-full sm:w-auto;
+    }
+
+    .app-page-header .header-link-compact {
+        @apply w-auto self-start;
+    }
+
+    .app-page-header .page-header-bar--compact {
+        @apply flex-row items-center gap-2;
+    }
+
+    .app-page-header .page-header-bar--compact a,
+    .app-page-header .page-header-bar--compact button {
+        @apply w-auto;
+    }
+}
