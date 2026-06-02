@@ -126,7 +126,7 @@ const navItems: NavItem[] = [
     },
     {
         name: 'Company',
-        route: 'company.edit',
+        route: 'company.show',
         isActive: () => (route().current('company.*') ?? false),
         icon: (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

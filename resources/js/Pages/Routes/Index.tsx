@@ -1,23 +1,18 @@
 import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import TextInput from '@/Components/TextInput';
 import ListFilterBar from '@/Components/ListFilterBar';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
-import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { exportFilteredList } from '@/lib/listExport';
-import { validateRouteForm } from '@/lib/routeValidation';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
-import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
 import { resolveReturnHref } from '@/lib/invoiceReturn';
+import { formatAppCreatedAt } from '@/lib/dateUtils';
 import type { RouteLocation } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
-import { FormEventHandler, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 type RouteFilters = ListFilters;
 
@@ -46,24 +41,29 @@ function useInvoiceReturn() {
 
 export default function RoutesIndex() {
     const { return_route, return_id, return_label } = useInvoiceReturn();
-    const [name, setName] = useState('');
-    const [processing, setProcessing] = useState(false);
     const [actionError, setActionError] = useState<string | null>(null);
-    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [searchInput, setSearchInput] = useState('');
 
     const backHref = resolveReturnHref(return_route, return_id);
 
     usePageHeader(
-        <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-semibold text-gray-800">Routes (From)</h2>
-            {backHref && (
-                <Link href={backHref}>
-                    <SecondaryButton type="button">
-                        {return_label ?? (return_route?.startsWith('entrybooks.') ? 'Back to entry' : 'Back to invoice')}
-                    </SecondaryButton>
-                </Link>
-            )}
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-xl font-semibold text-gray-800">Routes (From)</h2>
+                {backHref && (
+                    <Link href={backHref}>
+                        <SecondaryButton type="button">
+                            {return_label ??
+                                (return_route?.startsWith('entrybooks.')
+                                    ? 'Back to entry'
+                                    : 'Back to invoice')}
+                        </SecondaryButton>
+                    </Link>
+                )}
+            </div>
+            <Link href={route('routes.create')}>
+                <PrimaryButton>Add Route</PrimaryButton>
+            </Link>
         </div>,
     );
 
@@ -99,54 +99,6 @@ export default function RoutesIndex() {
 
     const routes = data?.routes.data ?? [];
 
-    const setRouteName = (value: string) => {
-        setName(value);
-        setFieldErrors((prev) => {
-            if (!prev.name) {
-                return prev;
-            }
-            const next = { ...prev };
-            delete next.name;
-            return next;
-        });
-    };
-
-    const submit: FormEventHandler = async (e) => {
-        e.preventDefault();
-        setFieldErrors({});
-        setActionError(null);
-
-        const clientErrors = validateRouteForm({ name });
-        if (Object.keys(clientErrors).length > 0) {
-            setFieldErrors(clientErrors);
-            return;
-        }
-
-        setProcessing(true);
-
-        try {
-            const res = await appApiPost<ApiEnvelope<{ route: RouteLocation }>>(
-                '/routes/route-store',
-                { name: name.trim() },
-            );
-
-            if (!res.success) {
-                setFieldErrors(apiFieldErrors(res.data));
-                if (!hasApiFieldErrors(res.data)) {
-                    setActionError(res.message || 'Could not add route.');
-                }
-                return;
-            }
-
-            setName('');
-            await fetchList();
-        } catch {
-            setActionError('Could not add route.');
-        } finally {
-            setProcessing(false);
-        }
-    };
-
     const destroy = async (id: number) => {
         if (!confirm('Remove this route from the list?')) {
             return;
@@ -178,107 +130,90 @@ export default function RoutesIndex() {
             <Head title="Routes" />
 
             <PageContainer className="space-y-4">
-                    <p className="text-sm text-gray-600">
-                        Add route / location names here (e.g. J N P T / SARIGAM / 1X20). They
-                        appear in the invoice &quot;From&quot; dropdown after saving.
+                <p className="text-sm text-gray-600">
+                    Manage route / location names used in invoice and entrybook &quot;From&quot;
+                    fields.
+                </p>
+
+                {displayError && (
+                    <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                        {displayError}
                     </p>
+                )}
 
-                    {displayError && (
-                        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                            {displayError}
-                        </p>
-                    )}
+                <ListFilterBar
+                    dateValue={dateValue}
+                    onDateChange={applyDateChange}
+                    search={{
+                        value: searchInput,
+                        placeholder: 'Search route name…',
+                        onChange: setSearchInput,
+                        onSubmit: () => applySearch(searchInput),
+                    }}
+                    filterSummary={filterSummary}
+                    hasActiveFilters={hasActiveFilters}
+                    onClear={() => {
+                        setSearchInput('');
+                        clearFilters();
+                    }}
+                    actions={
+                        <ListExportButtons onExport={(type) => void exportFiltered(type)} />
+                    }
+                />
 
-                    <form onSubmit={submit} className="rounded-lg bg-white p-4 shadow sm:p-6">
-                        <h3 className="mb-4 font-medium text-gray-900">Add Route / Location</h3>
-                        <div>
-                            <InputLabel value="From (Route)" />
-                            <TextInput
-                                className={fieldInputClass(Boolean(fieldErrors.name))}
-                                value={name}
-                                onChange={(e) => setRouteName(e.target.value)}
-                                placeholder="J N P T / SARIGAM / 1X20"
-                            />
-                            <InputError message={fieldErrors.name} className="mt-1" />
-                        </div>
-                        <PrimaryButton className="mt-4" disabled={processing}>
-                            Add Route
-                        </PrimaryButton>
-                    </form>
-
-                    <ListFilterBar
-                        dateValue={dateValue}
-                        onDateChange={applyDateChange}
-                        search={{
-                            value: searchInput,
-                            placeholder: 'Search route name…',
-                            onChange: setSearchInput,
-                            onSubmit: () => applySearch(searchInput),
-                        }}
-                        filterSummary={filterSummary}
-                        hasActiveFilters={hasActiveFilters}
-                        onClear={() => {
-                            setSearchInput('');
-                            clearFilters();
-                        }}
-                        actions={
-                            <ListExportButtons onExport={(type) => void exportFiltered(type)} />
-                        }
-                    />
-
-                    {loading && !data ? (
-                        <p className="text-center text-sm text-gray-500">Loading routes…</p>
-                    ) : (
-                        <div className="overflow-x-auto rounded-lg bg-white shadow">
-                            <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                <thead className="bg-gray-50">
+                {loading && !data ? (
+                    <p className="text-center text-sm text-gray-500">Loading routes…</p>
+                ) : (
+                    <div className="overflow-x-auto rounded-lg bg-white shadow">
+                        <table className="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
+                                        Name
+                                    </th>
+                                    <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
+                                        Created
+                                    </th>
+                                    <th className="px-3 py-2 text-right font-medium text-gray-500 sm:px-6 sm:py-3">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {routes.length === 0 ? (
                                     <tr>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">
-                                            Name
-                                        </th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">
-                                            Created
-                                        </th>
-                                        <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">
-                                            Actions
-                                        </th>
+                                        <td
+                                            colSpan={3}
+                                            className="px-6 py-8 text-center text-gray-500"
+                                        >
+                                            {hasActiveFilters
+                                                ? 'No routes match your filters.'
+                                                : 'No routes yet.'}
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {routes.length === 0 ? (
-                                        <tr>
-                                            <td
-                                                colSpan={3}
-                                                className="px-6 py-8 text-center text-gray-500"
-                                            >
-                                                {hasActiveFilters
-                                                    ? 'No routes match your filters.'
-                                                    : 'No routes yet.'}
+                                ) : (
+                                    routes.map((r) => (
+                                        <tr key={r.id}>
+                                            <td className="px-3 py-2 sm:px-6 sm:py-3">{r.name}</td>
+                                            <td className="whitespace-nowrap px-3 py-2 text-gray-600 sm:px-6 sm:py-3">
+                                                {formatAppCreatedAt(r.created_at)}
+                                            </td>
+                                            <td className="px-3 py-2 text-right sm:px-6 sm:py-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => void destroy(r.id)}
+                                                    className="text-red-600 hover:underline"
+                                                >
+                                                    Remove
+                                                </button>
                                             </td>
                                         </tr>
-                                    ) : (
-                                        routes.map((r) => (
-                                            <tr key={r.id}>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3">{r.name}</td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3 whitespace-nowrap text-gray-600">
-                                                    {formatAppCreatedAt(r.created_at)}
-                                                </td>
-                                                <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => void destroy(r.id)}
-                                                        className="text-red-600 hover:underline"
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </PageContainer>
         </>
     );

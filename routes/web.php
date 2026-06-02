@@ -31,7 +31,8 @@ require __DIR__.'/auth.php';
 
 Route::get('/dashboard', fn () => Inertia::render('Dashboard'))->name('dashboard');
 
-Route::get('/company', fn () => Inertia::render('Company/Edit'))->name('company.edit');
+Route::get('/company', fn () => Inertia::render('Company/Show'))->name('company.show');
+Route::get('/company/edit', fn () => Inertia::render('Company/Edit'))->name('company.edit');
 
 Route::get('/parties', fn () => Inertia::render('Parties/Index'))->name('parties.index');
 Route::get('/parties/create', fn () => Inertia::render('Parties/Form'))->name('parties.create');
@@ -61,6 +62,7 @@ Route::get('/entrybooks/create', fn () => Inertia::render('Entrybooks/Form'))->n
 Route::get('/entrybooks/{id}/edit', fn (int $id) => Inertia::render('Entrybooks/Form', ['entrybookId' => $id]))->name('entrybooks.edit');
 
 Route::get('/routes', fn () => Inertia::render('Routes/Index'))->name('routes.index');
+Route::get('/routes/create', fn () => Inertia::render('Routes/Form'))->name('routes.create');
 
 Route::get('/invoices', fn () => Inertia::render('Invoices/Index'))->name('invoices.index');
 Route::get('/invoices/create', fn () => Inertia::render('Invoices/Form'))->name('invoices.create');

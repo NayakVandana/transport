@@ -31,6 +31,10 @@ export function masterListHref(
             ? entrybookReturnQuery(isEdit, entityId)
             : invoiceReturnQuery(isEdit, entityId);
 
+    if (listRoute === 'routes.index') {
+        return route('routes.create', query);
+    }
+
     return route(listRoute, query);
 }
 
