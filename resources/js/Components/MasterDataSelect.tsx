@@ -39,7 +39,7 @@ export default function MasterDataSelect({
         return (
             <Link
                 href={addHref}
-                className="flex w-full items-center justify-center rounded border border-dashed border-indigo-300 bg-indigo-50 px-2 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                className="flex w-full items-center justify-center rounded-md border border-dashed border-indigo-300 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
             >
                 {addLabel}
             </Link>
@@ -48,7 +48,7 @@ export default function MasterDataSelect({
 
     return (
         <select
-            className="w-full rounded border-gray-300 text-xs shadow-sm"
+            className="w-full rounded-md border-gray-300 text-sm shadow-sm"
             value={value}
             onChange={(e) => handleSelect(e.target.value)}
         >

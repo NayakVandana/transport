@@ -1,4 +1,4 @@
-import PageContainer from '@/Components/PageContainer';
+import FormPage, { FormActions, FormCard, FormGrid } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import EntityDocumentsSection, {
@@ -7,6 +7,7 @@ import EntityDocumentsSection, {
     type DocumentDraft,
 } from '@/Components/EntityDocumentsSection';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import { invalidateAppQuery } from '@/hooks/useAppQuery';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -14,7 +15,7 @@ import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import type { Driver, EntityDocument, ExpenseOption } from '@/types/transport';
 import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { validateDriverForm } from '@/lib/driverValidation';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useState } from 'react';
 
 function dateInputValue(value?: string | null): string {
@@ -25,9 +26,14 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
     const isEdit = Boolean(driverId);
 
     usePageHeader(
-        <h2 className="text-xl font-semibold text-gray-800">
-            {isEdit ? 'Edit Driver' : 'New Driver'}
-        </h2>,
+        <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-xl font-semibold text-gray-800">
+                {isEdit ? 'Edit Driver' : 'New Driver'}
+            </h2>
+            <Link href={route('drivers.index')}>
+                <SecondaryButton type="button">Back to list</SecondaryButton>
+            </Link>
+        </div>,
     );
 
     const [loading, setLoading] = useState(true);
@@ -197,19 +203,21 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
         <>
             <Head title={isEdit ? 'Edit Driver' : 'New Driver'} />
 
-            <PageContainer width="xl">
+            <FormPage size="md">
                     {loading ? (
-                        <p className="text-center text-sm text-gray-500">Loading…</p>
+                        <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
                     ) : loadError ? (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {loadError}
                         </p>
                     ) : (
-                        <form onSubmit={submit} className="space-y-4 rounded-lg bg-white p-4 shadow sm:p-6">
+                        <FormCard>
+                        <form onSubmit={submit} className="space-y-6">
+                            <FormGrid>
                             <div>
                                 <InputLabel value="Name" />
                                 <TextInput
-                                    className={fieldInputClass(Boolean(errors.name))}
+                                    className={fieldInputClass(Boolean(errors.name), 'mt-1 block w-full')}
                                     value={data.name}
                                     onChange={(e) => setField('name', e.target.value)}
                                 />
@@ -218,12 +226,14 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                             <div>
                                 <InputLabel value="Mobile" />
                                 <TextInput
-                                    className={fieldInputClass(Boolean(errors.mobile))}
+                                    className={fieldInputClass(Boolean(errors.mobile), 'mt-1 block w-full')}
                                     value={data.mobile}
                                     onChange={(e) => setField('mobile', e.target.value)}
                                 />
                                 <InputError message={errors.mobile} className="mt-1" />
                             </div>
+                            </FormGrid>
+                            <FormGrid>
                             <div>
                                 <InputLabel value="License Number" />
                                 <TextInput
@@ -243,7 +253,8 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                                 />
                                 <InputError message={errors.license_expiry} className="mt-1" />
                             </div>
-                            <div className="grid gap-4 sm:grid-cols-2">
+                            </FormGrid>
+                            <FormGrid>
                                 <div>
                                     <InputLabel value="Joining Date" />
                                     <TextInput
@@ -267,7 +278,7 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                                     />
                                     <InputError message={errors.salary} className="mt-1" />
                                 </div>
-                            </div>
+                            </FormGrid>
                             <div>
                                 <InputLabel value="Address" />
                                 <textarea
@@ -278,7 +289,7 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                                 />
                                 <InputError message={errors.address} className="mt-1" />
                             </div>
-                            <div>
+                            <div className="sm:max-w-xs">
                                 <InputLabel value="Status" />
                                 <select
                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -304,12 +315,18 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                                 />
                             )}
 
+                            <FormActions>
                             <PrimaryButton disabled={processing}>
                                 {processing ? 'Saving…' : 'Save'}
                             </PrimaryButton>
+                            <Link href={route('drivers.index')}>
+                                <SecondaryButton type="button">Cancel</SecondaryButton>
+                            </Link>
+                            </FormActions>
                         </form>
+                        </FormCard>
                     )}
-            </PageContainer>
+            </FormPage>
         </>
     );
 }

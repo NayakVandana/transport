@@ -1,4 +1,4 @@
-import PageContainer from '@/Components/PageContainer';
+import FormPage, { FormCard } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import EntityDocumentsSection, {
@@ -297,22 +297,23 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
         <>
             <Head title={isEdit ? 'Edit Vehicle' : 'Add Vehicle'} />
 
-            <PageContainer width="3xl">
+            <FormPage size="lg">
                     {loading ? (
-                        <p className="text-center text-sm text-gray-500">Loading…</p>
+                        <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
                     ) : loadError ? (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {loadError}
                         </p>
                     ) : (
+                        <FormCard>
                         <form
                             onSubmit={submit}
                             noValidate
-                            className="space-y-6 rounded-lg bg-white p-4 shadow sm:p-6"
+                            className="space-y-6"
                         >
                             <div>
                                 <h3 className="mb-4 font-medium text-gray-900">Vehicle Details</h3>
-                                <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     <Field label="Vehicle Number" required error={errors.vehicle_number}>
                                         <TextInput
                                             className={inputClass('vehicle_number')}
@@ -389,7 +390,7 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                                 <h3 className="mb-4 font-medium text-gray-900">
                                     Insurance & Permits
                                 </h3>
-                                <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     <Field
                                         label="Insurance Number"
                                         required
@@ -474,8 +475,9 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                                 {processing ? 'Saving…' : 'Save'}
                             </PrimaryButton>
                         </form>
+                        </FormCard>
                     )}
-            </PageContainer>
+            </FormPage>
         </>
     );
 }

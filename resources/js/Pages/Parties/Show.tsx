@@ -417,14 +417,15 @@ export default function PartyShow({
                                     )}
 
                                     {tab === 'profile' && (
-                                        <div className="mx-auto max-w-xl">
+                                        <div className="rounded-lg border border-gray-200 bg-white p-4 sm:p-6">
                                             {profileMessage && (
                                                 <p className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
                                                     {profileMessage}
                                                 </p>
                                             )}
 
-                                            <form onSubmit={submitProfile} className="space-y-4">
+                                            <form onSubmit={submitProfile} className="space-y-5">
+                                                <div className="grid gap-4 sm:grid-cols-2">
                                                 <div>
                                                     <InputLabel value="Name" />
                                                     <TextInput
@@ -454,6 +455,7 @@ export default function PartyShow({
                                                     />
                                                     <InputError message={profileErrors.mobile} className="mt-1" />
                                                 </div>
+                                                </div>
                                                 <div>
                                                     <InputLabel value="Address" />
                                                     <textarea
@@ -469,7 +471,7 @@ export default function PartyShow({
                                                     />
                                                     <InputError message={profileErrors.address} className="mt-1" />
                                                 </div>
-                                                <div>
+                                                <div className="sm:max-w-xs">
                                                     <InputLabel value="State Code" />
                                                     <TextInput
                                                         className="mt-1 block w-full"

@@ -244,7 +244,19 @@ export default function Authenticated({
     };
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="min-h-screen bg-gray-100 print:bg-white">
+            <style>{`
+                @media print {
+                    .app-sidebar,
+                    .app-topbar,
+                    .no-print {
+                        display: none !important;
+                    }
+                    .app-main-shell {
+                        padding-left: 0 !important;
+                    }
+                }
+            `}</style>
             {sidebarOpen && (
                 <div
                     className="fixed inset-0 z-40 bg-gray-900/50 lg:hidden"
@@ -255,15 +267,15 @@ export default function Authenticated({
 
             <aside
                 className={
-                    'fixed inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] flex-col bg-slate-900 shadow-xl transition-transform duration-200 ease-in-out lg:translate-x-0 ' +
+                    'app-sidebar fixed inset-y-0 left-0 z-50 flex w-64 max-w-[85vw] flex-col bg-slate-900 shadow-xl transition-transform duration-200 ease-in-out lg:translate-x-0 ' +
                     (sidebarOpen ? 'translate-x-0' : '-translate-x-full')
                 }
             >
                 <SidebarContent onNavigate={closeSidebar} onLogout={handleLogout} />
             </aside>
 
-            <div className="flex min-h-screen min-w-0 flex-col lg:pl-64">
-                <header className="sticky top-0 z-30 flex h-14 w-full shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-3 shadow-sm sm:h-16 sm:gap-4 sm:px-6 lg:px-8">
+            <div className="app-main-shell flex min-h-screen min-w-0 flex-col lg:pl-64">
+                <header className="app-topbar sticky top-0 z-30 flex h-14 w-full shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-3 shadow-sm sm:h-16 sm:gap-4 sm:px-6 lg:px-8">
                     <button
                         type="button"
                         onClick={() => setSidebarOpen(true)}

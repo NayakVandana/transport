@@ -6,6 +6,7 @@ import InvoicePaymentStatusBadge, {
     invoicePaymentStatusFromAmounts,
 } from '@/Components/InvoicePaymentStatusBadge';
 import RecordPaymentForm from '@/Components/RecordPaymentForm';
+import TaxInvoiceDocument from '@/invoices/TaxInvoiceDocument';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { invalidateAppQuery, useAppQuery } from '@/hooks/useAppQuery';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -91,146 +92,118 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
     return (
         <>
             <Head title={`Invoice ${invoice?.bill_number ?? ''}`} />
+            <style>{`
+                @media print {
+                    .no-print { display: none !important; }
+                    .invoice-show-page { padding: 0 !important; background: white !important; }
+                    .tax-invoice-document { box-shadow: none !important; }
+                }
+            `}</style>
 
-            <PageContainer className="space-y-6">
-                    {loading && !invoice ? (
-                        <p className="text-center text-sm text-gray-500">Loading invoice…</p>
-                    ) : error ? (
-                        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                            {error}
-                        </p>
-                    ) : invoice ? (
-                        <>
-                            <div className="rounded-lg bg-white p-4 shadow sm:p-6">
-                                <div className="mb-4 flex flex-wrap items-center gap-3">
-                                    {paymentSummary && (
-                                        <InvoicePaymentStatusBadge
-                                            status={
-                                                paymentSummary.payment_status ??
-                                                invoice.payment_status ??
-                                                invoicePaymentStatusFromAmounts(
-                                                    paymentSummary.received,
-                                                    paymentSummary.outstanding,
-                                                )
-                                            }
-                                        />
-                                    )}
-                                    <span className="text-xs capitalize text-gray-500">
-                                        Invoice: {invoice.status}
-                                    </span>
-                                </div>
-                                <dl className="grid gap-4 text-sm sm:grid-cols-2">
-                                    <div>
-                                        <dt className="text-gray-500">Party</dt>
-                                        <dd className="font-medium">{invoice.party?.name}</dd>
-                                    </div>
-                                    <div>
-                                        <dt className="text-gray-500">Date</dt>
-                                        <dd>{formatAppDateTime(invoice.invoice_date)}</dd>
-                                    </div>
-                                    <div>
-                                        <dt className="text-gray-500">Net Value</dt>
-                                        <dd>₹ {formatMoney(invoice.net_value)}</dd>
-                                    </div>
-                                    <div>
-                                        <dt className="text-gray-500">Balance Due</dt>
-                                        <dd>₹ {formatMoney(invoice.balance_amount)}</dd>
-                                    </div>
-                                    {paymentSummary && (
-                                        <>
-                                            <div>
-                                                <dt className="text-gray-500">Received (this bill)</dt>
-                                                <dd className="font-medium text-green-700">
-                                                    ₹ {formatMoney(paymentSummary.received)}
-                                                </dd>
-                                            </div>
-                                            <div>
-                                                <dt className="text-gray-500">Outstanding (this bill)</dt>
-                                                <dd className="font-semibold text-indigo-700">
-                                                    ₹ {formatMoney(paymentSummary.outstanding)}
-                                                </dd>
-                                            </div>
-                                        </>
-                                    )}
-                                    {partySummary && (
-                                        <>
-                                            <div>
-                                                <dt className="text-gray-500">Party received</dt>
-                                                <dd className="font-medium text-green-700">
-                                                    ₹ {formatMoney(partySummary.received)}
-                                                </dd>
-                                            </div>
-                                            <div>
-                                                <dt className="text-gray-500">Party outstanding</dt>
-                                                <dd className="font-semibold text-indigo-700">
-                                                    ₹ {formatMoney(partySummary.outstanding)}
-                                                </dd>
-                                            </div>
-                                        </>
-                                    )}
-                                </dl>
-                                <p className="mt-4 text-xs text-gray-600">{invoice.balance_in_words}</p>
-                            </div>
-
-                            {payments.length > 0 && (
-                                <div className="overflow-x-auto rounded-lg bg-white shadow">
-                                    <div className="border-b px-4 py-4 sm:px-6">
-                                        <h3 className="font-semibold text-gray-800">
-                                            Party Payments (allocated to this bill)
-                                        </h3>
-                                    </div>
-                                    <table className="min-w-full divide-y divide-gray-200 text-sm">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">
-                                                    Date
-                                                </th>
-                                                <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">
-                                                    Amount
-                                                </th>
-                                                <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">
-                                                    Mode
-                                                </th>
-                                                <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">
-                                                    Reference
-                                                </th>
-                                                <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">
-                                                    Actions
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-200">
-                                            {payments.map((payment: InvoicePayment) => (
-                                                <tr key={payment.id}>
-                                                    <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(payment.payment_date)}</td>
-                                                    <td className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium">
-                                                        ₹ {formatMoney(payment.amount)}
-                                                    </td>
-                                                    <td className="px-3 py-2 sm:px-6 sm:py-3 capitalize">
-                                                        {payment.payment_mode ?? '—'}
-                                                    </td>
-                                                    <td className="px-3 py-2 sm:px-6 sm:py-3">
-                                                        {payment.reference_no ?? '—'}
-                                                    </td>
-                                                    <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
-                                                        <Link
-                                                            href={route(
-                                                                'invoice-payments.edit',
-                                                                payment.id,
-                                                            )}
-                                                            className="text-indigo-600 hover:underline"
-                                                        >
-                                                            Edit
-                                                        </Link>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+            <PageContainer className="invoice-show-page space-y-6">
+                {loading && !invoice ? (
+                    <p className="text-center text-sm text-gray-500">Loading invoice…</p>
+                ) : error ? (
+                    <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                        {error}
+                    </p>
+                ) : invoice ? (
+                    <>
+                        <div className="no-print flex flex-wrap items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm">
+                            {paymentSummary && (
+                                <InvoicePaymentStatusBadge
+                                    status={
+                                        paymentSummary.payment_status ??
+                                        invoice.payment_status ??
+                                        invoicePaymentStatusFromAmounts(
+                                            paymentSummary.received,
+                                            paymentSummary.outstanding,
+                                        )
+                                    }
+                                />
                             )}
-                        </>
-                    ) : null}
+                            <span className="text-gray-500 capitalize">Status: {invoice.status}</span>
+                            {paymentSummary && (
+                                <>
+                                    <span className="text-gray-400">|</span>
+                                    <span>
+                                        Received:{' '}
+                                        <strong className="text-green-700">
+                                            ₹ {formatMoney(paymentSummary.received)}
+                                        </strong>
+                                    </span>
+                                    <span>
+                                        Outstanding:{' '}
+                                        <strong className="text-indigo-700">
+                                            ₹ {formatMoney(paymentSummary.outstanding)}
+                                        </strong>
+                                    </span>
+                                </>
+                            )}
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <TaxInvoiceDocument invoice={invoice} />
+                        </div>
+
+                        {payments.length > 0 && (
+                            <div className="no-print overflow-x-auto rounded-lg bg-white shadow">
+                                <div className="border-b px-4 py-4 sm:px-6">
+                                    <h3 className="font-semibold text-gray-800">
+                                        Party Payments (allocated to this bill)
+                                    </h3>
+                                </div>
+                                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
+                                                Date
+                                            </th>
+                                            <th className="px-3 py-2 text-right font-medium text-gray-500 sm:px-6 sm:py-3">
+                                                Amount
+                                            </th>
+                                            <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
+                                                Mode
+                                            </th>
+                                            <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
+                                                Reference
+                                            </th>
+                                            <th className="px-3 py-2 text-right font-medium text-gray-500 sm:px-6 sm:py-3">
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {payments.map((payment: InvoicePayment) => (
+                                            <tr key={payment.id}>
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3">
+                                                    {formatAppDateTime(payment.payment_date)}
+                                                </td>
+                                                <td className="px-3 py-2 text-right font-medium sm:px-6 sm:py-3">
+                                                    ₹ {formatMoney(payment.amount)}
+                                                </td>
+                                                <td className="px-3 py-2 capitalize sm:px-6 sm:py-3">
+                                                    {payment.payment_mode ?? '—'}
+                                                </td>
+                                                <td className="px-3 py-2 sm:px-6 sm:py-3">
+                                                    {payment.reference_no ?? '—'}
+                                                </td>
+                                                <td className="px-3 py-2 text-right sm:px-6 sm:py-3">
+                                                    <Link
+                                                        href={route('invoice-payments.edit', payment.id)}
+                                                        className="text-indigo-600 hover:underline"
+                                                    >
+                                                        Edit
+                                                    </Link>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </>
+                ) : null}
             </PageContainer>
 
             <Modal show={paymentOpen} onClose={() => setPaymentOpen(false)} maxWidth="2xl">

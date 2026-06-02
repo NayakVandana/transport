@@ -1,7 +1,8 @@
-import PageContainer from '@/Components/PageContainer';
+import FormPage, { FormCard } from '@/Components/FormPage';
 import RecordPaymentForm from '@/Components/RecordPaymentForm';
+import SecondaryButton from '@/Components/SecondaryButton';
 import { usePageHeader } from '@/hooks/usePageHeader';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 
 export default function InvoicePaymentForm({
     invoicePaymentId,
@@ -13,24 +14,29 @@ export default function InvoicePaymentForm({
     const isEdit = Boolean(invoicePaymentId);
 
     usePageHeader(
-        <h2 className="text-xl font-semibold text-gray-800">
-            {isEdit ? 'Edit Payment' : 'Record Payment'}
-        </h2>,
+        <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-xl font-semibold text-gray-800">
+                {isEdit ? 'Edit Payment' : 'Record Payment'}
+            </h2>
+            <Link href={route('invoice-payments.index')}>
+                <SecondaryButton type="button">Back to list</SecondaryButton>
+            </Link>
+        </div>,
     );
 
     return (
         <>
             <Head title={isEdit ? 'Edit Payment' : 'Record Payment'} />
 
-            <PageContainer width="2xl">
-                    <div className="rounded-lg bg-white p-4 shadow sm:p-6">
-                        <RecordPaymentForm
-                            invoicePaymentId={invoicePaymentId}
-                            partyId={partyId}
-                            showCancelLink
-                        />
-                    </div>
-            </PageContainer>
+            <FormPage size="sm">
+                <FormCard>
+                    <RecordPaymentForm
+                        invoicePaymentId={invoicePaymentId}
+                        partyId={partyId}
+                        showCancelLink
+                    />
+                </FormCard>
+            </FormPage>
         </>
     );
 }

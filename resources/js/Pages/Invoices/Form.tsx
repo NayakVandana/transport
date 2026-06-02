@@ -1,15 +1,17 @@
-import PageContainer from '@/Components/PageContainer';
+import FormPage, { FormActions, FormCard, FormGrid, FormSectionHeader } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import TextInput from '@/Components/TextInput';
 import MasterDataSelect from '@/Components/MasterDataSelect';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import { apiFieldErrors, hasApiFieldErrors } from '@/lib/apiFormErrors';
+import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { balanceInWords } from '@/lib/amountInWords';
 import {
     calculateFreightInvoice,
+    formatMoney,
     lineFreight,
 } from '@/lib/freightCalculator';
 import { invoiceReturnQuery, masterListHref } from '@/lib/invoiceReturn';
@@ -23,7 +25,7 @@ import type {
     RouteLocation,
     Vehicle,
 } from '@/types/transport';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 
 interface EntrySettings {
@@ -365,250 +367,381 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
     const entrybooksHref = route('entrybooks.create', invoiceReturnQuery(isEdit, invoiceId));
 
     usePageHeader(
-        <h2 className="text-xl font-semibold text-gray-800">
-            {isEdit ? `Edit ${billNumber}` : 'New Tax Invoice'}
-        </h2>,
+        <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-xl font-semibold text-gray-800">
+                {isEdit ? `Edit ${billNumber}` : 'New Tax Invoice'}
+            </h2>
+            <Link href={route('invoices.index')}>
+                <SecondaryButton type="button">Back to list</SecondaryButton>
+            </Link>
+        </div>,
         [isEdit, billNumber],
     );
 
+    const inputClass = (field: string) =>
+        fieldInputClass(
+            Boolean(errors[field]),
+            'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500',
+        );
+
     return (
         <>
-            <Head title="Invoice" />
+            <Head title={isEdit ? `Edit ${billNumber}` : 'New Tax Invoice'} />
 
-            <PageContainer>
+            <FormPage size="lg">
                     {loading ? (
-                        <p className="text-center text-sm text-gray-500">Loading…</p>
+                        <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
                     ) : loadError ? (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {loadError}
                         </p>
                     ) : (
-                        <form onSubmit={submit} className="space-y-6">
-                            <div className="grid gap-4 rounded-lg bg-white p-4 shadow sm:p-6 sm:grid-cols-2 lg:grid-cols-4">
-                                <div>
-                                    <InputLabel value="Party" />
-                                    <select
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                        value={data.party_id}
-                                        onChange={(e) => changeParty(e.target.value)}
-                                        required
-                                    >
-                                        {parties.map((p) => (
-                                            <option key={p.id} value={p.id}>
-                                                {p.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <InputError message={errors.party_id} />
-                                </div>
-                                <div>
-                                    <InputLabel value="Bill Number" />
-                                    <input
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                        value={data.bill_number}
-                                        onChange={(e) => setField('bill_number', e.target.value)}
-                                        required
-                                    />
-                                    <InputError message={errors.bill_number} />
-                                </div>
-                                <div>
-                                    <InputLabel value="Invoice Date" />
-                                    <input
-                                        type="date"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                        value={data.invoice_date}
-                                        onChange={(e) => setField('invoice_date', e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <InputLabel value="Status" />
-                                    <select
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                        value={data.status}
-                                        onChange={(e) =>
-                                            setField(
-                                                'status',
-                                                e.target.value as 'draft' | 'finalized',
-                                            )
+                        <form onSubmit={submit} className="space-y-5">
+                            <FormCard>
+                                <FormSectionHeader
+                                    title="Invoice details"
+                                    description="Bill number and totals are calculated from the freight lines below."
+                                />
+
+                                <FormGrid cols={4}>
+                                    <div>
+                                        <InputLabel value="Party" />
+                                        <select
+                                            className={inputClass('party_id')}
+                                            value={data.party_id}
+                                            onChange={(e) => changeParty(e.target.value)}
+                                        >
+                                            <option value="">Select party</option>
+                                            {parties.map((p) => (
+                                                <option key={p.id} value={p.id}>
+                                                    {p.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <InputError message={errors.party_id} className="mt-1" />
+                                    </div>
+                                    <div>
+                                        <InputLabel value="Bill number" />
+                                        <TextInput
+                                            className={inputClass('bill_number')}
+                                            value={data.bill_number}
+                                            onChange={(e) => setField('bill_number', e.target.value)}
+                                        />
+                                        <InputError message={errors.bill_number} className="mt-1" />
+                                    </div>
+                                    <div>
+                                        <InputLabel value="Invoice date" />
+                                        <TextInput
+                                            type="date"
+                                            className={inputClass('invoice_date')}
+                                            value={data.invoice_date}
+                                            onChange={(e) => setField('invoice_date', e.target.value)}
+                                        />
+                                        <InputError message={errors.invoice_date} className="mt-1" />
+                                    </div>
+                                    <div>
+                                        <InputLabel value="Status" />
+                                        <select
+                                            className={inputClass('status')}
+                                            value={data.status}
+                                            onChange={(e) =>
+                                                setField(
+                                                    'status',
+                                                    e.target.value as 'draft' | 'finalized',
+                                                )
+                                            }
+                                        >
+                                            <option value="draft">Draft</option>
+                                            <option value="finalized">Finalized</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <InputLabel value="SAC code" />
+                                        <TextInput
+                                            className={inputClass('sac_code')}
+                                            value={data.sac_code}
+                                            onChange={(e) => setField('sac_code', e.target.value)}
+                                        />
+                                        <InputError message={errors.sac_code} className="mt-1" />
+                                    </div>
+                                    <div>
+                                        <InputLabel value="Prepared by" />
+                                        <TextInput
+                                            className={inputClass('prepared_by')}
+                                            value={data.prepared_by}
+                                            onChange={(e) => setField('prepared_by', e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <InputLabel value="Checked by" />
+                                        <TextInput
+                                            className={inputClass('checked_by')}
+                                            value={data.checked_by}
+                                            onChange={(e) => setField('checked_by', e.target.value)}
+                                        />
+                                    </div>
+                                </FormGrid>
+                            </FormCard>
+
+                            <FormCard>
+                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                    <FormSectionHeader
+                                        title="Freight lines"
+                                        description={
+                                            data.party_id
+                                                ? partyEntrybooks.length > 0
+                                                    ? 'Select an entrybook row to auto-fill vehicle, route, and amounts.'
+                                                    : 'No entrybook records for this party yet — add fields manually or create an entry.'
+                                                : 'Select a party first to see their entrybook entries.'
                                         }
-                                    >
-                                        <option value="draft">Draft</option>
-                                        <option value="finalized">Finalized</option>
-                                    </select>
+                                    />
+                                    <SecondaryButton type="button" onClick={addLine} className="shrink-0">
+                                        + Add line
+                                    </SecondaryButton>
                                 </div>
-                            </div>
 
-                            <p className="text-xs text-gray-500">
-                                Select a party first — only Entrybook entries for that party appear
-                                in each line. Choosing an entry auto-fills vehicle, route, date,
-                                freight, and advance. Use &quot;+ Add entry&quot; to create a new
-                                entrybook record for this party.
-                            </p>
+                                <div className="mt-4 space-y-4">
+                                    {data.lines.map((line, i) => (
+                                        <div
+                                            key={i}
+                                            className="rounded-lg border border-gray-200 bg-gray-50/50 p-4"
+                                        >
+                                            <div className="mb-4 flex items-center justify-between gap-2">
+                                                <span className="text-sm font-medium text-gray-800">
+                                                    Line {i + 1}
+                                                </span>
+                                                {data.lines.length > 1 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeLine(i)}
+                                                        className="text-sm text-red-600 hover:underline"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                )}
+                                            </div>
 
-                            <div className="overflow-x-auto rounded-lg bg-white p-4 shadow">
-                                <table className="min-w-full text-xs">
-                                    <thead>
-                                        <tr className="border-b text-left text-gray-500">
-                                            <th className="w-8 p-2">#</th>
-                                            <th className="min-w-[7rem] p-2">Entry No</th>
-                                            <th className="min-w-[8rem] p-2">Date</th>
-                                            <th className="min-w-[9rem] p-2">Vehicle</th>
-                                            <th className="min-w-[11rem] p-2">From</th>
-                                            <th className="p-2">Product</th>
-                                            <th className="p-2">Wt</th>
-                                            <th className="p-2">Rate</th>
-                                            <th className="p-2">Freight</th>
-                                            <th className="p-2">Advance</th>
-                                            <th className="p-2">Empty Cntr</th>
-                                            <th className="w-8 p-2"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {data.lines.map((line, i) => (
-                                            <tr key={i} className="border-b align-top">
-                                                <td className="p-2">{i + 1}</td>
-                                                <td className="p-2">
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <InputLabel value="Entry no." />
                                                     <MasterDataSelect
                                                         value={line.entry_number ?? ''}
                                                         options={entryOptionsForLine(
                                                             i,
                                                             line.entry_number ?? '',
                                                         )}
-                                                        emptyLabel="Select entry"
+                                                        emptyLabel="Select entry or enter manually below"
                                                         addLabel="+ Add entry"
                                                         addHref={entrybooksHref}
                                                         onChange={(v) => selectEntryNumber(i, v)}
                                                     />
-                                                </td>
-                                                <td className="p-2">
-                                                    <input
-                                                        type="date"
-                                                        className="w-full rounded border-gray-300"
-                                                        value={line.entry_date?.slice(0, 10) ?? todayDate()}
-                                                        onChange={(e) =>
-                                                            updateLine(i, 'entry_date', e.target.value)
-                                                        }
-                                                    />
-                                                </td>
-                                                <td className="min-w-[9rem] p-2">
-                                                    <MasterDataSelect
-                                                        value={line.vehicle_number ?? ''}
-                                                        options={vehicleOptions}
-                                                        emptyLabel="Select vehicle"
-                                                        addLabel="+ Add vehicle"
-                                                        addHref={vehiclesHref}
-                                                        onChange={(v) =>
-                                                            updateLine(i, 'vehicle_number', v)
-                                                        }
-                                                    />
-                                                </td>
-                                                <td className="min-w-[11rem] p-2">
-                                                    <MasterDataSelect
-                                                        value={line.route_from ?? ''}
-                                                        options={routeOptions}
-                                                        emptyLabel="Select route"
-                                                        addLabel="+ Add route"
-                                                        addHref={routesHref}
-                                                        onChange={(v) =>
-                                                            updateLine(i, 'route_from', v)
-                                                        }
-                                                    />
-                                                </td>
-                                                <td className="p-2">
-                                                    <input
-                                                        className="w-28 rounded border-gray-300"
-                                                        value={line.product_name ?? ''}
-                                                        onChange={(e) =>
-                                                            updateLine(i, 'product_name', e.target.value)
-                                                        }
-                                                    />
-                                                </td>
-                                                <td className="p-2">
-                                                    <input
-                                                        type="number"
-                                                        step="0.001"
-                                                        className="w-16 rounded border-gray-300"
-                                                        value={line.weight}
-                                                        onChange={(e) =>
-                                                            updateLine(i, 'weight', e.target.value)
-                                                        }
-                                                    />
-                                                </td>
-                                                <td className="p-2">
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        className="w-24 rounded border-gray-300"
-                                                        value={line.rate}
-                                                        onChange={(e) =>
-                                                            updateLine(i, 'rate', e.target.value)
-                                                        }
-                                                    />
-                                                </td>
-                                                <td className="whitespace-nowrap p-2 pt-3 text-right">
-                                                    {lineFreight(line.weight, line.rate).toFixed(2)}
-                                                </td>
-                                                <td className="p-2">
-                                                    <input
-                                                        type="number"
-                                                        className="w-24 rounded border-gray-300"
-                                                        value={line.advance_paid ?? 0}
-                                                        onChange={(e) =>
-                                                            updateLine(i, 'advance_paid', e.target.value)
-                                                        }
-                                                    />
-                                                </td>
-                                                <td className="p-2">
-                                                    <input
-                                                        type="number"
-                                                        className="w-24 rounded border-gray-300"
-                                                        value={line.empty_container_charge ?? 0}
-                                                        onChange={(e) =>
-                                                            updateLine(
-                                                                i,
-                                                                'empty_container_charge',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                    />
-                                                </td>
-                                                <td className="p-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeLine(i)}
-                                                        className="text-red-600"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                                <SecondaryButton type="button" onClick={addLine} className="mt-3">
-                                    Add Line
-                                </SecondaryButton>
-                            </div>
+                                                </div>
 
-                            <div className="rounded-lg bg-gray-50 p-4 text-sm">
-                                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                                    <p>Net Value: ₹ {totals.net_value.toFixed(2)}</p>
-                                    <p>Total Advance: ₹ {totals.total_advance.toFixed(2)}</p>
-                                    <p>Balance: ₹ {totals.balance_amount.toFixed(2)}</p>
-                                    <p>IGST ({igstRate}%): ₹ {totals.igst_amount.toFixed(2)}</p>
+                                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                                    <div>
+                                                        <InputLabel value="Date" />
+                                                        <TextInput
+                                                            type="date"
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                            value={
+                                                                line.entry_date?.slice(0, 10) ??
+                                                                todayDate()
+                                                            }
+                                                            onChange={(e) =>
+                                                                updateLine(
+                                                                    i,
+                                                                    'entry_date',
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel value="Vehicle" />
+                                                        <MasterDataSelect
+                                                            value={line.vehicle_number ?? ''}
+                                                            options={vehicleOptions}
+                                                            emptyLabel="Select vehicle"
+                                                            addLabel="+ Add vehicle"
+                                                            addHref={vehiclesHref}
+                                                            onChange={(v) =>
+                                                                updateLine(i, 'vehicle_number', v)
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel value="From (route)" />
+                                                        <MasterDataSelect
+                                                            value={line.route_from ?? ''}
+                                                            options={routeOptions}
+                                                            emptyLabel="Select route"
+                                                            addLabel="+ Add route"
+                                                            addHref={routesHref}
+                                                            onChange={(v) =>
+                                                                updateLine(i, 'route_from', v)
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div className="sm:col-span-2 lg:col-span-3">
+                                                        <InputLabel value="Product name" />
+                                                        <TextInput
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                            value={line.product_name ?? ''}
+                                                            onChange={(e) =>
+                                                                updateLine(
+                                                                    i,
+                                                                    'product_name',
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel value="Weight" />
+                                                        <TextInput
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.001"
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                            value={line.weight}
+                                                            onChange={(e) =>
+                                                                updateLine(i, 'weight', e.target.value)
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel value="Rate" />
+                                                        <TextInput
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                            value={line.rate}
+                                                            onChange={(e) =>
+                                                                updateLine(i, 'rate', e.target.value)
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel value="Freight" />
+                                                        <TextInput
+                                                            readOnly
+                                                            disabled
+                                                            className="mt-1 block w-full cursor-not-allowed rounded-md border-gray-200 bg-white text-gray-700 shadow-sm"
+                                                            value={formatMoney(
+                                                                lineFreight(line.weight, line.rate),
+                                                            )}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel value="Advance" />
+                                                        <TextInput
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                            value={line.advance_paid ?? 0}
+                                                            onChange={(e) =>
+                                                                updateLine(
+                                                                    i,
+                                                                    'advance_paid',
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel value="Empty container charge" />
+                                                        <TextInput
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                            value={line.empty_container_charge ?? 0}
+                                                            onChange={(e) =>
+                                                                updateLine(
+                                                                    i,
+                                                                    'empty_container_charge',
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                                <p className="mt-2 text-xs text-gray-600">
+                            </FormCard>
+
+                            <FormCard className="border border-gray-200 bg-gray-50">
+                                <FormSectionHeader title="Summary" />
+                                <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                                    <div className="flex justify-between gap-4 sm:block">
+                                        <dt className="text-gray-500">Total weight</dt>
+                                        <dd className="font-medium">
+                                            {totals.total_weight.toFixed(3)}
+                                        </dd>
+                                    </div>
+                                    <div className="flex justify-between gap-4 sm:block">
+                                        <dt className="text-gray-500">Total freight</dt>
+                                        <dd className="font-medium">
+                                            ₹ {formatMoney(totals.total_freight)}
+                                        </dd>
+                                    </div>
+                                    {totals.total_empty_container_charge > 0 && (
+                                        <div className="flex justify-between gap-4 sm:block">
+                                            <dt className="text-gray-500">Empty container</dt>
+                                            <dd className="font-medium">
+                                                ₹ {formatMoney(totals.total_empty_container_charge)}
+                                            </dd>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between gap-4 sm:block">
+                                        <dt className="text-gray-500">Net value</dt>
+                                        <dd className="font-medium">
+                                            ₹ {formatMoney(totals.net_value)}
+                                        </dd>
+                                    </div>
+                                    <div className="flex justify-between gap-4 sm:block">
+                                        <dt className="text-gray-500">Total advance</dt>
+                                        <dd className="font-medium">
+                                            ₹ {formatMoney(totals.total_advance)}
+                                        </dd>
+                                    </div>
+                                    <div className="flex justify-between gap-4 sm:block">
+                                        <dt className="text-gray-500">Balance</dt>
+                                        <dd className="font-semibold text-indigo-700">
+                                            ₹ {formatMoney(totals.balance_amount)}
+                                        </dd>
+                                    </div>
+                                    <div className="flex justify-between gap-4 sm:block">
+                                        <dt className="text-gray-500">IGST ({igstRate}%)</dt>
+                                        <dd className="font-medium">
+                                            ₹ {formatMoney(totals.igst_amount)}
+                                        </dd>
+                                    </div>
+                                </dl>
+                                <p className="mt-3 border-t border-gray-200 pt-3 text-xs text-gray-600">
                                     {balanceInWords(totals.balance_amount)}
                                 </p>
-                            </div>
+                            </FormCard>
 
-                            <PrimaryButton disabled={processing}>
-                                {isEdit ? 'Update Invoice' : 'Create Invoice'}
-                            </PrimaryButton>
+                            <FormActions>
+                                <PrimaryButton disabled={processing}>
+                                    {processing
+                                        ? 'Saving…'
+                                        : isEdit
+                                          ? 'Update invoice'
+                                          : 'Create invoice'}
+                                </PrimaryButton>
+                                <Link href={route('invoices.index')}>
+                                    <SecondaryButton type="button">Cancel</SecondaryButton>
+                                </Link>
+                            </FormActions>
                         </form>
                     )}
-            </PageContainer>
+            </FormPage>
         </>
     );
 }

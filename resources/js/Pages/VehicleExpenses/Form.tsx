@@ -1,7 +1,8 @@
-import PageContainer from '@/Components/PageContainer';
+import FormPage, { FormActions, FormCard, FormGrid } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
@@ -191,15 +192,16 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
         <>
             <Head title={isEdit ? 'Edit Vehicle Expense' : 'Add Vehicle Expense'} />
 
-            <PageContainer width="2xl">
+            <FormPage size="md">
                     {loadError && (
                         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {loadError}
                         </p>
                     )}
 
-                    <form onSubmit={submit} className="space-y-5 rounded-lg bg-white p-4 shadow sm:p-6">
-                        <div className="grid gap-5 sm:grid-cols-2">
+                    <FormCard>
+                    <form onSubmit={submit} className="space-y-5">
+                        <FormGrid>
                             <div>
                                 <InputLabel value="Date" />
                                 <TextInput
@@ -227,9 +229,9 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
                                 </select>
                                 <InputError message={errors.vehicle_id} className="mt-1" />
                             </div>
-                        </div>
+                        </FormGrid>
 
-                        <div className="grid gap-5 sm:grid-cols-2">
+                        <FormGrid>
                             <div>
                                 <InputLabel value="Freight" />
                                 <TextInput
@@ -255,9 +257,9 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
                                 />
                                 <InputError message={errors.advance} className="mt-1" />
                             </div>
-                        </div>
+                        </FormGrid>
 
-                        <div className="grid gap-5 sm:grid-cols-3">
+                        <FormGrid cols={3}>
                             <div>
                                 <InputLabel value="Empty" />
                                 <TextInput
@@ -296,7 +298,7 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
                                 />
                                 <InputError message={errors.maintenance} className="mt-1" />
                             </div>
-                        </div>
+                        </FormGrid>
 
                         <div>
                             <InputLabel value="Balance" />
@@ -308,19 +310,17 @@ export default function VehicleExpenseForm({ vehicleExpenseId }: { vehicleExpens
                             </p>
                         </div>
 
-                        <div className="flex items-center gap-3 pt-2">
+                        <FormActions>
                             <PrimaryButton disabled={processing}>
                                 {isEdit ? 'Update Expense' : 'Save Expense'}
                             </PrimaryButton>
-                            <Link
-                                href={route('vehicle-expenses.index')}
-                                className="text-sm text-gray-600 hover:text-gray-900"
-                            >
-                                Cancel
+                            <Link href={route('vehicle-expenses.index')}>
+                                <SecondaryButton type="button">Cancel</SecondaryButton>
                             </Link>
-                        </div>
+                        </FormActions>
                     </form>
-            </PageContainer>
+                    </FormCard>
+            </FormPage>
         </>
     );
 }

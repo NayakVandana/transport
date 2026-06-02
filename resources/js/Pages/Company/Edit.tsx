@@ -1,4 +1,4 @@
-import PageContainer from '@/Components/PageContainer';
+import FormPage, { FormCard } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -139,15 +139,16 @@ export default function CompanyEdit() {
         <>
             <Head title="Company" />
 
-            <PageContainer width="3xl">
+            <FormPage size="lg">
                     {loading ? (
-                        <p className="text-center text-sm text-gray-500">Loading…</p>
+                        <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
                     ) : loadError && !data.name ? (
                         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {loadError}
                         </p>
                     ) : (
-                        <form onSubmit={submit} className="space-y-6 rounded-lg bg-white p-4 shadow sm:p-6">
+                        <FormCard>
+                        <form onSubmit={submit} className="space-y-6">
                             {loadError && (
                                 <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                                     {loadError}
@@ -163,7 +164,7 @@ export default function CompanyEdit() {
                                         placeholder="Enter company name"
                                     />
                                 </Field>
-                                <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     <Field label="PAN" error={errors.pan}>
                                         <TextInput
                                             className="mt-1 block w-full"
@@ -179,7 +180,7 @@ export default function CompanyEdit() {
                                         />
                                     </Field>
                                 </div>
-                                <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     <Field label="Udyam Reg No" error={errors.udyam_reg_no}>
                                         <TextInput
                                             className="mt-1 block w-full"
@@ -203,7 +204,7 @@ export default function CompanyEdit() {
                                         onChange={(e) => setField('jurisdiction', e.target.value)}
                                     />
                                 </Field>
-                                <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     <Field label="SAC Code" error={errors.sac_code}>
                                         <TextInput
                                             className={fieldInputClass(Boolean(errors.sac_code))}
@@ -228,7 +229,7 @@ export default function CompanyEdit() {
                                     Consignment entry numbers are auto-generated as{' '}
                                     <span className="font-mono">PREFIX-SEQUENCE</span> (e.g. R2526-1767).
                                 </p>
-                                <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     <Field label="Entry Prefix" error={errors.entry_number_prefix}>
                                         <TextInput
                                             className={`${fieldInputClass(Boolean(errors.entry_number_prefix))} font-mono`}
@@ -264,7 +265,7 @@ export default function CompanyEdit() {
                                         onChange={(e) => setField('bank_account_name', e.target.value)}
                                     />
                                 </Field>
-                                <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     <Field label="Account No" error={errors.bank_account_no}>
                                         <TextInput
                                             className="mt-1 block w-full"
@@ -280,7 +281,7 @@ export default function CompanyEdit() {
                                         />
                                     </Field>
                                 </div>
-                                <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     <Field label="Bank Name" error={errors.bank_name}>
                                         <TextInput
                                             className="mt-1 block w-full"
@@ -298,15 +299,16 @@ export default function CompanyEdit() {
                                 </div>
                             </Section>
 
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-wrap items-center gap-4">
                                 <PrimaryButton disabled={processing}>Save Company</PrimaryButton>
                                 {saved && (
                                     <p className="text-sm text-gray-600">Saved.</p>
                                 )}
                             </div>
                         </form>
+                        </FormCard>
                     )}
-            </PageContainer>
+            </FormPage>
         </>
     );
 }

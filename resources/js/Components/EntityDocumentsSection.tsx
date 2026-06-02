@@ -3,6 +3,7 @@ import InputLabel from '@/Components/InputLabel';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, appApiPostFormData, type ApiEnvelope } from '@/api/appClient';
 import { formatAppDateTime } from '@/lib/dateUtils';
+import { formControlClass } from '@/Components/FormPage';
 import type { EntityDocument, ExpenseOption } from '@/types/transport';
 
 export type DocumentDraft = {
@@ -121,8 +122,7 @@ export default function EntityDocumentsSection({
         }
     };
 
-    const selectClass =
-        'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500';
+    const selectClass = formControlClass;
 
     const visibleSaved = savedDocuments.filter((doc) => !documentsToDelete.includes(doc.id));
 

@@ -177,7 +177,7 @@ export default function RoutesIndex() {
         <>
             <Head title="Routes" />
 
-            <PageContainer className="space-y-4" width="3xl">
+            <PageContainer className="space-y-4">
                     <p className="text-sm text-gray-600">
                         Add route / location names here (e.g. J N P T / SARIGAM / 1X20). They
                         appear in the invoice &quot;From&quot; dropdown after saving.

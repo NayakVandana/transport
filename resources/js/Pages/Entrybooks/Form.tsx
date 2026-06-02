@@ -1,8 +1,9 @@
-import PageContainer from '@/Components/PageContainer';
+import FormPage, { FormActions, FormCard, FormField, FormGrid, formControlClass, formSelectClass } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import MasterDataSelect from '@/Components/MasterDataSelect';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
@@ -184,10 +185,7 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
     };
 
     const inputClass = (field: keyof EntrybookFormData) =>
-        fieldInputClass(
-            Boolean(errors[field]),
-            'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500',
-        );
+        fieldInputClass(Boolean(errors[field]), formControlClass);
 
     if (loading) {
         return (
@@ -202,16 +200,17 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
         <>
             <Head title={isEdit ? 'Edit Entry' : 'Add Entry'} />
 
-            <PageContainer width="2xl">
+            <FormPage size="md">
                     {loadError && (
                         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                             {loadError}
                         </p>
                     )}
 
-                    <form onSubmit={submit} className="space-y-5 rounded-lg bg-white p-4 shadow sm:p-6">
-                        <div className="grid gap-5 sm:grid-cols-2">
-                            <div>
+                    <FormCard>
+                    <form onSubmit={submit} className="space-y-5">
+                        <FormGrid>
+                            <FormField width="sm">
                                 <InputLabel value="Entry No." />
                                 <TextInput
                                     readOnly
@@ -224,9 +223,9 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                                         Assigned automatically on save (001, 002, …).
                                     </p>
                                 )}
-                            </div>
+                            </FormField>
 
-                            <div>
+                            <FormField width="sm">
                                 <InputLabel value="Date" />
                                 <TextInput
                                     type="date"
@@ -235,44 +234,46 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                                     onChange={(e) => setField('entry_date', e.target.value)}
                                 />
                                 <InputError message={errors.entry_date} className="mt-1" />
-                            </div>
-                        </div>
+                            </FormField>
+                        </FormGrid>
 
-                        <div>
-                            <InputLabel value="Vehicle" />
-                            <select
-                                className={inputClass('vehicle_id')}
-                                value={data.vehicle_id}
-                                onChange={(e) => setField('vehicle_id', e.target.value)}
-                            >
-                                <option value="">Select vehicle</option>
-                                {vehicles.map((vehicle) => (
-                                    <option key={vehicle.id} value={vehicle.id}>
-                                        {vehicle.vehicle_number}
-                                    </option>
-                                ))}
-                            </select>
-                            <InputError message={errors.vehicle_id} className="mt-1" />
-                        </div>
+                        <FormGrid>
+                            <FormField width="md">
+                                <InputLabel value="Vehicle" />
+                                <select
+                                    className={fieldInputClass(Boolean(errors.vehicle_id), formSelectClass)}
+                                    value={data.vehicle_id}
+                                    onChange={(e) => setField('vehicle_id', e.target.value)}
+                                >
+                                    <option value="">Select vehicle</option>
+                                    {vehicles.map((vehicle) => (
+                                        <option key={vehicle.id} value={vehicle.id}>
+                                            {vehicle.vehicle_number}
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError message={errors.vehicle_id} className="mt-1" />
+                            </FormField>
 
-                        <div>
-                            <InputLabel value="Party" />
-                            <select
-                                className={inputClass('party_id')}
-                                value={data.party_id}
-                                onChange={(e) => setField('party_id', e.target.value)}
-                            >
-                                <option value="">Select party</option>
-                                {parties.map((party) => (
-                                    <option key={party.id} value={party.id}>
-                                        {party.name}
-                                    </option>
-                                ))}
-                            </select>
-                            <InputError message={errors.party_id} className="mt-1" />
-                        </div>
+                            <FormField width="md">
+                                <InputLabel value="Party" />
+                                <select
+                                    className={fieldInputClass(Boolean(errors.party_id), formSelectClass)}
+                                    value={data.party_id}
+                                    onChange={(e) => setField('party_id', e.target.value)}
+                                >
+                                    <option value="">Select party</option>
+                                    {parties.map((party) => (
+                                        <option key={party.id} value={party.id}>
+                                            {party.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError message={errors.party_id} className="mt-1" />
+                            </FormField>
+                        </FormGrid>
 
-                        <div>
+                        <FormField width="lg">
                             <InputLabel value="From (Route)" />
                             <MasterDataSelect
                                 value={data.route_from}
@@ -283,10 +284,10 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                                 onChange={(value) => setField('route_from', value)}
                             />
                             <InputError message={errors.route_from} className="mt-1" />
-                        </div>
+                        </FormField>
 
-                        <div className="grid gap-5 sm:grid-cols-3">
-                            <div>
+                        <FormGrid cols={3}>
+                            <FormField width="sm">
                                 <InputLabel value="Freight" />
                                 <TextInput
                                     type="number"
@@ -297,9 +298,9 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                                     onChange={(e) => setField('freight', e.target.value)}
                                 />
                                 <InputError message={errors.freight} className="mt-1" />
-                            </div>
+                            </FormField>
 
-                            <div>
+                            <FormField width="sm">
                                 <InputLabel value="Advance" />
                                 <TextInput
                                     type="number"
@@ -310,29 +311,27 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                                     onChange={(e) => setField('advance', e.target.value)}
                                 />
                                 <InputError message={errors.advance} className="mt-1" />
-                            </div>
+                            </FormField>
 
-                            <div>
+                            <FormField width="sm">
                                 <InputLabel value="Balance" />
                                 <p className="mt-2 text-lg font-semibold text-gray-900">
                                     ₹ {formatMoney(balance)}
                                 </p>
-                            </div>
-                        </div>
+                            </FormField>
+                        </FormGrid>
 
-                        <div className="flex items-center gap-3 pt-2">
+                        <FormActions>
                             <PrimaryButton disabled={processing}>
                                 {isEdit ? 'Update Entry' : 'Save Entry'}
                             </PrimaryButton>
-                            <Link
-                                href={route('entrybooks.index')}
-                                className="text-sm text-gray-600 hover:text-gray-900"
-                            >
-                                Cancel
+                            <Link href={route('entrybooks.index')}>
+                                <SecondaryButton type="button">Cancel</SecondaryButton>
                             </Link>
-                        </div>
+                        </FormActions>
                     </form>
-            </PageContainer>
+                    </FormCard>
+            </FormPage>
         </>
     );
 }

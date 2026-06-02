@@ -1,7 +1,8 @@
-import PageContainer from '@/Components/PageContainer';
+import FormPage, { FormActions, FormCard, FormGrid } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import { invalidateAppQuery } from '@/hooks/useAppQuery';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -9,16 +10,21 @@ import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import type { Party } from '@/types/transport';
 import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { validatePartyForm } from '@/lib/partyValidation';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useState } from 'react';
 
 export default function PartyForm({ partyId }: { partyId?: number }) {
     const isEdit = Boolean(partyId);
 
     usePageHeader(
-        <h2 className="text-xl font-semibold text-gray-800">
-            {isEdit ? 'Edit Party' : 'New Party'}
-        </h2>,
+        <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-xl font-semibold text-gray-800">
+                {isEdit ? 'Edit Party' : 'New Party'}
+            </h2>
+            <Link href={route('parties.index')}>
+                <SecondaryButton type="button">Back to list</SecondaryButton>
+            </Link>
+        </div>,
     );
 
     const [loading, setLoading] = useState(Boolean(partyId));
@@ -112,63 +118,84 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
         }
     };
 
+    const inputClass = (field: keyof typeof data) =>
+        fieldInputClass(Boolean(errors[field]), 'mt-1 block w-full');
+
     return (
         <>
             <Head title={isEdit ? 'Edit Party' : 'New Party'} />
 
-            <PageContainer width="xl">
-                    {loading ? (
-                        <p className="text-center text-sm text-gray-500">Loading…</p>
-                    ) : loadError ? (
-                        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                            {loadError}
-                        </p>
-                    ) : (
-                        <form onSubmit={submit} className="space-y-4 rounded-lg bg-white p-4 shadow sm:p-6">
-                            <div>
-                                <InputLabel value="Name" />
-                                <TextInput
-                                    className={fieldInputClass(Boolean(errors.name))}
-                                    value={data.name}
-                                    onChange={(e) => setField('name', e.target.value)}
-                                />
-                                <InputError message={errors.name} className="mt-1" />
-                            </div>
-                            <div>
-                                <InputLabel value="Mobile" />
-                                <TextInput
-                                    className={fieldInputClass(Boolean(errors.mobile))}
-                                    value={data.mobile}
-                                    onChange={(e) => setField('mobile', e.target.value)}
-                                />
-                                <InputError message={errors.mobile} className="mt-1" />
-                            </div>
+            <FormPage size="sm">
+                {loading ? (
+                    <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
+                ) : loadError && !data.name ? (
+                    <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                        {loadError}
+                    </p>
+                ) : (
+                    <FormCard>
+                        {loadError && (
+                            <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                                {loadError}
+                            </p>
+                        )}
+
+                        <form onSubmit={submit} className="space-y-5">
+                            <FormGrid>
+                                <div>
+                                    <InputLabel value="Name" />
+                                    <TextInput
+                                        className={inputClass('name')}
+                                        value={data.name}
+                                        onChange={(e) => setField('name', e.target.value)}
+                                    />
+                                    <InputError message={errors.name} className="mt-1" />
+                                </div>
+                                <div>
+                                    <InputLabel value="Mobile" />
+                                    <TextInput
+                                        className={inputClass('mobile')}
+                                        value={data.mobile}
+                                        onChange={(e) => setField('mobile', e.target.value)}
+                                    />
+                                    <InputError message={errors.mobile} className="mt-1" />
+                                </div>
+                            </FormGrid>
+
                             <div>
                                 <InputLabel value="Address" />
                                 <textarea
-                                    className={`${fieldInputClass(Boolean(errors.address), 'mt-1 block w-full rounded-md shadow-sm focus:ring-indigo-500')} border-gray-300 focus:border-indigo-500`}
+                                    className={`${inputClass('address')} rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500`}
                                     rows={4}
                                     value={data.address}
                                     onChange={(e) => setField('address', e.target.value)}
                                 />
                                 <InputError message={errors.address} className="mt-1" />
                             </div>
-                            <div>
-                                <InputLabel value="State Code" />
+
+                            <div className="sm:max-w-xs">
+                                <InputLabel value="State code" />
                                 <TextInput
-                                    className={fieldInputClass(Boolean(errors.state_code))}
+                                    className={inputClass('state_code')}
                                     value={data.state_code}
                                     onChange={(e) => setField('state_code', e.target.value)}
                                     placeholder="e.g. 27"
                                 />
                                 <InputError message={errors.state_code} className="mt-1" />
                             </div>
-                            <PrimaryButton disabled={processing}>
-                                {isEdit ? 'Update' : 'Create'}
-                            </PrimaryButton>
+
+                            <FormActions>
+                                <PrimaryButton disabled={processing}>
+                                    {processing ? 'Saving…' : isEdit ? 'Update party' : 'Create party'}
+                                </PrimaryButton>
+                                <Link href={route('parties.index')}>
+                                    <SecondaryButton type="button">Cancel</SecondaryButton>
+                                </Link>
+                            </FormActions>
                         </form>
-                    )}
-            </PageContainer>
+                    </FormCard>
+                )}
+            </FormPage>
         </>
     );
 }

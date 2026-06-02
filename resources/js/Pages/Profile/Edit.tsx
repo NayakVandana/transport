@@ -1,4 +1,4 @@
-import PageContainer from '@/Components/PageContainer';
+import FormPage from '@/Components/FormPage';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { Head } from '@inertiajs/react';
 import DeleteUserForm from './Partials/DeleteUserForm';
@@ -16,19 +16,19 @@ export default function Edit() {
         <>
             <Head title="Profile" />
 
-            <PageContainer className="space-y-6" width="4xl">
-                <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                    <UpdateProfileInformationForm className="max-w-xl" />
+            <FormPage size="md" className="space-y-6">
+                <div className="rounded-lg bg-white p-4 shadow sm:p-6 lg:p-8">
+                    <UpdateProfileInformationForm className="w-full max-w-none" />
                 </div>
 
-                <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                    <UpdatePasswordForm className="max-w-xl" />
+                <div className="rounded-lg bg-white p-4 shadow sm:p-6 lg:p-8">
+                    <UpdatePasswordForm className="w-full max-w-none" />
                 </div>
 
-                <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                    <DeleteUserForm className="max-w-xl" />
+                <div className="rounded-lg bg-white p-4 shadow sm:p-6 lg:p-8">
+                    <DeleteUserForm className="w-full max-w-none" />
                 </div>
-            </PageContainer>
+            </FormPage>
         </>
     );
 }
