@@ -189,7 +189,7 @@ export default function PartiesIndex() {
                                                     )}
                                                     <span className="mx-2 text-gray-300">|</span>
                                                     <Link
-                                                        href={route('parties.edit', party.id)}
+                                                        href={`${route('parties.edit', party.id)}?return=profile`}
                                                         className="text-gray-600 hover:underline"
                                                     >
                                                         Edit

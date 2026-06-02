@@ -174,7 +174,7 @@ function SidebarContent({
                     <p className="truncate text-xs text-slate-400">{user?.email ?? ''}</p>
                 </div>
                 <SidebarNavLink
-                    href={route('profile.edit')}
+                    href={route('profile.show')}
                     active={route().current('profile.*') ?? false}
                     icon={
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

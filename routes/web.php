@@ -42,7 +42,7 @@ Route::get('/parties/{id}/ledger', fn (int $id) => Inertia::render('Parties/Show
 Route::get('/parties/{id}/invoices', fn (int $id) => Inertia::render('Parties/Show', ['partyId' => $id, 'activeTab' => 'invoices']))->name('parties.invoices');
 Route::get('/parties/{id}/entries', fn (int $id) => Inertia::render('Parties/Show', ['partyId' => $id, 'activeTab' => 'entries']))->name('parties.entries');
 Route::get('/parties/{id}/payments', fn (int $id) => Inertia::render('Parties/Show', ['partyId' => $id, 'activeTab' => 'payments']))->name('parties.payments');
-Route::get('/parties/{id}/profile', fn (int $id) => Inertia::render('Parties/Show', ['partyId' => $id, 'activeTab' => 'profile']))->name('parties.profile');
+Route::get('/parties/{id}/profile', fn (int $id) => Inertia::render('Parties/ProfileShow', ['partyId' => $id]))->name('parties.profile');
 Route::get('/parties/{id}/edit', fn (int $id) => Inertia::render('Parties/Form', ['partyId' => $id]))->name('parties.edit');
 
 Route::get('/vehicles', fn () => Inertia::render('Vehicles/Index'))->name('vehicles.index');
@@ -89,4 +89,5 @@ Route::get('/invoice-payments/create', function (Request $request) {
 })->name('invoice-payments.create');
 Route::get('/invoice-payments/{id}/edit', fn (int $id) => Inertia::render('InvoicePayments/Form', ['invoicePaymentId' => $id]))->name('invoice-payments.edit');
 
-Route::get('/profile', fn () => Inertia::render('Profile/Edit'))->name('profile.edit');
+Route::get('/profile', fn () => Inertia::render('Profile/Show'))->name('profile.show');
+Route::get('/profile/edit', fn () => Inertia::render('Profile/Edit'))->name('profile.edit');

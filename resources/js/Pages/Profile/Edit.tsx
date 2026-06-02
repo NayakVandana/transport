@@ -1,28 +1,32 @@
-import FormPage from '@/Components/FormPage';
+import FormPage, { FormCard } from '@/Components/FormPage';
+import SecondaryButton from '@/Components/SecondaryButton';
 import { usePageHeader } from '@/hooks/usePageHeader';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 
-export default function Edit() {
+export default function ProfileEdit() {
     usePageHeader(
-        <h2 className="text-xl font-semibold leading-tight text-gray-800">
-            Profile
-        </h2>,
+        <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-xl font-semibold text-gray-800">Edit Profile</h2>
+            <Link href={route('profile.show')}>
+                <SecondaryButton type="button">Back to profile</SecondaryButton>
+            </Link>
+        </div>,
     );
 
     return (
         <>
-            <Head title="Profile" />
+            <Head title="Edit Profile" />
 
-            <FormPage size="md" className="space-y-6">
-                <div className="rounded-lg bg-white p-4 shadow sm:p-6 lg:p-8">
-                    <UpdateProfileInformationForm className="w-full max-w-none" />
-                </div>
+            <FormPage size="sm" className="space-y-5">
+                <FormCard>
+                    <UpdateProfileInformationForm />
+                </FormCard>
 
-                <div className="rounded-lg bg-white p-4 shadow sm:p-6 lg:p-8">
-                    <UpdatePasswordForm className="w-full max-w-none" />
-                </div>
+                <FormCard>
+                    <UpdatePasswordForm />
+                </FormCard>
             </FormPage>
         </>
     );

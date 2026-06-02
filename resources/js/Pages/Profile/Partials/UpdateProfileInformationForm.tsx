@@ -1,25 +1,27 @@
+import {
+    FormActions,
+    FormField,
+    FormSectionHeader,
+    formControlClass,
+} from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import { applyApiFormErrors } from '@/lib/apiFormErrors';
+import { applyApiFormErrors, fieldInputClass } from '@/lib/apiFormErrors';
 import { clearAuthUserCache, useAuthUser } from '@/auth/useAuthUser';
 import type { User } from '@/types';
-import { Transition } from '@headlessui/react';
+import { Link, router } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useState } from 'react';
 
-export default function UpdateProfileInformation({
-    className = '',
-}: {
-    className?: string;
-}) {
+export default function UpdateProfileInformation() {
     const { user, refresh } = useAuthUser();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [recentlySuccessful, setRecentlySuccessful] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -28,17 +30,30 @@ export default function UpdateProfileInformation({
         }
     }, [user]);
 
+    const setField = (field: 'name' | 'email', value: string) => {
+        if (field === 'name') {
+            setName(value);
+        } else {
+            setEmail(value);
+        }
+
+        setErrors((prev) => {
+            const next = { ...prev };
+            delete next[field];
+            return next;
+        });
+    };
+
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
         setProcessing(true);
         setErrors({});
-        setRecentlySuccessful(false);
 
         try {
-            const res = await appApiPost<ApiEnvelope<{ user: User }>>(
-                '/profile/profile-update',
-                { name, email },
-            );
+            const res = await appApiPost<ApiEnvelope<{ user: User }>>('/profile/profile-update', {
+                name,
+                email,
+            });
 
             if (!res.success) {
                 setErrors(
@@ -52,7 +67,7 @@ export default function UpdateProfileInformation({
 
             clearAuthUserCache();
             await refresh();
-            setRecentlySuccessful(true);
+            router.visit(route('profile.show'));
         } catch {
             setErrors({ email: 'Could not update profile.' });
         } finally {
@@ -60,75 +75,56 @@ export default function UpdateProfileInformation({
         }
     };
 
+    const inputClass = (field: 'name' | 'email') =>
+        fieldInputClass(Boolean(errors[field]), formControlClass);
+
     return (
-        <section className={className}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900">
-                    Profile Information
-                </h2>
+        <form onSubmit={submit} className="space-y-5">
+            <FormSectionHeader
+                title="Profile Information"
+                description="Update your name and email address."
+            />
 
-                <p className="mt-1 text-sm text-gray-600">
-                    Update your account's profile information and email address.
-                </p>
-            </header>
+            <FormField width="md">
+                <InputLabel htmlFor="name" value="Name" />
+                <TextInput
+                    id="name"
+                    className={inputClass('name')}
+                    value={name}
+                    onChange={(e) => setField('name', e.target.value)}
+                    required
+                    autoFocus
+                    autoComplete="name"
+                />
+                <InputError className="mt-1" message={errors.name} />
+            </FormField>
 
-            <form onSubmit={submit} className="mt-6 space-y-6">
-                <div>
-                    <InputLabel htmlFor="name" value="Name" />
+            <FormField width="md">
+                <InputLabel htmlFor="email" value="Email" />
+                <TextInput
+                    id="email"
+                    type="email"
+                    className={inputClass('email')}
+                    value={email}
+                    onChange={(e) => setField('email', e.target.value)}
+                    required
+                    autoComplete="username"
+                />
+                <InputError className="mt-1" message={errors.email} />
+            </FormField>
 
-                    <TextInput
-                        id="name"
-                        className="mt-1 block w-full"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                        isFocused
-                        autoComplete="name"
-                    />
+            {user && !user.email_verified_at && (
+                <p className="text-sm text-amber-700">Your email address is unverified.</p>
+            )}
 
-                    <InputError className="mt-2" message={errors.name} />
-                </div>
-
-                <div>
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
-                        id="email"
-                        type="email"
-                        className="mt-1 block w-full"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        autoComplete="username"
-                    />
-
-                    <InputError className="mt-2" message={errors.email} />
-                </div>
-
-                {user && !user.email_verified_at && (
-                    <div>
-                        <p className="mt-2 text-sm text-gray-800">
-                            Your email address is unverified.
-                        </p>
-                    </div>
-                )}
-
-                <div className="flex flex-wrap items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
-
-                    <Transition
-                        show={recentlySuccessful}
-                        enter="transition ease-in-out"
-                        enterFrom="opacity-0"
-                        leave="transition ease-in-out"
-                        leaveTo="opacity-0"
-                    >
-                        <p className="text-sm text-gray-600">
-                            Saved.
-                        </p>
-                    </Transition>
-                </div>
-            </form>
-        </section>
+            <FormActions>
+                <PrimaryButton disabled={processing}>
+                    {processing ? 'Saving…' : 'Save Profile'}
+                </PrimaryButton>
+                <Link href={route('profile.show')}>
+                    <SecondaryButton type="button">Cancel</SecondaryButton>
+                </Link>
+            </FormActions>
+        </form>
     );
 }

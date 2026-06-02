@@ -1,6 +1,4 @@
 import PageContainer from '@/Components/PageContainer';
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
 import ListFilterBar from '@/Components/ListFilterBar';
 import Modal from '@/Components/Modal';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -9,34 +7,23 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import InvoicePaymentStatusBadge, {
     invoicePaymentStatusFromAmounts,
 } from '@/Components/InvoicePaymentStatusBadge';
-import TextInput from '@/Components/TextInput';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { dateFiltersFromPicker } from '@/lib/listFilters';
 import type { DatePickerRangeValue } from '@/Components/FormDatePicker';
-import { apiFieldErrors, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
 import type {
-    Party,
     PartyAccountData,
     PartyEntrybookRow,
     PartyInvoiceRow,
     PartyLedgerEntry,
 } from '@/types/transport';
-import { Head, Link, router } from '@inertiajs/react';
-import { FormEventHandler, useCallback, useEffect, useMemo, useState } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { PartyAccountTabId, PartyTabs, partyTabs } from './PartyTabs';
 
-type TabId = 'overview' | 'ledger' | 'invoices' | 'entries' | 'payments' | 'profile';
-
-const tabs: { id: TabId; label: string; route: string }[] = [
-    { id: 'overview', label: 'Overview', route: 'parties.overview' },
-    { id: 'ledger', label: 'Ledger', route: 'parties.ledger' },
-    { id: 'invoices', label: 'Invoices', route: 'parties.invoices' },
-    { id: 'entries', label: 'Entries', route: 'parties.entries' },
-    { id: 'payments', label: 'Payments', route: 'parties.payments' },
-    { id: 'profile', label: 'Profile', route: 'parties.profile' },
-];
+type TabId = PartyAccountTabId;
 
 function StatCard({ label, value, tone }: { label: string; value: string; tone?: 'green' | 'indigo' }) {
     const toneClass =
@@ -64,16 +51,6 @@ export default function PartyShow({
     const [dateValue, setDateValue] = useState<DatePickerRangeValue>({ startDate: null, endDate: null });
     const [paymentParty, setPaymentParty] = useState<LockedPaymentParty | null>(null);
 
-    const [profileData, setProfileData] = useState({
-        name: '',
-        mobile: '',
-        address: '',
-        state_code: '',
-    });
-    const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
-    const [profileProcessing, setProfileProcessing] = useState(false);
-    const [profileMessage, setProfileMessage] = useState<string | null>(null);
-
     const loadAccount = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -93,12 +70,6 @@ export default function PartyShow({
             }
 
             setAccount(res.data);
-            setProfileData({
-                name: res.data.party.name ?? '',
-                mobile: res.data.party.mobile ?? '',
-                address: res.data.party.address ?? '',
-                state_code: res.data.party.state_code ?? '',
-            });
         } catch {
             setError('Could not load party account.');
         } finally {
@@ -157,53 +128,9 @@ export default function PartyShow({
         });
     };
 
-    const submitProfile: FormEventHandler = async (e) => {
-        e.preventDefault();
-        setProfileErrors({});
-        setProfileMessage(null);
-        setProfileProcessing(true);
-
-        try {
-            const res = await appApiPost<ApiEnvelope<{ party: Party }>>('/parties/party-update', {
-                id: partyId,
-                ...profileData,
-            });
-
-            if (!res.success) {
-                setProfileErrors(apiFieldErrors(res.data));
-                if (!hasApiFieldErrors(res.data)) {
-                    setProfileMessage(res.message || 'Could not update party.');
-                }
-                return;
-            }
-
-            setProfileMessage('Profile updated.');
-            await loadAccount();
-        } catch {
-            setProfileMessage('Could not update party.');
-        } finally {
-            setProfileProcessing(false);
-        }
-    };
-
-    const destroyParty = async () => {
-        if (!confirm('Delete this party?')) {
-            return;
-        }
-
-        const res = await appApiPost<ApiEnvelope<null>>('/parties/party-destroy', { id: partyId });
-
-        if (!res.success) {
-            setError(res.message || 'Could not delete party.');
-            return;
-        }
-
-        router.visit(route('parties.index'));
-    };
-
     return (
         <>
-            <Head title={`${account?.party.name ?? 'Party'} — ${tabs.find((t) => t.id === tab)?.label ?? 'Overview'}`} />
+            <Head title={`${account?.party.name ?? 'Party'} — ${partyTabs.find((t) => t.id === tab)?.label ?? 'Overview'}`} />
 
             <PageContainer className="space-y-4">
                     {error && (
@@ -217,22 +144,7 @@ export default function PartyShow({
                     ) : account && overview ? (
                         <>
                             <div className="rounded-lg bg-white shadow">
-                                <nav className="flex gap-1 overflow-x-auto border-b border-gray-200 px-2">
-                                    {tabs.map((item) => (
-                                        <Link
-                                            key={item.id}
-                                            href={route(item.route, partyId)}
-                                            preserveScroll
-                                            className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium ${
-                                                tab === item.id
-                                                    ? 'border-indigo-600 text-indigo-600'
-                                                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                                            }`}
-                                        >
-                                            {item.label}
-                                        </Link>
-                                    ))}
-                                </nav>
+                                <PartyTabs partyId={partyId} activeTab={tab} />
 
                                 <div className="p-4 sm:p-6">
                                     {tab === 'overview' && (
@@ -416,94 +328,6 @@ export default function PartyShow({
                                         </div>
                                     )}
 
-                                    {tab === 'profile' && (
-                                        <div className="rounded-lg border border-gray-200 bg-white p-4 sm:p-6">
-                                            {profileMessage && (
-                                                <p className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-                                                    {profileMessage}
-                                                </p>
-                                            )}
-
-                                            <form onSubmit={submitProfile} className="space-y-5">
-                                                <div className="grid gap-4 sm:grid-cols-2">
-                                                <div>
-                                                    <InputLabel value="Name" />
-                                                    <TextInput
-                                                        className="mt-1 block w-full"
-                                                        value={profileData.name}
-                                                        onChange={(e) =>
-                                                            setProfileData((prev) => ({
-                                                                ...prev,
-                                                                name: e.target.value,
-                                                            }))
-                                                        }
-                                                        required
-                                                    />
-                                                    <InputError message={profileErrors.name} className="mt-1" />
-                                                </div>
-                                                <div>
-                                                    <InputLabel value="Mobile" />
-                                                    <TextInput
-                                                        className="mt-1 block w-full"
-                                                        value={profileData.mobile}
-                                                        onChange={(e) =>
-                                                            setProfileData((prev) => ({
-                                                                ...prev,
-                                                                mobile: e.target.value,
-                                                            }))
-                                                        }
-                                                    />
-                                                    <InputError message={profileErrors.mobile} className="mt-1" />
-                                                </div>
-                                                </div>
-                                                <div>
-                                                    <InputLabel value="Address" />
-                                                    <textarea
-                                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                                        rows={4}
-                                                        value={profileData.address}
-                                                        onChange={(e) =>
-                                                            setProfileData((prev) => ({
-                                                                ...prev,
-                                                                address: e.target.value,
-                                                            }))
-                                                        }
-                                                    />
-                                                    <InputError message={profileErrors.address} className="mt-1" />
-                                                </div>
-                                                <div className="sm:max-w-xs">
-                                                    <InputLabel value="State Code" />
-                                                    <TextInput
-                                                        className="mt-1 block w-full"
-                                                        value={profileData.state_code}
-                                                        onChange={(e) =>
-                                                            setProfileData((prev) => ({
-                                                                ...prev,
-                                                                state_code: e.target.value,
-                                                            }))
-                                                        }
-                                                        placeholder="e.g. 27"
-                                                    />
-                                                    <InputError
-                                                        message={profileErrors.state_code}
-                                                        className="mt-1"
-                                                    />
-                                                </div>
-
-                                                <div className="flex flex-wrap gap-3 pt-2">
-                                                    <PrimaryButton disabled={profileProcessing}>
-                                                        Save Profile
-                                                    </PrimaryButton>
-                                                    <SecondaryButton
-                                                        type="button"
-                                                        onClick={() => void destroyParty()}
-                                                    >
-                                                        Delete Party
-                                                    </SecondaryButton>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         </>

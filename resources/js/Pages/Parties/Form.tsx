@@ -1,4 +1,10 @@
-import FormPage, { FormActions, FormCard, FormGrid } from '@/Components/FormPage';
+import FormPage, {
+    FormActions,
+    FormCard,
+    FormField,
+    FormGrid,
+    formControlClass,
+} from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -11,18 +17,34 @@ import type { Party } from '@/types/transport';
 import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { validatePartyForm } from '@/lib/partyValidation';
 import { Head, Link, router } from '@inertiajs/react';
-import { FormEventHandler, useEffect, useState } from 'react';
+import { FormEventHandler, useEffect, useMemo, useState } from 'react';
+
+function useReturnContext() {
+    return useMemo(() => {
+        const params = new URLSearchParams(window.location.search);
+
+        return params.get('return') === 'profile' ? 'profile' : 'index';
+    }, []);
+}
 
 export default function PartyForm({ partyId }: { partyId?: number }) {
     const isEdit = Boolean(partyId);
+    const returnTo = useReturnContext();
+    const backToProfile = isEdit && returnTo === 'profile';
+
+    const backHref = backToProfile
+        ? route('parties.profile', partyId!)
+        : route('parties.index');
 
     usePageHeader(
         <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-xl font-semibold text-gray-800">
-                {isEdit ? 'Edit Party' : 'New Party'}
+                {isEdit ? (backToProfile ? 'Edit Party Profile' : 'Edit Party') : 'New Party'}
             </h2>
-            <Link href={route('parties.index')}>
-                <SecondaryButton type="button">Back to list</SecondaryButton>
+            <Link href={backHref}>
+                <SecondaryButton type="button">
+                    {backToProfile ? 'Back to profile' : 'Back to list'}
+                </SecondaryButton>
             </Link>
         </div>,
     );
@@ -110,7 +132,9 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
             }
 
             invalidateAppQuery('parties-list');
-            router.visit(route('parties.index'));
+            router.visit(
+                backToProfile ? route('parties.profile', partyId!) : route('parties.index'),
+            );
         } catch {
             setLoadError('Could not save party.');
         } finally {
@@ -119,11 +143,11 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
     };
 
     const inputClass = (field: keyof typeof data) =>
-        fieldInputClass(Boolean(errors[field]), 'mt-1 block w-full');
+        fieldInputClass(Boolean(errors[field]), formControlClass);
 
     return (
         <>
-            <Head title={isEdit ? 'Edit Party' : 'New Party'} />
+            <Head title={isEdit ? (backToProfile ? 'Edit Party Profile' : 'Edit Party') : 'New Party'} />
 
             <FormPage size="sm">
                 {loading ? (
@@ -142,7 +166,7 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
 
                         <form onSubmit={submit} className="space-y-5">
                             <FormGrid>
-                                <div>
+                                <FormField width="md">
                                     <InputLabel value="Name" />
                                     <TextInput
                                         className={inputClass('name')}
@@ -150,8 +174,8 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
                                         onChange={(e) => setField('name', e.target.value)}
                                     />
                                     <InputError message={errors.name} className="mt-1" />
-                                </div>
-                                <div>
+                                </FormField>
+                                <FormField width="md">
                                     <InputLabel value="Mobile" />
                                     <TextInput
                                         className={inputClass('mobile')}
@@ -159,10 +183,10 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
                                         onChange={(e) => setField('mobile', e.target.value)}
                                     />
                                     <InputError message={errors.mobile} className="mt-1" />
-                                </div>
+                                </FormField>
                             </FormGrid>
 
-                            <div>
+                            <FormField width="full">
                                 <InputLabel value="Address" />
                                 <textarea
                                     className={`${inputClass('address')} rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500`}
@@ -171,9 +195,9 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
                                     onChange={(e) => setField('address', e.target.value)}
                                 />
                                 <InputError message={errors.address} className="mt-1" />
-                            </div>
+                            </FormField>
 
-                            <div className="sm:max-w-xs">
+                            <FormField width="sm">
                                 <InputLabel value="State code" />
                                 <TextInput
                                     className={inputClass('state_code')}
@@ -182,13 +206,13 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
                                     placeholder="e.g. 27"
                                 />
                                 <InputError message={errors.state_code} className="mt-1" />
-                            </div>
+                            </FormField>
 
                             <FormActions>
                                 <PrimaryButton disabled={processing}>
-                                    {processing ? 'Saving…' : isEdit ? 'Update party' : 'Create party'}
+                                    {processing ? 'Saving…' : isEdit ? 'Save Profile' : 'Create party'}
                                 </PrimaryButton>
-                                <Link href={route('parties.index')}>
+                                <Link href={backHref}>
                                     <SecondaryButton type="button">Cancel</SecondaryButton>
                                 </Link>
                             </FormActions>
