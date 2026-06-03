@@ -9,8 +9,8 @@ import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { resolveReturnHref } from '@/lib/invoiceReturn';
-import { validateRouteForm } from '@/lib/routeValidation';
-import type { RouteLocation } from '@/types/transport';
+import { validateLocationForm } from '@/lib/locationValidation';
+import type { Location } from '@/types/transport';
 import { Head, Link, router } from '@inertiajs/react';
 import { FormEventHandler, useMemo, useState } from 'react';
 
@@ -26,14 +26,14 @@ function useReturnContext() {
     }, []);
 }
 
-export default function RouteForm() {
+export default function LocationForm() {
     const { return_route, return_id, return_label } = useReturnContext();
     const [name, setName] = useState('');
     const [processing, setProcessing] = useState(false);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    const backHref = resolveReturnHref(return_route, return_id) ?? route('routes.index');
+    const backHref = resolveReturnHref(return_route, return_id) ?? route('locations.index');
 
     const backLabel =
         return_label ??
@@ -44,28 +44,16 @@ export default function RouteForm() {
               : 'Back to list');
 
     usePageHeader(
-        <FormPageHeader title="Add Route" backHref={backHref} backLabel={backLabel} />,
+        <FormPageHeader title="Add Location" backHref={backHref} backLabel={backLabel} />,
         [backHref, backLabel],
     );
-
-    const setRouteName = (value: string) => {
-        setName(value);
-        setErrors((prev) => {
-            if (!prev.name) {
-                return prev;
-            }
-            const next = { ...prev };
-            delete next.name;
-            return next;
-        });
-    };
 
     const submit: FormEventHandler = async (e) => {
         e.preventDefault();
         setErrors({});
         setLoadError(null);
 
-        const clientErrors = validateRouteForm({ name });
+        const clientErrors = validateLocationForm({ name });
         if (Object.keys(clientErrors).length > 0) {
             setErrors(clientErrors);
             return;
@@ -74,15 +62,15 @@ export default function RouteForm() {
         setProcessing(true);
 
         try {
-            const res = await appApiPost<ApiEnvelope<{ route: RouteLocation }>>(
-                '/routes/route-store',
+            const res = await appApiPost<ApiEnvelope<{ location: Location }>>(
+                '/locations/location-store',
                 { name: name.trim() },
             );
 
             if (!res.success) {
                 setErrors(apiFieldErrors(res.data));
                 if (!hasApiFieldErrors(res.data)) {
-                    setLoadError(res.message || 'Could not add route.');
+                    setLoadError(res.message || 'Could not add location.');
                 }
                 return;
             }
@@ -93,9 +81,9 @@ export default function RouteForm() {
                 return;
             }
 
-            router.visit(route('routes.index'));
+            router.visit(route('locations.index'));
         } catch {
-            setLoadError('Could not add route.');
+            setLoadError('Could not add location.');
         } finally {
             setProcessing(false);
         }
@@ -105,7 +93,7 @@ export default function RouteForm() {
 
     return (
         <>
-            <Head title="Add Route" />
+            <Head title="Add Location" />
 
             <FormPage size="sm">
                 {loadError && (
@@ -116,18 +104,18 @@ export default function RouteForm() {
 
                 <FormCard>
                     <p className="mb-4 text-sm text-gray-600">
-                        Route names appear in the invoice and entrybook &quot;From&quot; dropdown
-                        after saving (e.g. J N P T / SARIGAM / 1X20).
+                        Location names are used in route from/to fields across entrybooks and
+                        invoices.
                     </p>
 
                     <form onSubmit={submit} className="space-y-5">
                         <FormField width="lg">
-                            <InputLabel value="From (Route)" />
+                            <InputLabel value="Location Name" />
                             <TextInput
                                 className={inputClass}
                                 value={name}
-                                onChange={(e) => setRouteName(e.target.value)}
-                                placeholder="J N P T / SARIGAM / 1X20"
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Silvassa"
                                 autoFocus
                             />
                             <InputError message={errors.name} className="mt-1" />
@@ -135,7 +123,7 @@ export default function RouteForm() {
 
                         <FormActions>
                             <PrimaryButton disabled={processing}>
-                                {processing ? 'Saving…' : 'Save Route'}
+                                {processing ? 'Saving…' : 'Save Location'}
                             </PrimaryButton>
                             <Link href={backHref}>
                                 <SecondaryButton type="button">Cancel</SecondaryButton>

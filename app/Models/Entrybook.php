@@ -19,6 +19,7 @@ class Entrybook extends Model
         'vehicle_id',
         'party_id',
         'route_from',
+        'route_to',
         'freight',
         'advance',
         'detention',

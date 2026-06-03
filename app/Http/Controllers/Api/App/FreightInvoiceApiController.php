@@ -7,7 +7,7 @@ use App\Models\Company;
 use App\Models\Party;
 use App\Models\Entrybook;
 use App\Models\FreightInvoice;
-use App\Models\RouteLocation;
+use App\Models\Location;
 use App\Models\Vehicle;
 use App\Support\AmountInWords;
 use App\Support\EntryNumberGenerator;
@@ -16,6 +16,8 @@ use App\Support\InvoicePaymentCalculator;
 use App\Support\ListExport;
 use App\Support\TaxInvoicePdf;
 use App\Support\ListFilter;
+use App\Support\RoutePairRegistry;
+use InvalidArgumentException;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -237,6 +239,7 @@ class FreightInvoiceApiController extends Controller
                 'lines.*.entry_date' => ['nullable', 'date'],
                 'lines.*.vehicle_number' => ['nullable', 'string', 'max:20'],
                 'lines.*.route_from' => ['nullable', 'string', 'max:255'],
+                'lines.*.route_to' => ['nullable', 'string', 'max:255'],
                 'lines.*.product_name' => ['nullable', 'string', 'max:255'],
                 'lines.*.weight' => ['required', 'numeric', 'min:0'],
                 'lines.*.rate' => ['required', 'numeric', 'min:0'],
@@ -333,6 +336,7 @@ class FreightInvoiceApiController extends Controller
                 'lines.*.entry_date' => ['nullable', 'date'],
                 'lines.*.vehicle_number' => ['nullable', 'string', 'max:20'],
                 'lines.*.route_from' => ['nullable', 'string', 'max:255'],
+                'lines.*.route_to' => ['nullable', 'string', 'max:255'],
                 'lines.*.product_name' => ['nullable', 'string', 'max:255'],
                 'lines.*.weight' => ['required', 'numeric', 'min:0'],
                 'lines.*.rate' => ['required', 'numeric', 'min:0'],
@@ -446,13 +450,14 @@ class FreightInvoiceApiController extends Controller
             'company' => $company,
             'parties' => $this->partiesForUser($request),
             'vehicles' => Vehicle::query()->forUser($userId)->orderBy('vehicle_number')->get(['id', 'vehicle_number']),
-            'routeLocations' => RouteLocation::query()->forUser($userId)->orderBy('name')->get(['id', 'name']),
+            'locations' => Location::query()->forUser($userId)->orderBy('name')->get(['id', 'name']),
+            'routeLocations' => Location::query()->forUser($userId)->orderBy('name')->get(['id', 'name']),
             'entrybooks' => Entrybook::query()
                 ->where('user_id', $userId)
                 ->with(['vehicle:id,vehicle_number', 'party:id,name'])
                 ->orderByDesc('entry_date')
                 ->orderByDesc('id')
-                ->get(['id', 'entry_number', 'entry_date', 'vehicle_id', 'party_id', 'route_from', 'freight', 'advance', 'detention', 'balance']),
+                ->get(['id', 'entry_number', 'entry_date', 'vehicle_id', 'party_id', 'route_from', 'route_to', 'freight', 'advance', 'detention', 'balance']),
             'entrySettings' => [
                 'prefix' => $company->entry_number_prefix,
                 'nextSequence' => $nextSequence,
@@ -493,14 +498,26 @@ class FreightInvoiceApiController extends Controller
      */
     private function syncLines(FreightInvoice $invoice, array $lines, array $freights): void
     {
+        $userId = (int) $invoice->user_id;
+
         foreach ($lines as $index => $line) {
+            $routeFrom = isset($line['route_from']) ? trim((string) $line['route_from']) : '';
+            $routeTo = isset($line['route_to']) ? trim((string) $line['route_to']) : '';
+
+            if ($routeFrom !== '' && $routeTo !== '') {
+                $pair = RoutePairRegistry::registerTripLocations($userId, $routeFrom, $routeTo);
+                $routeFrom = $pair['from'];
+                $routeTo = $pair['to'];
+            }
+
             $invoice->lines()->create([
                 'serial_number' => $index + 1,
                 'entrybook_id' => $line['entrybook_id'] ?? null,
                 'entry_number' => $line['entry_number'] ?? null,
                 'entry_date' => $line['entry_date'] ?? null,
                 'vehicle_number' => $line['vehicle_number'] ?? null,
-                'route_from' => $line['route_from'] ?? null,
+                'route_from' => $routeFrom !== '' ? $routeFrom : null,
+                'route_to' => $routeTo !== '' ? $routeTo : null,
                 'product_name' => $line['product_name'] ?? null,
                 'weight' => $line['weight'] ?? 1,
                 'rate' => $line['rate'] ?? 0,

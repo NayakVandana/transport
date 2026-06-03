@@ -139,6 +139,7 @@ class PartyAccountReport
                 'entry_date' => $entry->entry_date->format('Y-m-d'),
                 'vehicle_number' => $entry->vehicle?->vehicle_number ?? '',
                 'route_from' => $entry->route_from ?? '',
+                'route_to' => $entry->route_to ?? '',
                 'freight' => round((float) $entry->freight, 2),
                 'advance' => round((float) $entry->advance, 2),
                 'detention' => round((float) $entry->detention, 2),

@@ -72,8 +72,8 @@ Route::get('/daily-reports/create', function (Request $request) {
 })->name('daily-reports.create');
 Route::get('/daily-reports/{id}/edit', fn (int $id) => Inertia::render('DailyReports/Form', ['dailyReportId' => $id]))->name('daily-reports.edit');
 
-Route::get('/routes', fn () => Inertia::render('Routes/Index'))->name('routes.index');
-Route::get('/routes/create', fn () => Inertia::render('Routes/Form'))->name('routes.create');
+Route::get('/locations', fn () => Inertia::render('Locations/Index'))->name('locations.index');
+Route::get('/locations/create', fn () => Inertia::render('Locations/Form'))->name('locations.create');
 
 Route::get('/invoices', fn () => Inertia::render('Invoices/Index'))->name('invoices.index');
 Route::get('/invoices/create', function (Request $request) {

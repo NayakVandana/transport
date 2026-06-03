@@ -18,6 +18,7 @@ import { dateFiltersFromPicker } from '@/lib/listFilters';
 import type { DatePickerRangeValue } from '@/Components/FormDatePicker';
 import { formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
+import { formatLocationLabel } from '@/lib/routeHelpers';
 import { invoiceFromEntrybookHref } from '@/lib/invoiceReturn';
 import type {
     PartyAccountData,
@@ -456,7 +457,11 @@ function EntrybooksTable({ rows, partyId }: { rows: PartyEntrybookRow[]; partyId
                         },
                         {
                             label: 'From',
-                            value: row.route_from || '—',
+                            value: formatLocationLabel(row.route_from),
+                        },
+                        {
+                            label: 'To',
+                            value: formatLocationLabel(row.route_to),
                         },
                         {
                             label: 'Freight',
@@ -508,6 +513,7 @@ function EntrybooksTable({ rows, partyId }: { rows: PartyEntrybookRow[]; partyId
                     <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-500">Vehicle</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-500">From</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">To</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Detention</th>
@@ -521,7 +527,8 @@ function EntrybooksTable({ rows, partyId }: { rows: PartyEntrybookRow[]; partyId
                     <td className="px-4 py-3 font-mono font-medium">{row.entry_number}</td>
                     <td className="px-4 py-3">{formatAppDateTime(row.entry_date)}</td>
                     <td className="px-4 py-3 font-mono">{row.vehicle_number || '—'}</td>
-                    <td className="px-4 py-3">{row.route_from || '—'}</td>
+                    <td className="px-4 py-3">{formatLocationLabel(row.route_from)}</td>
+                    <td className="px-4 py-3">{formatLocationLabel(row.route_to)}</td>
                     <td className="px-4 py-3 text-right">₹ {formatMoney(row.freight)}</td>
                     <td className="px-4 py-3 text-right">₹ {formatMoney(row.advance)}</td>
                     <td className="px-4 py-3 text-right">₹ {formatMoney(row.detention ?? 0)}</td>

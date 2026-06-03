@@ -15,6 +15,7 @@ class FreightInvoiceLine extends Model
         'entry_date',
         'vehicle_number',
         'route_from',
+        'route_to',
         'product_name',
         'weight',
         'rate',

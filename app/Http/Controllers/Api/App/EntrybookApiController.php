@@ -8,11 +8,13 @@ use App\Support\EntrybookCalculator;
 use App\Support\EntrybookReport;
 use App\Support\EntryNumberGenerator;
 use App\Support\ListExport;
+use App\Support\RoutePairRegistry;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EntrybookApiController extends Controller
@@ -61,7 +63,7 @@ class EntrybookApiController extends Controller
 
             return $this->sendJsonResponse(true, 'Entrybook form data loaded.', [
                 'vehicles' => EntrybookReport::vehiclesForUser($userId),
-                'routes' => EntrybookReport::routesForUser($userId),
+                'routes' => EntrybookReport::locationsForUser($userId),
                 'parties' => EntrybookReport::partiesForUser($userId),
                 'nextEntryNumber' => EntryNumberGenerator::formatEntrybookNumber($nextSequence),
             ], 200);
@@ -90,7 +92,7 @@ class EntrybookApiController extends Controller
             return $this->sendJsonResponse(true, 'Entry loaded.', [
                 'entrybook' => $entrybook,
                 'vehicles' => EntrybookReport::vehiclesForUser($userId),
-                'routes' => EntrybookReport::routesForUser($userId),
+                'routes' => EntrybookReport::locationsForUser($userId),
                 'parties' => EntrybookReport::partiesForUser($userId),
             ], 200);
         } catch (Exception $e) {
@@ -123,6 +125,7 @@ class EntrybookApiController extends Controller
                     ),
                 ],
                 'route_from' => ['required', 'string', 'max:255'],
+                'route_to' => ['required', 'string', 'max:255'],
                 'freight' => ['required', 'numeric', 'min:0'],
                 'advance' => ['nullable', 'numeric', 'min:0'],
                 'detention' => ['nullable', 'numeric', 'min:0'],
@@ -136,6 +139,11 @@ class EntrybookApiController extends Controller
             $sequence = EntryNumberGenerator::resolveEntrybookSequence($userId);
             $entryNumber = EntryNumberGenerator::formatEntrybookNumber($sequence);
             $validated = $validation->validated();
+            $routeError = $this->applyRoutePair($userId, $validated);
+            if ($routeError !== null) {
+                return $routeError;
+            }
+
             $freight = (float) $validated['freight'];
             $advance = (float) ($validated['advance'] ?? 0);
             $detention = (float) ($validated['detention'] ?? 0);
@@ -183,6 +191,7 @@ class EntrybookApiController extends Controller
                     ),
                 ],
                 'route_from' => ['required', 'string', 'max:255'],
+                'route_to' => ['required', 'string', 'max:255'],
                 'freight' => ['required', 'numeric', 'min:0'],
                 'advance' => ['nullable', 'numeric', 'min:0'],
                 'detention' => ['nullable', 'numeric', 'min:0'],
@@ -199,6 +208,11 @@ class EntrybookApiController extends Controller
 
             $validated = $validation->validated();
             unset($validated['id']);
+            $routeError = $this->applyRoutePair($userId, $validated);
+            if ($routeError !== null) {
+                return $routeError;
+            }
+
             $freight = (float) $validated['freight'];
             $advance = (float) ($validated['advance'] ?? 0);
             $detention = (float) ($validated['detention'] ?? 0);
@@ -258,13 +272,14 @@ class EntrybookApiController extends Controller
                 'entrybook',
                 'Entrybook Export',
                 $filterSummary,
-                ['Entry No.', 'Date', 'Party', 'Vehicle', 'From', 'Freight', 'Advance', 'Detention', 'Balance'],
+                ['Entry No.', 'Date', 'Party', 'Vehicle', 'From', 'To', 'Freight', 'Advance', 'Detention', 'Balance'],
                 $entries->map(fn ($entry) => [
                     $entry->entry_number,
                     ListExport::formatDate($entry->entry_date),
                     $entry->party?->name ?? '',
                     $entry->vehicle?->vehicle_number ?? '',
                     $entry->route_from ?? '',
+                    $entry->route_to ?? '',
                     $entry->freight,
                     $entry->advance,
                     $entry->detention,
@@ -273,6 +288,7 @@ class EntrybookApiController extends Controller
                 [
                     'TOTAL',
                     $totals['count'].' entries',
+                    '',
                     '',
                     '',
                     '',
@@ -304,13 +320,14 @@ class EntrybookApiController extends Controller
                 'entrybook',
                 'Entrybook Report',
                 $filterSummary,
-                ['Entry No.', 'Date', 'Party', 'Vehicle', 'From', 'Freight', 'Advance', 'Detention', 'Balance'],
+                ['Entry No.', 'Date', 'Party', 'Vehicle', 'From', 'To', 'Freight', 'Advance', 'Detention', 'Balance'],
                 $entries->map(fn ($entry) => [
                     $entry->entry_number,
                     ListExport::formatDate($entry->entry_date),
                     $entry->party?->name ?? '—',
                     $entry->vehicle?->vehicle_number ?? '—',
                     $entry->route_from ?? '—',
+                    $entry->route_to ?? '—',
                     ListExport::formatMoney($entry->freight),
                     ListExport::formatMoney($entry->advance),
                     ListExport::formatMoney($entry->detention),
@@ -320,6 +337,7 @@ class EntrybookApiController extends Controller
                 [
                     'TOTAL',
                     $totals['count'].' entries',
+                    '',
                     '',
                     '',
                     '',
@@ -336,5 +354,26 @@ class EntrybookApiController extends Controller
         } catch (Exception $e) {
             return $this->sendError($e);
         }
+    }
+
+    /** @param  array<string, mixed>  $validated */
+    private function applyRoutePair(int $userId, array &$validated): ?JsonResponse
+    {
+        try {
+            $pair = RoutePairRegistry::validatedPair(
+                (string) ($validated['route_from'] ?? ''),
+                (string) ($validated['route_to'] ?? ''),
+            );
+            RoutePairRegistry::registerTripLocations($userId, $pair['from'], $pair['to']);
+            $validated['route_from'] = $pair['from'];
+            $validated['route_to'] = $pair['to'];
+        } catch (InvalidArgumentException $e) {
+            return $this->sendJsonResponse(false, $e->getMessage(), [
+                'route_from' => [$e->getMessage()],
+                'route_to' => [$e->getMessage()],
+            ], 200);
+        }
+
+        return null;
     }
 }

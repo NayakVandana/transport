@@ -4,7 +4,7 @@ namespace App\Support;
 
 use App\Models\DailyReport;
 use App\Models\Party;
-use App\Models\RouteLocation;
+use App\Models\Location;
 use App\Models\Vehicle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -165,14 +165,20 @@ class DailyReportReport
             ->get(['id', 'name']);
     }
 
-    /** @return Collection<int, RouteLocation> */
-    public static function routesForUser(int $userId): Collection
+    /** @return Collection<int, Location> */
+    public static function locationsForUser(int $userId): Collection
     {
-        return RouteLocation::query()
+        return Location::query()
             ->where('user_id', $userId)
             ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name']);
+    }
+
+    /** @return Collection<int, Location> */
+    public static function routesForUser(int $userId): Collection
+    {
+        return self::locationsForUser($userId);
     }
 
     /** @return array<string, string> */

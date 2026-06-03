@@ -210,6 +210,7 @@
                 <th class="col-date">Date</th>
                 <th class="col-vehicle">Vehicle</th>
                 <th class="col-from">From</th>
+                <th class="col-to">To</th>
                 <th class="col-product">Product Name</th>
                 <th class="col-weight right">Weight</th>
                 <th class="col-rate right">Rate</th>
@@ -224,6 +225,7 @@
                     <td class="nowrap">{{ $row->entry_date ? ListExport::formatDate($row->entry_date) : '-' }}</td>
                     <td>{{ $display($row->vehicle_number) }}</td>
                     <td>{{ $display($row->route_from) }}</td>
+                    <td>{{ $display($row->route_to) }}</td>
                     <td>{{ $display($row->product_name) }}</td>
                     <td class="right nowrap">{{ number_format((float) $row->weight, 3, '.', ',') }}</td>
                     <td class="right nowrap">{{ ListExport::formatMoney($row->rate) }}</td>
@@ -231,7 +233,7 @@
                 </tr>
                 @if ((float) $row->advance_paid > 0 || (float) $row->empty_container_charge > 0 || (float) $row->detention > 0 || (float) $row->weightman > 0 || (float) $row->parking > 0)
                     <tr class="sub-line">
-                        <td colspan="9">
+                        <td colspan="10">
                             @if ((float) $row->advance_paid > 0)
                                 Advance : {{ ListExport::formatMoney($row->advance_paid) }}
                             @endif

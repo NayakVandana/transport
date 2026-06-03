@@ -1,3 +1,4 @@
+import RouteLocationFields from '@/Components/RouteLocationFields';
 import { FormPageHeader } from '@/Components/ListPageHeader';
 import FormPage, { FormActions, FormCard, FormGrid, FormSectionHeader } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
@@ -23,7 +24,7 @@ import type {
     Entrybook,
     FreightInvoice,
     FreightInvoiceLine,
-    RouteLocation,
+    Location,
     Vehicle,
 } from '@/types/transport';
 import { Head, Link, router } from '@inertiajs/react';
@@ -38,7 +39,8 @@ type InvoiceMetaData = {
     company: Company;
     parties: Party[];
     vehicles: Vehicle[];
-    routeLocations: RouteLocation[];
+    routeLocations: Location[];
+    locations?: Location[];
     entrybooks: Entrybook[];
     entrySettings?: EntrySettings;
     nextBillNumber: string | null;
@@ -58,6 +60,7 @@ function buildEmptyLine(existing?: FreightInvoiceLine): FreightInvoiceLine {
         entry_date: todayDate(),
         vehicle_number: '',
         route_from: '',
+        route_to: '',
         product_name: 'AS PER INVOICES',
         weight: 1,
         rate: 0,
@@ -80,6 +83,7 @@ function applyEntrybookToLine(
         entry_date: entry.entry_date.slice(0, 10),
         vehicle_number: entry.vehicle?.vehicle_number ?? '',
         route_from: entry.route_from ?? '',
+        route_to: entry.route_to ?? '',
         rate: entry.freight,
         advance_paid: entry.advance,
         detention: entry.detention ?? 0,
@@ -101,7 +105,7 @@ export default function InvoiceForm({
     const [company, setCompany] = useState<Company | null>(null);
     const [parties, setParties] = useState<Party[]>([]);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-    const [routes, setRoutes] = useState<RouteLocation[]>([]);
+    const [locations, setLocations] = useState<Location[]>([]);
     const [entrybooks, setEntrybooks] = useState<Entrybook[]>([]);
     const [billNumber, setBillNumber] = useState('');
     const [loading, setLoading] = useState(true);
@@ -150,7 +154,7 @@ export default function InvoiceForm({
                     setCompany(invoice.company ?? meta.company);
                     setParties(meta.parties);
                     setVehicles(meta.vehicles);
-                    setRoutes(meta.routeLocations);
+                    setLocations(meta.locations ?? meta.routeLocations);
                     setEntrybooks(meta.entrybooks ?? []);
                     setBillNumber(invoice.bill_number);
 
@@ -192,7 +196,7 @@ export default function InvoiceForm({
                     setCompany(meta.company);
                     setParties(meta.parties);
                     setVehicles(meta.vehicles);
-                    setRoutes(meta.routeLocations);
+                    setLocations(meta.locations ?? meta.routeLocations);
                     setEntrybooks(meta.entrybooks ?? []);
                     setBillNumber(meta.nextBillNumber ?? '');
 
@@ -329,9 +333,9 @@ export default function InvoiceForm({
         [vehicles],
     );
 
-    const routeOptions = useMemo(
-        () => routes.map((r) => ({ value: r.name, label: r.name })),
-        [routes],
+    const locationOptions = useMemo(
+        () => locations.map((location) => ({ value: location.name, label: location.name })),
+        [locations],
     );
 
     const changeParty = (partyId: string) => {
@@ -385,7 +389,7 @@ export default function InvoiceForm({
     };
 
     const vehiclesHref = masterListHref('vehicles.index', isEdit, invoiceId);
-    const routesHref = masterListHref('routes.index', isEdit, invoiceId);
+    const locationsHref = masterListHref('locations.index', isEdit, invoiceId);
     const entrybooksHref = route('entrybooks.create', invoiceReturnQuery(isEdit, invoiceId));
 
     usePageHeader(
@@ -591,18 +595,20 @@ export default function InvoiceForm({
                                                         }
                                                     />
                                                     </div>
-                                                    <div>
-                                                        <InputLabel value="From (route)" />
-                                                    <MasterDataSelect
-                                                        value={line.route_from ?? ''}
-                                                        options={routeOptions}
-                                                        emptyLabel="Select route"
-                                                        addLabel="+ Add route"
-                                                        addHref={routesHref}
-                                                        onChange={(v) =>
-                                                            updateLine(i, 'route_from', v)
-                                                        }
-                                                    />
+                                                    <div className="sm:col-span-2 lg:col-span-3">
+                                                        <RouteLocationFields
+                                                            fromValue={line.route_from ?? ''}
+                                                            toValue={line.route_to ?? ''}
+                                                            onFromChange={(v) =>
+                                                                updateLine(i, 'route_from', v)
+                                                            }
+                                                            onToChange={(v) =>
+                                                                updateLine(i, 'route_to', v)
+                                                            }
+                                                            locationOptions={locationOptions}
+                                                            locationsHref={locationsHref}
+                                                            showHeader
+                                                        />
                                                     </div>
                                                     <div className="sm:col-span-2 lg:col-span-3">
                                                         <InputLabel value="Product name" />

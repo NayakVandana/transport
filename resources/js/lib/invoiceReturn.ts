@@ -37,7 +37,7 @@ export function entrybookReturnQuery(isEdit: boolean, entrybookId?: number): Rec
 }
 
 export function masterListHref(
-    listRoute: 'vehicles.index' | 'routes.index',
+    listRoute: 'vehicles.index' | 'locations.index',
     isEdit: boolean,
     entityId?: number,
     context: 'invoice' | 'entrybook' = 'invoice',
@@ -47,8 +47,8 @@ export function masterListHref(
             ? entrybookReturnQuery(isEdit, entityId)
             : invoiceReturnQuery(isEdit, entityId);
 
-    if (listRoute === 'routes.index') {
-        return route('routes.create', query);
+    if (listRoute === 'locations.index') {
+        return route('locations.create', query);
     }
 
     return route(listRoute, query);

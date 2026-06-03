@@ -14,7 +14,7 @@ use App\Http\Controllers\Api\App\FreightInvoiceApiController;
 use App\Http\Controllers\Api\App\InvoicePaymentApiController;
 use App\Http\Controllers\Api\App\ProfileApiController;
 use App\Http\Controllers\Api\App\UserDocumentApiController;
-use App\Http\Controllers\Api\App\RouteLocationApiController;
+use App\Http\Controllers\Api\App\LocationApiController;
 use App\Http\Controllers\Api\App\VehicleApiController;
 use App\Http\Controllers\Api\App\VehicleDocumentApiController;
 use App\Http\Controllers\Api\App\VehicleExpenseApiController;
@@ -114,11 +114,11 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/daily-reports/daily-reports-bulk-save', [DailyReportApiController::class, 'postDailyReportsBulkSave']);
     Route::post('/daily-reports/daily-report-destroy', [DailyReportApiController::class, 'postDailyReportDestroy']);
 
-    Route::post('/routes/routes-list', [RouteLocationApiController::class, 'postRoutesList']);
-    Route::post('/routes/routes-export-csv', [RouteLocationApiController::class, 'postRoutesExportCsv']);
-    Route::post('/routes/routes-export-pdf', [RouteLocationApiController::class, 'postRoutesExportPdf']);
-    Route::post('/routes/route-store', [RouteLocationApiController::class, 'postRouteStore']);
-    Route::post('/routes/route-destroy', [RouteLocationApiController::class, 'postRouteDestroy']);
+    Route::post('/locations/locations-list', [LocationApiController::class, 'postLocationsList']);
+    Route::post('/locations/locations-export-csv', [LocationApiController::class, 'postLocationsExportCsv']);
+    Route::post('/locations/locations-export-pdf', [LocationApiController::class, 'postLocationsExportPdf']);
+    Route::post('/locations/location-store', [LocationApiController::class, 'postLocationStore']);
+    Route::post('/locations/location-destroy', [LocationApiController::class, 'postLocationDestroy']);
 
     Route::post('/invoices/invoices-list', [FreightInvoiceApiController::class, 'postInvoicesList']);
     Route::post('/invoices/invoices-export-csv', [FreightInvoiceApiController::class, 'postInvoicesExportCsv']);

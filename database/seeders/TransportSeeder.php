@@ -9,7 +9,7 @@ use App\Models\DriverDocument;
 use App\Models\Entrybook;
 use App\Models\FreightInvoice;
 use App\Models\InvoicePayment;
-use App\Models\RouteLocation;
+use App\Models\Location;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
@@ -36,7 +36,7 @@ class TransportSeeder extends Seeder
         $parties = $this->seedParties($userId);
         $vehicles = $this->seedVehicles($userId);
         $drivers = $this->seedDrivers($userId);
-        $this->seedRoutes($userId);
+        $this->seedLocations($userId);
         $entrybooks = $this->seedEntrybooks($userId, $vehicles, $parties);
         $this->seedInvoices($userId, $company, $parties, $vehicles, $entrybooks);
         $this->seedInvoicePayments($userId);
@@ -203,18 +203,24 @@ class TransportSeeder extends Seeder
         return $result;
     }
 
-    /** @return list<RouteLocation> */
-    private function seedRoutes(int $userId): array
+    /** @return list<Location> */
+    private function seedLocations(int $userId): array
     {
         $names = [
-            'J N P T / SARIGAM / 1X20',
-            'NHAVA SHEVA / VAPI',
-            'MUNDRA / HAZIRA',
-            'PIPAVAV / RAJKOT',
+            'Silvassa',
+            'Jaipur',
+            'NHAVA SHEVA',
+            'VAPI',
+            'MUNDRA',
+            'HAZIRA',
+            'J N P T',
+            'SARIGAM',
+            'PIPAVAV',
+            'RAJKOT',
         ];
 
         return array_map(
-            fn (string $name) => RouteLocation::query()->updateOrCreate(
+            fn (string $name) => Location::query()->updateOrCreate(
                 ['user_id' => $userId, 'name' => $name],
                 ['is_active' => true],
             ),
@@ -247,7 +253,8 @@ class TransportSeeder extends Seeder
                         'entrybook' => '001',
                         'entry_date' => '2025-08-13',
                         'vehicle_number' => 'MH04JU9931',
-                        'route_from' => 'J N P T / SARIGAM / 1X20',
+                        'route_from' => 'J N P T',
+                        'route_to' => 'SARIGAM',
                         'product_name' => 'AS PER INVOICES',
                         'weight' => 1,
                         'rate' => 24000,
@@ -258,7 +265,8 @@ class TransportSeeder extends Seeder
                         'entrybook' => '002',
                         'entry_date' => '2025-08-14',
                         'vehicle_number' => 'MH04JU9932',
-                        'route_from' => 'J N P T / SARIGAM / 1X20',
+                        'route_from' => 'J N P T',
+                        'route_to' => 'SARIGAM',
                         'product_name' => 'AS PER INVOICES',
                         'weight' => 1,
                         'rate' => 24000,
@@ -279,7 +287,8 @@ class TransportSeeder extends Seeder
                         'entrybook' => '003',
                         'entry_date' => '2025-08-20',
                         'vehicle_number' => 'MH04JU9931',
-                        'route_from' => 'NHAVA SHEVA / VAPI',
+                        'route_from' => 'NHAVA SHEVA',
+                        'route_to' => 'VAPI',
                         'product_name' => 'AS PER INVOICES',
                         'weight' => 1,
                         'rate' => 18500,
@@ -300,7 +309,8 @@ class TransportSeeder extends Seeder
                         'entrybook' => '004',
                         'entry_date' => '2025-08-25',
                         'vehicle_number' => 'MH04JU9932',
-                        'route_from' => 'MUNDRA / HAZIRA',
+                        'route_from' => 'MUNDRA',
+                        'route_to' => 'HAZIRA',
                         'product_name' => 'AS PER INVOICES',
                         'weight' => 1,
                         'rate' => 22000,
@@ -349,6 +359,7 @@ class TransportSeeder extends Seeder
                     'entry_date' => $line['entry_date'],
                     'vehicle_number' => $line['vehicle_number'],
                     'route_from' => $line['route_from'],
+                    'route_to' => $line['route_to'] ?? null,
                     'product_name' => $line['product_name'],
                     'weight' => $line['weight'],
                     'rate' => $line['rate'],
@@ -426,7 +437,8 @@ class TransportSeeder extends Seeder
                 'entry_date' => '2025-08-13',
                 'vehicle_number' => 'MH04JU9931',
                 'party_index' => 0,
-                'route_from' => 'J N P T / SARIGAM / 1X20',
+                'route_from' => 'J N P T',
+                'route_to' => 'SARIGAM',
                 'freight' => 24000,
                 'advance' => 12000,
             ],
@@ -435,7 +447,8 @@ class TransportSeeder extends Seeder
                 'entry_date' => '2025-08-14',
                 'vehicle_number' => 'MH04JU9932',
                 'party_index' => 0,
-                'route_from' => 'J N P T / SARIGAM / 1X20',
+                'route_from' => 'J N P T',
+                'route_to' => 'SARIGAM',
                 'freight' => 24000,
                 'advance' => 15000,
             ],
@@ -444,7 +457,8 @@ class TransportSeeder extends Seeder
                 'entry_date' => '2025-08-20',
                 'vehicle_number' => 'MH04JU9931',
                 'party_index' => 0,
-                'route_from' => 'NHAVA SHEVA / VAPI',
+                'route_from' => 'NHAVA SHEVA',
+                'route_to' => 'VAPI',
                 'freight' => 18500,
                 'advance' => 10000,
             ],
@@ -453,7 +467,8 @@ class TransportSeeder extends Seeder
                 'entry_date' => '2025-08-25',
                 'vehicle_number' => 'MH04JU9932',
                 'party_index' => 1,
-                'route_from' => 'MUNDRA / HAZIRA',
+                'route_from' => 'MUNDRA',
+                'route_to' => 'HAZIRA',
                 'freight' => 22000,
                 'advance' => 11000,
             ],
@@ -476,6 +491,7 @@ class TransportSeeder extends Seeder
                     'vehicle_id' => $vehicles[$row['vehicle_number']]->id,
                     'party_id' => $parties[$row['party_index']]->id ?? null,
                     'route_from' => $row['route_from'],
+                    'route_to' => $row['route_to'] ?? null,
                     'freight' => $freight,
                     'advance' => $advance,
                     'detention' => $detention,

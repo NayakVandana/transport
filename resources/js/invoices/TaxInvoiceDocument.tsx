@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import { formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
+import { formatLocationLabel } from '@/lib/routeHelpers';
 import type { FreightInvoice, FreightInvoiceLine } from '@/types/transport';
 
 const documentStyles = `
@@ -136,7 +137,7 @@ export default function TaxInvoiceDocument({
                                 Swipe horizontally to view all columns →
                             </p>
                             <div className="tax-invoice-lines-scroll -mx-1 overflow-x-auto px-1 sm:mx-0 sm:px-0">
-                                <table className="mt-2 min-w-[38rem] w-full border-collapse sm:mt-3">
+                                <table className="mt-2 min-w-[42rem] w-full border-collapse sm:mt-3">
                                     <thead>
                                         <tr className="border-b border-black">
                                             <th className="px-1 py-1 text-left font-normal">Srl</th>
@@ -144,6 +145,7 @@ export default function TaxInvoiceDocument({
                                             <th className="px-1 py-1 text-left font-normal">Date</th>
                                             <th className="px-1 py-1 text-left font-normal">Vehicle</th>
                                             <th className="px-1 py-1 text-left font-normal">From</th>
+                                            <th className="px-1 py-1 text-left font-normal">To</th>
                                             <th className="px-1 py-1 text-left font-normal">
                                                 Product Name
                                             </th>
@@ -158,7 +160,7 @@ export default function TaxInvoiceDocument({
                                         {lines.length === 0 ? (
                                             <tr>
                                                 <td
-                                                    colSpan={9}
+                                                    colSpan={10}
                                                     className="py-4 text-center text-gray-500"
                                                 >
                                                     No line items.
@@ -181,7 +183,10 @@ export default function TaxInvoiceDocument({
                                                             {row.vehicle_number ?? '—'}
                                                         </td>
                                                         <td className="break-words px-1 py-1">
-                                                            {row.route_from ?? '—'}
+                                                            {formatLocationLabel(row.route_from)}
+                                                        </td>
+                                                        <td className="break-words px-1 py-1">
+                                                            {formatLocationLabel(row.route_to)}
                                                         </td>
                                                         <td className="break-words px-1 py-1">
                                                             {row.product_name ?? '—'}
@@ -203,7 +208,7 @@ export default function TaxInvoiceDocument({
                                                     Number(row.parking) > 0) && (
                                                     <tr>
                                                         <td
-                                                            colSpan={9}
+                                                            colSpan={10}
                                                             className="px-1 pb-2 pl-4 text-[10px] sm:pl-8"
                                                         >
                                                             {Number(row.advance_paid) > 0 && (

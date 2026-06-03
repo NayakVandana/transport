@@ -1,8 +1,11 @@
+import { validateRoutePair } from '@/lib/routeHelpers';
+
 export type EntrybookFormData = {
     entry_date: string;
     vehicle_id: string;
     party_id: string;
     route_from: string;
+    route_to: string;
     freight: string;
     advance: string;
     detention: string;
@@ -29,9 +32,7 @@ export function validateEntrybookForm(
         errors.party_id = 'Please select a party.';
     }
 
-    if (!data.route_from.trim()) {
-        errors.route_from = 'Please select a route.';
-    }
+    Object.assign(errors, validateRoutePair(data.route_from, data.route_to));
 
     if (!data.freight.trim()) {
         errors.freight = 'Please enter the freight amount.';

@@ -1,3 +1,4 @@
+import RouteLocationFields from '@/Components/RouteLocationFields';
 import { FormPageHeader } from '@/Components/ListPageHeader';
 import FormPage, { FormActions, FormCard, FormField, FormGrid, formControlClass, formSelectClass } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
@@ -15,7 +16,7 @@ import {
 } from '@/lib/entrybookValidation';
 import { calculateEntrybookBalance, formatMoney } from '@/lib/freightCalculator';
 import { masterListHref } from '@/lib/invoiceReturn';
-import type { Entrybook, Party, RouteLocation, Vehicle } from '@/types/transport';
+import type { Entrybook, Location, Party, Vehicle } from '@/types/transport';
 import { Head, Link, router } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 
@@ -26,13 +27,13 @@ function dateInputValue(value?: string | null): string {
 type EntrybookShowData = {
     entrybook: Entrybook;
     vehicles: Pick<Vehicle, 'id' | 'vehicle_number'>[];
-    routes: Pick<RouteLocation, 'id' | 'name'>[];
+    routes: Pick<Location, 'id' | 'name'>[];
     parties: Pick<Party, 'id' | 'name'>[];
 };
 
 type EntrybookMetaData = {
     vehicles: Pick<Vehicle, 'id' | 'vehicle_number'>[];
-    routes: Pick<RouteLocation, 'id' | 'name'>[];
+    routes: Pick<Location, 'id' | 'name'>[];
     parties: Pick<Party, 'id' | 'name'>[];
     nextEntryNumber: string;
 };
@@ -48,7 +49,7 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
     );
 
     const [vehicles, setVehicles] = useState<Pick<Vehicle, 'id' | 'vehicle_number'>[]>([]);
-    const [routes, setRoutes] = useState<Pick<RouteLocation, 'id' | 'name'>[]>([]);
+    const [locations, setLocations] = useState<Pick<Location, 'id' | 'name'>[]>([]);
     const [parties, setParties] = useState<Pick<Party, 'id' | 'name'>[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
@@ -60,6 +61,7 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
         vehicle_id: '',
         party_id: '',
         route_from: '',
+        route_to: '',
         freight: '',
         advance: '0',
         detention: '0',
@@ -84,7 +86,7 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
 
                     const entry = res.data.entrybook;
                     setVehicles(res.data.vehicles);
-                    setRoutes(res.data.routes);
+                    setLocations(res.data.routes);
                     setParties(res.data.parties);
                     setEntryNumber(entry.entry_number);
                     setData({
@@ -92,6 +94,7 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                         vehicle_id: entry.vehicle_id ? String(entry.vehicle_id) : '',
                         party_id: entry.party_id ? String(entry.party_id) : '',
                         route_from: entry.route_from ?? '',
+                        route_to: entry.route_to ?? '',
                         freight: entry.freight != null ? String(entry.freight) : '',
                         advance: entry.advance != null ? String(entry.advance) : '0',
                         detention: entry.detention != null ? String(entry.detention) : '0',
@@ -108,7 +111,7 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                     }
 
                     setVehicles(res.data.vehicles);
-                    setRoutes(res.data.routes);
+                    setLocations(res.data.routes);
                     setParties(res.data.parties);
                     setEntryNumber(res.data.nextEntryNumber);
                 }
@@ -127,12 +130,12 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
         [data.freight, data.advance, data.detention],
     );
 
-    const routeOptions = useMemo(
-        () => routes.map((r) => ({ value: r.name, label: r.name })),
-        [routes],
+    const locationOptions = useMemo(
+        () => locations.map((location) => ({ value: location.name, label: location.name })),
+        [locations],
     );
 
-    const routesHref = masterListHref('routes.index', isEdit, entrybookId, 'entrybook');
+    const locationsHref = masterListHref('locations.index', isEdit, entrybookId, 'entrybook');
 
     const setField = (field: keyof EntrybookFormData, value: string) => {
         setData((prev) => ({ ...prev, [field]: value }));
@@ -165,6 +168,7 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                 advance: Number(data.advance),
                 detention: Number(data.detention || 0),
                 route_from: data.route_from.trim(),
+                route_to: data.route_to.trim(),
                 ...(entrybookId ? { id: entrybookId } : {}),
             };
 
@@ -278,18 +282,18 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                             </FormField>
                         </FormGrid>
 
-                        <FormField width="lg">
-                            <InputLabel value="From (Route)" />
-                            <MasterDataSelect
-                                value={data.route_from}
-                                options={routeOptions}
-                                emptyLabel="Select route"
-                                addLabel="+ Add route"
-                                addHref={routesHref}
-                                onChange={(value) => setField('route_from', value)}
-                            />
-                            <InputError message={errors.route_from} className="mt-1" />
-                        </FormField>
+                        <RouteLocationFields
+                            fromValue={data.route_from}
+                            toValue={data.route_to}
+                            onFromChange={(value) => setField('route_from', value)}
+                            onToChange={(value) => setField('route_to', value)}
+                            locationOptions={locationOptions}
+                            locationsHref={locationsHref}
+                            errors={{
+                                route_from: errors.route_from,
+                                route_to: errors.route_to,
+                            }}
+                        />
 
                         <FormGrid cols={4}>
                             <FormField width="sm">

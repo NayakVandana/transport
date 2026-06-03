@@ -9,6 +9,7 @@ import ListPageHeader from '@/Components/ListPageHeader';
 import { EntrybookBillCell, entrybookHasInvoice } from '@/Components/EntrybookBillCell';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
+import { formatLocationLabel } from '@/lib/routeHelpers';
 import { invoiceFromEntrybookHref } from '@/lib/invoiceReturn';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -223,7 +224,11 @@ export default function EntrybooksIndex() {
                                             },
                                             {
                                                 label: 'From',
-                                                value: entry.route_from || '—',
+                                                value: formatLocationLabel(entry.route_from),
+                                            },
+                                            {
+                                                label: 'To',
+                                                value: formatLocationLabel(entry.route_to),
                                             },
                                             {
                                                 label: 'Freight',
@@ -279,6 +284,7 @@ export default function EntrybooksIndex() {
                                         <th className="px-4 py-3 text-left font-medium text-gray-500">Party</th>
                                         <th className="px-4 py-3 text-left font-medium text-gray-500">Vehicle</th>
                                         <th className="px-4 py-3 text-left font-medium text-gray-500">From</th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">To</th>
                                         <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
                                         <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
                                         <th className="px-4 py-3 text-right font-medium text-gray-500">Detention</th>
@@ -305,7 +311,12 @@ export default function EntrybooksIndex() {
                                         <td className="px-4 py-3 font-mono">
                                             {entry.vehicle?.vehicle_number ?? '—'}
                                         </td>
-                                        <td className="px-4 py-3">{entry.route_from || '—'}</td>
+                                        <td className="px-4 py-3">
+                                            {formatLocationLabel(entry.route_from)}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {formatLocationLabel(entry.route_to)}
+                                        </td>
                                         <td className="px-4 py-3 text-right">
                                             ₹ {formatMoney(entry.freight)}
                                         </td>

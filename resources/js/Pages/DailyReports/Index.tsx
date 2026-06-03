@@ -182,7 +182,7 @@ export default function DailyReportsIndex() {
         () => routes.map((routeRow) => ({ value: routeRow.name, label: routeRow.name })),
         [routes],
     );
-    const routesHref = route('routes.create');
+    const routesHref = route('locations.create');
     const totals = data?.totals ?? { count: 0, detention: 0 };
     const reportDate = filters.date_from || today;
     const showInputs = isSheetMode && isEditing;

@@ -53,11 +53,14 @@ export interface Driver {
     documents?: EntityDocument[];
 }
 
-export interface RouteLocation {
+export interface Location {
     id: number;
     name: string;
     created_at?: string | null;
 }
+
+/** @deprecated Use Location */
+export type RouteLocation = Location;
 
 export interface Entrybook {
     id: number;
@@ -66,6 +69,7 @@ export interface Entrybook {
     vehicle_id: number;
     party_id?: number | null;
     route_from?: string | null;
+    route_to?: string | null;
     freight: string | number;
     advance: string | number;
     detention: string | number;
@@ -190,6 +194,8 @@ export interface PartyEntrybookRow {
     entry_date: string;
     vehicle_number: string;
     route_from: string;
+    route_to?: string | null;
+    route_to?: string | null;
     freight: number;
     advance: number;
     detention: number;
@@ -243,6 +249,7 @@ export interface FreightInvoiceLine {
     entry_date?: string | null;
     vehicle_number?: string | null;
     route_from?: string | null;
+    route_to?: string | null;
     product_name?: string | null;
     weight: number | string;
     rate: number | string;

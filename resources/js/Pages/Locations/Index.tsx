@@ -13,19 +13,19 @@ import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import { resolveReturnHref } from '@/lib/invoiceReturn';
 import { formatAppCreatedAt } from '@/lib/dateUtils';
-import type { RouteLocation } from '@/types/transport';
+import type { Location } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
-type RouteFilters = ListFilters;
+type LocationFilters = ListFilters;
 
-type RoutesListData = {
-    routes: { data: RouteLocation[] };
-    filters: RouteFilters;
+type LocationsListData = {
+    locations: { data: Location[] };
+    filters: LocationFilters;
     filterSummary: string;
 };
 
-const defaultFilters: RouteFilters = {
+const defaultFilters: LocationFilters = {
     search: '',
     ...defaultDateFilters,
 };
@@ -42,7 +42,7 @@ function useInvoiceReturn() {
     }, []);
 }
 
-export default function RoutesIndex() {
+export default function LocationsIndex() {
     const { return_route, return_id, return_label } = useInvoiceReturn();
     const [actionError, setActionError] = useState<string | null>(null);
     const [searchInput, setSearchInput] = useState('');
@@ -52,22 +52,19 @@ export default function RoutesIndex() {
     usePageHeader(
         <PageHeaderBar
             layout="compact"
-            title="Routes (From)"
+            title="Locations"
             actions={
                 <>
                     {backHref ? (
                         <Link href={backHref} className="hidden shrink-0 sm:inline-flex">
                             <SecondaryButton type="button">
-                                {return_label ??
-                                    (return_route?.startsWith('entrybooks.')
-                                        ? 'Back to entry'
-                                        : 'Back to invoice')}
+                                {return_label ?? 'Back'}
                             </SecondaryButton>
                         </Link>
                     ) : null}
                     <HeaderCreateButton
-                        href={route('routes.create')}
-                        label="Add Route"
+                        href={route('locations.create')}
+                        label="Add Location"
                         mobileLabel="Add"
                     />
                 </>
@@ -86,11 +83,11 @@ export default function RoutesIndex() {
         applyDateChange,
         applySearch,
         clearFilters,
-    } = useFilteredList<RoutesListData, RouteFilters>({
+    } = useFilteredList<LocationsListData, LocationFilters>({
         defaultFilters,
         load: async (activeFilters) => {
-            const res = await appApiPost<ApiEnvelope<RoutesListData>>(
-                '/routes/routes-list',
+            const res = await appApiPost<ApiEnvelope<LocationsListData>>(
+                '/locations/locations-list',
                 buildListFilterParams(activeFilters),
             );
 
@@ -104,14 +101,13 @@ export default function RoutesIndex() {
         },
     });
 
-    const routes = data?.routes.data ?? [];
-
+    const locations = data?.locations.data ?? [];
     const displayError = actionError ?? error;
 
     const exportFiltered = async (type: 'csv' | 'pdf') => {
         try {
             setActionError(null);
-            await exportFilteredList('routes', type, { ...filters, search: searchInput });
+            await exportFilteredList('locations', type, { ...filters, search: searchInput });
         } catch {
             setActionError(`Could not export ${type.toUpperCase()}.`);
         }
@@ -119,12 +115,11 @@ export default function RoutesIndex() {
 
     return (
         <>
-            <Head title="Routes" />
+            <Head title="Locations" />
 
             <PageContainer className="space-y-4">
                 <p className="text-sm text-gray-600">
-                    Manage route / location names used in invoice and entrybook &quot;From&quot;
-                    fields.
+                    Manage location names used in route from/to fields.
                 </p>
 
                 {displayError && (
@@ -138,7 +133,7 @@ export default function RoutesIndex() {
                     onDateChange={applyDateChange}
                     search={{
                         value: searchInput,
-                        placeholder: 'Search route name…',
+                        placeholder: 'Search location…',
                         onChange: setSearchInput,
                         onSubmit: () => applySearch(searchInput),
                     }}
@@ -154,25 +149,25 @@ export default function RoutesIndex() {
                 />
 
                 {loading && !data ? (
-                    <p className="text-center text-sm text-gray-500">Loading routes…</p>
+                    <p className="text-center text-sm text-gray-500">Loading locations…</p>
                 ) : (
                     <ListingTableShell
-                        isEmpty={routes.length === 0}
-                        mobileCountLabel={`${routes.length} route${routes.length === 1 ? '' : 's'}`}
+                        isEmpty={locations.length === 0}
+                        mobileCountLabel={`${locations.length} location${locations.length === 1 ? '' : 's'}`}
                         emptyMessage={
                             hasActiveFilters
-                                ? 'No routes match your filters.'
-                                : 'No routes yet.'
+                                ? 'No locations match your filters.'
+                                : 'No locations yet.'
                         }
-                        mobile={routes.map((r, index) => (
+                        mobile={locations.map((location, index) => (
                             <ListingMobileCard
-                                key={r.id}
+                                key={location.id}
                                 index={index + 1}
-                                title={r.name}
+                                title={location.name}
                                 fields={[
                                     {
                                         label: 'Created',
-                                        value: formatAppCreatedAt(r.created_at),
+                                        value: formatAppCreatedAt(location.created_at),
                                         fullWidth: true,
                                     },
                                 ]}
@@ -181,18 +176,18 @@ export default function RoutesIndex() {
                         thead={
                             <tr>
                                 <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
-                                    Name
+                                    Location
                                 </th>
                                 <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
                                     Created
                                 </th>
                             </tr>
                         }
-                        tbody={routes.map((r) => (
-                            <tr key={r.id}>
-                                <td className="px-3 py-2 sm:px-6 sm:py-3">{r.name}</td>
+                        tbody={locations.map((location) => (
+                            <tr key={location.id}>
+                                <td className="px-3 py-2 sm:px-6 sm:py-3">{location.name}</td>
                                 <td className="whitespace-nowrap px-3 py-2 text-gray-600 sm:px-6 sm:py-3">
-                                    {formatAppCreatedAt(r.created_at)}
+                                    {formatAppCreatedAt(location.created_at)}
                                 </td>
                             </tr>
                         ))}
