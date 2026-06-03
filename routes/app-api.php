@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\App\AuthApiController;
 use App\Http\Controllers\Api\App\CompanyApiController;
 use App\Http\Controllers\Api\App\PartyApiController;
 use App\Http\Controllers\Api\App\DashboardApiController;
+use App\Http\Controllers\Api\App\DailyReportApiController;
 use App\Http\Controllers\Api\App\DriverApiController;
 use App\Http\Controllers\Api\App\DriverDocumentApiController;
 use App\Http\Controllers\Api\App\EntrybookApiController;
@@ -84,6 +85,16 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/entrybooks/entrybook-store', [EntrybookApiController::class, 'postEntrybookStore']);
     Route::post('/entrybooks/entrybook-update', [EntrybookApiController::class, 'postEntrybookUpdate']);
     Route::post('/entrybooks/entrybook-destroy', [EntrybookApiController::class, 'postEntrybookDestroy']);
+
+    Route::post('/daily-reports/daily-reports-list', [DailyReportApiController::class, 'postDailyReportsList']);
+    Route::post('/daily-reports/daily-reports-export-csv', [DailyReportApiController::class, 'postDailyReportsExportCsv']);
+    Route::post('/daily-reports/daily-reports-export-pdf', [DailyReportApiController::class, 'postDailyReportsExportPdf']);
+    Route::post('/daily-reports/daily-report-meta', [DailyReportApiController::class, 'postDailyReportMeta']);
+    Route::post('/daily-reports/daily-report-show', [DailyReportApiController::class, 'postDailyReportShow']);
+    Route::post('/daily-reports/daily-report-store', [DailyReportApiController::class, 'postDailyReportStore']);
+    Route::post('/daily-reports/daily-report-update', [DailyReportApiController::class, 'postDailyReportUpdate']);
+    Route::post('/daily-reports/daily-reports-bulk-save', [DailyReportApiController::class, 'postDailyReportsBulkSave']);
+    Route::post('/daily-reports/daily-report-destroy', [DailyReportApiController::class, 'postDailyReportDestroy']);
 
     Route::post('/routes/routes-list', [RouteLocationApiController::class, 'postRoutesList']);
     Route::post('/routes/routes-export-csv', [RouteLocationApiController::class, 'postRoutesExportCsv']);

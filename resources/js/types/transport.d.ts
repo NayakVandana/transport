@@ -83,6 +83,30 @@ export interface EntrybookTotals {
     balance: number;
 }
 
+export interface DailyReport {
+    id: number | null;
+    serial_number: number;
+    report_date: string;
+    vehicle_id: number;
+    description?: string | null;
+    current_party_id?: number | null;
+    planning_party_id?: number | null;
+    location?: string | null;
+    detention: string | number;
+    day?: number | null;
+    vehicle?: Pick<Vehicle, 'id' | 'vehicle_number'>;
+    current_party?: Pick<Party, 'id' | 'name'>;
+    currentParty?: Pick<Party, 'id' | 'name'>;
+    planning_party?: Pick<Party, 'id' | 'name'>;
+    planningParty?: Pick<Party, 'id' | 'name'>;
+    created_at?: string | null;
+}
+
+export interface DailyReportTotals {
+    count: number;
+    detention: number;
+}
+
 export interface VehicleExpense {
     id: number;
     expense_date: string;

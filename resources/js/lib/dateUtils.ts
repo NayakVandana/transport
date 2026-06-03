@@ -140,6 +140,25 @@ export function formatCompactDate(value: string): string {
     return formatAppDateTime(value, value);
 }
 
+/** Day number if set, otherwise weekday abbreviation from the report date. */
+export function formatReportDayLabel(
+    reportDate: string | null | undefined,
+    day?: number | null,
+    fallback = '—',
+): string {
+    if (day != null && day > 0) {
+        return String(day);
+    }
+
+    const date = parseAppDate(reportDate);
+
+    if (!date) {
+        return fallback;
+    }
+
+    return date.toLocaleDateString('en-GB', { weekday: 'short' });
+}
+
 export function addMonths(date: Date, amount: number): Date {
     return new Date(date.getFullYear(), date.getMonth() + amount, 1);
 }

@@ -61,6 +61,15 @@ Route::get('/entrybooks', fn () => Inertia::render('Entrybooks/Index'))->name('e
 Route::get('/entrybooks/create', fn () => Inertia::render('Entrybooks/Form'))->name('entrybooks.create');
 Route::get('/entrybooks/{id}/edit', fn (int $id) => Inertia::render('Entrybooks/Form', ['entrybookId' => $id]))->name('entrybooks.edit');
 
+Route::get('/daily-reports', fn () => Inertia::render('DailyReports/Index'))->name('daily-reports.index');
+Route::get('/daily-reports/create', function (Request $request) {
+    return Inertia::render('DailyReports/Form', [
+        'vehicleId' => is_numeric($request->query('vehicle')) ? (int) $request->query('vehicle') : null,
+        'reportDate' => is_string($request->query('date')) ? $request->query('date') : null,
+    ]);
+})->name('daily-reports.create');
+Route::get('/daily-reports/{id}/edit', fn (int $id) => Inertia::render('DailyReports/Form', ['dailyReportId' => $id]))->name('daily-reports.edit');
+
 Route::get('/routes', fn () => Inertia::render('Routes/Index'))->name('routes.index');
 Route::get('/routes/create', fn () => Inertia::render('Routes/Form'))->name('routes.create');
 

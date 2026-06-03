@@ -11,6 +11,7 @@ type Props = {
     addLabel: string;
     addHref: string;
     onChange: (value: string) => void;
+    className?: string;
 };
 
 export default function MasterDataSelect({
@@ -20,6 +21,7 @@ export default function MasterDataSelect({
     addLabel,
     addHref,
     onChange,
+    className = 'w-full rounded-md border-gray-300 text-sm shadow-sm',
 }: Props) {
     const known = new Set(options.map((o) => o.value));
     const allOptions =
@@ -48,7 +50,7 @@ export default function MasterDataSelect({
 
     return (
         <select
-            className="w-full rounded-md border-gray-300 text-sm shadow-sm"
+            className={className}
             value={value}
             onChange={(e) => handleSelect(e.target.value)}
         >
