@@ -96,6 +96,7 @@ class EntrybookReport
             ->with([
                 'vehicle:id,vehicle_number',
                 'party:id,name',
+                'invoiceLine.freightInvoice:id,bill_number',
             ])
             ->where('user_id', $userId);
 

@@ -6,8 +6,10 @@ import ListingMobileCard from '@/Components/ListingMobileCard';
 import ListingTableShell from '@/Components/ListingTableShell';
 import PartyLink from '@/Components/PartyLink';
 import ListPageHeader from '@/Components/ListPageHeader';
+import { EntrybookBillCell, entrybookHasInvoice } from '@/Components/EntrybookBillCell';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { formatAppCreatedAt, formatAppDateTime } from '@/lib/dateUtils';
+import { invoiceFromEntrybookHref } from '@/lib/invoiceReturn';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { exportFilteredList } from '@/lib/listExport';
@@ -231,14 +233,42 @@ export default function EntrybooksIndex() {
                                                 label: 'Detention',
                                                 value: `₹ ${formatMoney(entry.detention ?? 0)}`,
                                             },
+                                            {
+                                                label: 'Bill',
+                                                value: entry.bill_number ? (
+                                                    <span className="font-mono">{entry.bill_number}</span>
+                                                ) : (
+                                                    'Pending'
+                                                ),
+                                            },
                                         ]}
                                         actions={
-                                            <ListingMobileAction
-                                                href={route('entrybooks.edit', entry.id)}
-                                                variant="primary"
-                                            >
-                                                Edit
-                                            </ListingMobileAction>
+                                            <>
+                                                {!entrybookHasInvoice(entry) && (
+                                                    <ListingMobileAction
+                                                        href={invoiceFromEntrybookHref(entry)}
+                                                        variant="success"
+                                                    >
+                                                        Create Invoice
+                                                    </ListingMobileAction>
+                                                )}
+                                                {entrybookHasInvoice(entry) && entry.invoice_id && (
+                                                    <ListingMobileAction
+                                                        href={route('invoices.show', entry.invoice_id)}
+                                                        variant="primary"
+                                                    >
+                                                        View Bill
+                                                    </ListingMobileAction>
+                                                )}
+                                                <ListingMobileAction
+                                                    href={route('entrybooks.edit', entry.id)}
+                                                    variant={
+                                                        entrybookHasInvoice(entry) ? 'secondary' : 'primary'
+                                                    }
+                                                >
+                                                    Edit
+                                                </ListingMobileAction>
+                                            </>
                                         }
                                     />
                                 ))}
@@ -254,6 +284,7 @@ export default function EntrybooksIndex() {
                                         <th className="px-4 py-3 text-right font-medium text-gray-500">Detention</th>
                                         <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
                                         <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
+                                        <th className="px-4 py-3 text-left font-medium text-gray-500">Bill</th>
                                         <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
                                     </tr>
                                 }
@@ -289,6 +320,9 @@ export default function EntrybooksIndex() {
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap text-gray-600">
                                             {formatAppCreatedAt(entry.created_at)}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <EntrybookBillCell entry={entry} />
                                         </td>
                                         <td className="space-x-3 px-4 py-3 text-right">
                                             <Link

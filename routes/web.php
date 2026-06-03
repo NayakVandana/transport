@@ -65,7 +65,15 @@ Route::get('/routes', fn () => Inertia::render('Routes/Index'))->name('routes.in
 Route::get('/routes/create', fn () => Inertia::render('Routes/Form'))->name('routes.create');
 
 Route::get('/invoices', fn () => Inertia::render('Invoices/Index'))->name('invoices.index');
-Route::get('/invoices/create', fn () => Inertia::render('Invoices/Form'))->name('invoices.create');
+Route::get('/invoices/create', function (Request $request) {
+    $party = $request->query('party');
+    $entrybook = $request->query('entrybook');
+
+    return Inertia::render('Invoices/Form', [
+        'partyId' => is_numeric($party) ? (int) $party : null,
+        'entrybookId' => is_numeric($entrybook) ? (int) $entrybook : null,
+    ]);
+})->name('invoices.create');
 Route::get('/invoices/{id}', fn (int $id) => Inertia::render('Invoices/Show', ['invoiceId' => $id]))->name('invoices.show');
 Route::get('/invoices/{id}/edit', fn (int $id) => Inertia::render('Invoices/Form', ['invoiceId' => $id]))->name('invoices.edit');
 

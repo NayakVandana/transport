@@ -126,7 +126,7 @@ class PartyAccountReport
         $ledger = self::buildLedger($invoices, $payments, $dateFilters);
 
         $entrybookRows = Entrybook::query()
-            ->with(['vehicle:id,vehicle_number'])
+            ->with(['vehicle:id,vehicle_number', 'invoiceLine.freightInvoice:id,bill_number'])
             ->where('user_id', $userId)
             ->where('party_id', $partyId)
             ->orderByDesc('entry_date')
@@ -142,6 +142,8 @@ class PartyAccountReport
                 'advance' => round((float) $entry->advance, 2),
                 'detention' => round((float) $entry->detention, 2),
                 'balance' => round((float) $entry->balance, 2),
+                'invoice_id' => $entry->invoiceLine?->freight_invoice_id,
+                'bill_number' => $entry->invoiceLine?->freightInvoice?->bill_number,
             ])
             ->values()
             ->all();

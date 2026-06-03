@@ -88,7 +88,15 @@ function applyEntrybookToLine(
     };
 }
 
-export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
+export default function InvoiceForm({
+    invoiceId,
+    partyId: initialPartyId,
+    entrybookId: initialEntrybookId,
+}: {
+    invoiceId?: number;
+    partyId?: number | null;
+    entrybookId?: number | null;
+}) {
     const isEdit = Boolean(invoiceId);
     const [company, setCompany] = useState<Company | null>(null);
     const [parties, setParties] = useState<Party[]>([]);
@@ -173,6 +181,13 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                     }
 
                     const meta = metaRes.data;
+                    const preselectedEntry =
+                        initialEntrybookId != null
+                            ? meta.entrybooks.find((e) => e.id === initialEntrybookId)
+                            : undefined;
+                    const defaultPartyId = preselectedEntry
+                        ? String(preselectedEntry.party_id ?? initialPartyId ?? meta.parties[0]?.id ?? '')
+                        : String(initialPartyId ?? meta.parties[0]?.id ?? '');
 
                     setCompany(meta.company);
                     setParties(meta.parties);
@@ -182,14 +197,16 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                     setBillNumber(meta.nextBillNumber ?? '');
 
                     setData({
-                        party_id: String(meta.parties[0]?.id ?? ''),
+                        party_id: defaultPartyId,
                         bill_number: meta.nextBillNumber ?? '',
                         invoice_date: todayDate(),
                         sac_code: meta.company.sac_code,
                         status: 'draft',
                         prepared_by: '',
                         checked_by: '',
-                        lines: [buildEmptyLine()],
+                        lines: preselectedEntry
+                            ? [applyEntrybookToLine(buildEmptyLine(), preselectedEntry)]
+                            : [buildEmptyLine()],
                     });
                 }
             } catch {
@@ -200,7 +217,7 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
         };
 
         void load();
-    }, [invoiceId]);
+    }, [invoiceId, initialPartyId, initialEntrybookId]);
 
     const igstRate = Number(company?.igst_rate) || 5;
     const totals = useMemo(

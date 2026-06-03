@@ -1,3 +1,19 @@
+export function invoiceFromEntrybookHref(
+    entry: {
+        id: number;
+        party_id?: number | null;
+        party?: { id?: number } | null;
+    },
+    partyId?: number,
+): string {
+    const resolvedPartyId = entry.party_id ?? entry.party?.id ?? partyId;
+
+    return route('invoices.create', {
+        party: resolvedPartyId ?? undefined,
+        entrybook: entry.id,
+    });
+}
+
 export function invoiceReturnQuery(isEdit: boolean, invoiceId?: number): Record<string, string | number> {
     if (isEdit && invoiceId) {
         return {

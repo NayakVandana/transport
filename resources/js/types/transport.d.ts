@@ -71,6 +71,8 @@ export interface Entrybook {
     vehicle?: Pick<Vehicle, 'id' | 'vehicle_number'>;
     party?: Pick<Party, 'id' | 'name'>;
     created_at?: string | null;
+    invoice_id?: number | null;
+    bill_number?: string | null;
 }
 
 export interface EntrybookTotals {
@@ -165,6 +167,8 @@ export interface PartyEntrybookRow {
     advance: number;
     detention: number;
     balance: number;
+    invoice_id?: number | null;
+    bill_number?: string | null;
 }
 
 export interface PartyPaymentRow {

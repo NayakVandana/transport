@@ -1,4 +1,5 @@
 import { PageToolbar, PageToolbarActions } from '@/Components/DetailShow';
+import { EntrybookBillCell, entrybookHasInvoice } from '@/Components/EntrybookBillCell';
 import PageContainer from '@/Components/PageContainer';
 import ListFilterBar from '@/Components/ListFilterBar';
 import ListingMobileAction from '@/Components/ListingMobileAction';
@@ -17,6 +18,7 @@ import { dateFiltersFromPicker } from '@/lib/listFilters';
 import type { DatePickerRangeValue } from '@/Components/FormDatePicker';
 import { formatAppDateTime } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
+import { invoiceFromEntrybookHref } from '@/lib/invoiceReturn';
 import type {
     PartyAccountData,
     PartyEntrybookRow,
@@ -241,7 +243,7 @@ export default function PartyShow({
                                                     </Link>
                                                 </PageToolbarActions>
                                             </PageToolbar>
-                                            <EntrybooksTable rows={account.entrybooks} />
+                                            <EntrybooksTable rows={account.entrybooks} partyId={partyId} />
                                         </div>
                                     )}
 
@@ -404,7 +406,7 @@ function LedgerTable({ rows }: { rows: PartyLedgerEntry[] }) {
     );
 }
 
-function EntrybooksTable({ rows }: { rows: PartyEntrybookRow[] }) {
+function EntrybooksTable({ rows, partyId }: { rows: PartyEntrybookRow[]; partyId: number }) {
     return (
         <ListingTableShell
             embedded
@@ -440,14 +442,39 @@ function EntrybooksTable({ rows }: { rows: PartyEntrybookRow[] }) {
                             label: 'Detention',
                             value: `₹ ${formatMoney(row.detention ?? 0)}`,
                         },
+                        {
+                            label: 'Bill',
+                            value: row.bill_number ?? 'Pending',
+                        },
                     ]}
                     actions={
-                        <ListingMobileAction
-                            href={route('entrybooks.edit', row.id)}
-                            variant="primary"
-                        >
-                            Edit
-                        </ListingMobileAction>
+                        <>
+                            {!entrybookHasInvoice(row) && (
+                                <ListingMobileAction
+                                    href={invoiceFromEntrybookHref(
+                                        { id: row.id, party_id: partyId },
+                                        partyId,
+                                    )}
+                                    variant="success"
+                                >
+                                    Create Invoice
+                                </ListingMobileAction>
+                            )}
+                            {entrybookHasInvoice(row) && row.invoice_id && (
+                                <ListingMobileAction
+                                    href={route('invoices.show', row.invoice_id)}
+                                    variant="primary"
+                                >
+                                    View Bill
+                                </ListingMobileAction>
+                            )}
+                            <ListingMobileAction
+                                href={route('entrybooks.edit', row.id)}
+                                variant={entrybookHasInvoice(row) ? 'secondary' : 'primary'}
+                            >
+                                Edit
+                            </ListingMobileAction>
+                        </>
                     }
                 />
             ))}
@@ -461,6 +488,7 @@ function EntrybooksTable({ rows }: { rows: PartyEntrybookRow[] }) {
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Detention</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Bill</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
                 </tr>
             }
@@ -476,7 +504,10 @@ function EntrybooksTable({ rows }: { rows: PartyEntrybookRow[] }) {
                     <td className="px-4 py-3 text-right font-medium">
                         ₹ {formatMoney(row.balance)}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3">
+                        <EntrybookBillCell entry={{ ...row, party_id: partyId }} partyId={partyId} />
+                    </td>
+                    <td className="space-x-3 px-4 py-3 text-right">
                         <Link
                             href={route('entrybooks.edit', row.id)}
                             className="text-indigo-600 hover:underline"

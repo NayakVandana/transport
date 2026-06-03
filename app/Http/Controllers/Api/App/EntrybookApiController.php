@@ -29,7 +29,15 @@ class EntrybookApiController extends Controller
             $perPage = (int) ($request->input('per_page') ?: 20);
             $currentPage = (int) ($request->input('current_page') ?: 1);
 
-            $paginator = (clone $query)->paginate($perPage, ['*'], 'page', $currentPage);
+            $paginator = (clone $query)
+                ->paginate($perPage, ['*'], 'page', $currentPage)
+                ->through(function (Entrybook $entry) {
+                    $entry->setAttribute('invoice_id', $entry->invoiceLine?->freight_invoice_id);
+                    $entry->setAttribute('bill_number', $entry->invoiceLine?->freightInvoice?->bill_number);
+                    $entry->unsetRelation('invoiceLine');
+
+                    return $entry;
+                });
 
             return $this->sendJsonResponse(true, 'Entrybook loaded.', [
                 'entrybooks' => $paginator,
