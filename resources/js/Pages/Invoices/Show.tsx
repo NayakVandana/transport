@@ -1,4 +1,3 @@
-import ListingMobileAction from '@/Components/ListingMobileAction';
 import ListingMobileCard from '@/Components/ListingMobileCard';
 import ListingTableShell from '@/Components/ListingTableShell';
 import PageContainer from '@/Components/PageContainer';
@@ -194,14 +193,6 @@ const headerBtnClass =
                                                 fullWidth: true,
                                             },
                                         ]}
-                                        actions={
-                                            <ListingMobileAction
-                                                href={route('invoice-payments.edit', payment.id)}
-                                                variant="primary"
-                                            >
-                                                Edit
-                                            </ListingMobileAction>
-                                        }
                                     />
                                 ))}
                                 thead={
@@ -218,9 +209,6 @@ const headerBtnClass =
                                         <th className="px-3 py-2 text-left font-medium text-gray-500 sm:px-6 sm:py-3">
                                             Reference
                                         </th>
-                                        <th className="px-3 py-2 text-right font-medium text-gray-500 sm:px-6 sm:py-3">
-                                            Actions
-                                        </th>
                                     </tr>
                                 }
                                 tbody={payments.map((payment: InvoicePayment) => (
@@ -236,14 +224,6 @@ const headerBtnClass =
                                         </td>
                                         <td className="px-3 py-2 sm:px-6 sm:py-3">
                                             {payment.reference_no ?? '—'}
-                                        </td>
-                                        <td className="px-3 py-2 text-right sm:px-6 sm:py-3">
-                                            <Link
-                                                href={route('invoice-payments.edit', payment.id)}
-                                                className="text-indigo-600 hover:underline"
-                                            >
-                                                Edit
-                                            </Link>
                                         </td>
                                     </tr>
                                 ))}

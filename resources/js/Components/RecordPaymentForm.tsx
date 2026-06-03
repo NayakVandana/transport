@@ -19,16 +19,6 @@ import type {
 import { Link, router } from '@inertiajs/react';
 import { FormEventHandler, useCallback, useEffect, useMemo, useState } from 'react';
 
-function dateInputValue(value?: string | null): string {
-    return value?.slice(0, 10) ?? '';
-}
-
-function billNumberFromPayment(
-    payment: Pick<InvoicePayment, 'bill_number' | 'freight_invoice'>,
-): string {
-    return payment.bill_number ?? payment.freight_invoice?.bill_number ?? '';
-}
-
 function matchOpenInvoice(
     openInvoices: OpenInvoiceOption[],
     billNumber: string,
@@ -56,10 +46,6 @@ type InvoicePaymentMetaData = {
     paymentModes: string[];
 };
 
-type InvoicePaymentShowData = InvoicePaymentMetaData & {
-    invoicePayment: InvoicePayment;
-};
-
 export type LockedPaymentParty = {
     id: number;
     name: string;
@@ -80,7 +66,6 @@ export type LockedPaymentInvoice = {
 export default function RecordPaymentForm({
     partyId,
     invoiceId,
-    invoicePaymentId,
     lockedParty,
     lockedInvoice,
     onSuccess,
@@ -89,14 +74,12 @@ export default function RecordPaymentForm({
 }: {
     partyId?: number | null;
     invoiceId?: number | null;
-    invoicePaymentId?: number;
     lockedParty?: LockedPaymentParty | null;
     lockedInvoice?: LockedPaymentInvoice | null;
     onSuccess?: () => void;
     onCancel?: () => void;
     showCancelLink?: boolean;
 }) {
-    const isEdit = Boolean(invoicePaymentId);
     const fixedParty = lockedParty ?? null;
     const fixedInvoice = lockedInvoice ?? null;
     const resolvedPartyId = fixedParty?.id ?? fixedInvoice?.party_id ?? partyId ?? null;
@@ -163,59 +146,29 @@ export default function RecordPaymentForm({
 
         const load = async () => {
             try {
-                if (invoicePaymentId) {
-                    const res = await appApiPost<ApiEnvelope<InvoicePaymentShowData>>(
-                        '/invoice-payments/invoice-payment-show',
-                        { id: invoicePaymentId },
-                    );
+                const partyKey = resolvedPartyId ? String(resolvedPartyId) : undefined;
+                const invoiceKey = resolvedInvoiceId ? String(resolvedInvoiceId) : undefined;
+                const meta = await loadMeta({
+                    partyId: partyKey,
+                    invoiceId: invoiceKey,
+                    billNumber: fixedInvoice?.bill_number,
+                });
 
-                    if (!res.success || !res.data?.invoicePayment) {
-                        setLoadError(res.message || 'Could not load payment.');
-                        return;
-                    }
+                const matchedInvoice = invoiceKey
+                    ? meta.openInvoices.find((inv) => String(inv.id) === invoiceKey)
+                    : undefined;
 
-                    const row = res.data.invoicePayment;
-                    setParties(res.data.parties);
-                    setOpenInvoices(res.data.openInvoices ?? []);
-                    setInvoiceSummary(res.data.invoiceSummary ?? null);
-                    setPaymentModes(res.data.paymentModes);
-                    setData({
-                        party_id: String(row.party_id),
-                        freight_invoice_id: row.freight_invoice_id
-                            ? String(row.freight_invoice_id)
-                            : '',
-                        bill_number: billNumberFromPayment(row),
-                        payment_date: dateInputValue(row.payment_date),
-                        amount: String(row.amount),
-                        payment_mode: row.payment_mode ?? 'neft',
-                        reference_no: row.reference_no ?? '',
-                        notes: row.notes ?? '',
-                    });
-                } else {
-                    const partyKey = resolvedPartyId ? String(resolvedPartyId) : undefined;
-                    const invoiceKey = resolvedInvoiceId ? String(resolvedInvoiceId) : undefined;
-                    const meta = await loadMeta({
-                        partyId: partyKey,
-                        invoiceId: invoiceKey,
-                        billNumber: fixedInvoice?.bill_number,
-                    });
-
-                    const matchedInvoice = invoiceKey
-                        ? meta.openInvoices.find((inv) => String(inv.id) === invoiceKey)
-                        : undefined;
-
-                    setData((prev) => ({
-                        ...prev,
-                        party_id:
-                            partyKey ??
-                            (matchedInvoice ? String(matchedInvoice.party_id) : prev.party_id),
-                        freight_invoice_id: invoiceKey ?? prev.freight_invoice_id,
-                        bill_number:
-                            fixedInvoice?.bill_number ??
-                            matchedInvoice?.bill_number ??
-                            prev.bill_number,
-                    }));
-                }
+                setData((prev) => ({
+                    ...prev,
+                    party_id:
+                        partyKey ??
+                        (matchedInvoice ? String(matchedInvoice.party_id) : prev.party_id),
+                    freight_invoice_id: invoiceKey ?? prev.freight_invoice_id,
+                    bill_number:
+                        fixedInvoice?.bill_number ??
+                        matchedInvoice?.bill_number ??
+                        prev.bill_number,
+                }));
             } catch {
                 setLoadError('Could not load form data.');
             } finally {
@@ -224,7 +177,7 @@ export default function RecordPaymentForm({
         };
 
         void load();
-    }, [invoicePaymentId, resolvedPartyId, resolvedInvoiceId, loadMeta]);
+    }, [resolvedPartyId, resolvedInvoiceId, fixedInvoice?.bill_number, loadMeta]);
 
     const billOptions = useMemo(() => {
         const partyFilter = data.party_id || (fixedParty ? String(fixedParty.id) : '');
@@ -282,12 +235,8 @@ export default function RecordPaymentForm({
             return null;
         }
 
-        if (isEdit && invoicePaymentId) {
-            return activeInvoiceSummary.outstanding + Number(data.amount || 0);
-        }
-
         return activeInvoiceSummary.outstanding;
-    }, [activeInvoiceSummary, isEdit, invoicePaymentId, data.amount]);
+    }, [activeInvoiceSummary]);
 
     const setField = (field: keyof PaymentFormData, value: string) => {
         setData((prev) => ({ ...prev, [field]: value }));
@@ -314,7 +263,7 @@ export default function RecordPaymentForm({
         }
     };
 
-    const urlLockedParty = Boolean(resolvedPartyId && !fixedParty && !fixedInvoice && !isEdit);
+    const urlLockedParty = Boolean(resolvedPartyId && !fixedParty && !fixedInvoice);
     const activePartyId =
         data.party_id ||
         (fixedParty ? String(fixedParty.id) : '') ||
@@ -376,13 +325,10 @@ export default function RecordPaymentForm({
                 payment_mode: data.payment_mode || null,
                 reference_no: data.reference_no || null,
                 notes: data.notes || null,
-                ...(invoicePaymentId ? { id: invoicePaymentId } : {}),
             };
 
             const res = await appApiPost<ApiEnvelope<{ invoicePayment: InvoicePayment }>>(
-                invoicePaymentId
-                    ? '/invoice-payments/invoice-payment-update'
-                    : '/invoice-payments/invoice-payment-store',
+                '/invoice-payments/invoice-payment-store',
                 payload,
             );
 
@@ -616,9 +562,7 @@ export default function RecordPaymentForm({
                 </div>
 
                 <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:flex-wrap sm:items-center [&_a]:w-full sm:[&_a]:w-auto [&_button]:w-full sm:[&_button]:w-auto">
-                    <PrimaryButton disabled={processing}>
-                        {isEdit ? 'Update Payment' : 'Save Payment'}
-                    </PrimaryButton>
+                    <PrimaryButton disabled={processing}>Save Payment</PrimaryButton>
                     {onCancel && (
                         <SecondaryButton type="button" onClick={onCancel}>
                             Cancel

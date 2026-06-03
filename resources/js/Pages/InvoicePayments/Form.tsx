@@ -5,19 +5,15 @@ import { usePageHeader } from '@/hooks/usePageHeader';
 import { Head } from '@inertiajs/react';
 
 export default function InvoicePaymentForm({
-    invoicePaymentId,
     partyId,
     invoiceId,
 }: {
-    invoicePaymentId?: number;
     partyId?: number | null;
     invoiceId?: number | null;
 }) {
-    const isEdit = Boolean(invoicePaymentId);
-
     usePageHeader(
         <FormPageHeader
-            title={isEdit ? 'Edit Payment' : 'Record Payment'}
+            title="Record Payment"
             backHref={route('invoice-payments.index')}
             backLabel="Back to list"
             backMobileLabel="Back"
@@ -26,16 +22,11 @@ export default function InvoicePaymentForm({
 
     return (
         <>
-            <Head title={isEdit ? 'Edit Payment' : 'Record Payment'} />
+            <Head title="Record Payment" />
 
             <FormPage size="sm">
                 <FormCard>
-                    <RecordPaymentForm
-                        invoicePaymentId={invoicePaymentId}
-                        partyId={partyId}
-                        invoiceId={invoiceId}
-                        showCancelLink
-                    />
+                    <RecordPaymentForm partyId={partyId} invoiceId={invoiceId} showCancelLink />
                 </FormCard>
             </FormPage>
         </>

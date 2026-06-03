@@ -1,7 +1,6 @@
 import PageContainer from '@/Components/PageContainer';
 import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
-import ListingMobileAction from '@/Components/ListingMobileAction';
 import ListingMobileCard from '@/Components/ListingMobileCard';
 import ListingTableShell from '@/Components/ListingTableShell';
 import PartyLink from '@/Components/PartyLink';
@@ -228,14 +227,6 @@ export default function InvoicePaymentsIndex() {
                                             value: row.payment_mode ?? '—',
                                         },
                                     ]}
-                                    actions={
-                                        <ListingMobileAction
-                                            href={route('invoice-payments.edit', row.id)}
-                                            variant="primary"
-                                        >
-                                            Edit
-                                        </ListingMobileAction>
-                                    }
                                 />
                             ))}
                             thead={
@@ -247,7 +238,6 @@ export default function InvoicePaymentsIndex() {
                                     <th className="px-4 py-3 text-left font-medium text-gray-500">Mode</th>
                                     <th className="px-4 py-3 text-left font-medium text-gray-500">Reference</th>
                                     <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
-                                    <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
                                 </tr>
                             }
                             tbody={rows.map((row) => (
@@ -286,14 +276,6 @@ export default function InvoicePaymentsIndex() {
                                     <td className="px-4 py-3">{row.reference_no ?? '—'}</td>
                                     <td className="px-4 py-3 whitespace-nowrap text-gray-600">
                                         {formatAppCreatedAt(row.created_at)}
-                                    </td>
-                                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                                        <Link
-                                            href={route('invoice-payments.edit', row.id)}
-                                            className="text-indigo-600 hover:underline"
-                                        >
-                                            Edit
-                                        </Link>
                                     </td>
                                 </tr>
                             ))}

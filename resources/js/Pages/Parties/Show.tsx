@@ -684,14 +684,6 @@ function PaymentsTable({ rows }: { rows: PartyAccountData['payments'] }) {
                             value: row.reference_no ?? '—',
                         },
                     ]}
-                    actions={
-                        <ListingMobileAction
-                            href={route('invoice-payments.edit', row.id)}
-                            variant="primary"
-                        >
-                            Edit
-                        </ListingMobileAction>
-                    }
                 />
             ))}
             thead={
@@ -701,7 +693,6 @@ function PaymentsTable({ rows }: { rows: PartyAccountData['payments'] }) {
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Amount</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-500">Mode</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-500">Reference</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
                 </tr>
             }
             tbody={rows.map((row) => (
@@ -724,14 +715,6 @@ function PaymentsTable({ rows }: { rows: PartyAccountData['payments'] }) {
                     </td>
                     <td className="px-4 py-3 capitalize">{row.payment_mode ?? '—'}</td>
                     <td className="px-4 py-3">{row.reference_no ?? '—'}</td>
-                    <td className="px-4 py-3 text-right">
-                        <Link
-                            href={route('invoice-payments.edit', row.id)}
-                            className="text-indigo-600 hover:underline"
-                        >
-                            Edit
-                        </Link>
-                    </td>
                 </tr>
             ))}
         />
