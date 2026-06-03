@@ -10,7 +10,7 @@ import InvoicePaymentStatusBadge, {
     invoicePaymentStatusFromAmounts,
 } from '@/Components/InvoicePaymentStatusBadge';
 import PartyLink from '@/Components/PartyLink';
-import RecordPaymentForm from '@/Components/RecordPaymentForm';
+import RecordPaymentForm, { type LockedPaymentInvoice } from '@/Components/RecordPaymentForm';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -47,7 +47,9 @@ const defaultFilters: InvoiceFilters = {
 export default function InvoicesIndex() {
     const [actionError, setActionError] = useState<string | null>(null);
     const [searchInput, setSearchInput] = useState('');
-    const [paymentPartyId, setPaymentPartyId] = useState<number | null>(null);
+    const [paymentInvoice, setPaymentInvoice] = useState<
+        (FreightInvoice & { party?: { name: string } }) | null
+    >(null);
 
     usePageHeader(
         <ListPageHeader
@@ -105,11 +107,11 @@ export default function InvoicesIndex() {
     };
 
     const openPaymentModal = (inv: FreightInvoice & { party?: { name: string } }) => {
-        setPaymentPartyId(inv.party_id);
+        setPaymentInvoice(inv);
     };
 
     const closePaymentModal = () => {
-        setPaymentPartyId(null);
+        setPaymentInvoice(null);
     };
 
     const onPaymentSaved = async () => {
@@ -341,14 +343,27 @@ export default function InvoicesIndex() {
                     )}
             </PageContainer>
 
-            <Modal show={paymentPartyId !== null} onClose={closePaymentModal} maxWidth="2xl">
+            <Modal show={paymentInvoice !== null} onClose={closePaymentModal} maxWidth="2xl">
                 <div className="p-4 sm:p-6">
                     <h3 className="text-lg font-semibold text-gray-900">Record Payment</h3>
-                    {paymentPartyId && (
+                    {paymentInvoice && (
                         <div className="mt-4">
                             <RecordPaymentForm
-                                key={paymentPartyId}
-                                partyId={paymentPartyId}
+                                key={paymentInvoice.id}
+                                invoiceId={paymentInvoice.id}
+                                lockedInvoice={
+                                    paymentInvoice.received !== undefined &&
+                                    paymentInvoice.outstanding !== undefined
+                                        ? ({
+                                              id: paymentInvoice.id,
+                                              bill_number: paymentInvoice.bill_number,
+                                              party_id: paymentInvoice.party_id,
+                                              balance_amount: paymentInvoice.balance_amount,
+                                              received: paymentInvoice.received,
+                                              outstanding: paymentInvoice.outstanding,
+                                          } satisfies LockedPaymentInvoice)
+                                        : undefined
+                                }
                                 onSuccess={() => void onPaymentSaved()}
                                 onCancel={closePaymentModal}
                             />

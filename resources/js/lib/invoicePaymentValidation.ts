@@ -1,5 +1,7 @@
 export type InvoicePaymentFormData = {
     party_id: string;
+    freight_invoice_id: string;
+    bill_number: string;
     payment_date: string;
     amount: string;
     payment_mode: string;
@@ -18,6 +20,12 @@ export function validateInvoicePaymentForm(
         errors.party_id = 'Select a party (receiver).';
     }
 
+    if (!data.bill_number.trim() && !data.freight_invoice_id) {
+        errors.bill_number = 'Enter or select a bill number.';
+    } else if (data.bill_number.trim() && !data.freight_invoice_id) {
+        errors.bill_number = 'Select a valid bill number from the list.';
+    }
+
     if (!data.payment_date) {
         errors.payment_date = 'Payment date is required.';
     }
@@ -27,7 +35,7 @@ export function validateInvoicePaymentForm(
     } else if (Number.isNaN(Number(data.amount)) || Number(data.amount) <= 0) {
         errors.amount = 'Enter a valid amount.';
     } else if (maxAmount !== null && Number(data.amount) > maxAmount) {
-        errors.amount = `Amount cannot exceed outstanding (₹ ${formatAmount(maxAmount)}).`;
+        errors.amount = `Amount cannot exceed bill outstanding (₹ ${formatAmount(maxAmount)}).`;
     }
 
     if (data.reference_no.length > 100) {

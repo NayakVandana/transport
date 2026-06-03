@@ -37,74 +37,32 @@ class InvoicePaymentCalculator
     }
 
     /**
-     * Allocate party payments to invoices (oldest first). Invoice-linked payments apply to that bill first.
+     * Sum received amounts per invoice (bill-wise payments only).
      *
      * @return array<int, float>
      */
-    public static function fifoAllocatedReceivedByInvoice(
+    public static function receivedByInvoice(
         int $userId,
         ?int $excludePaymentId = null,
         ?int $partyId = null,
     ): array {
-        $allocated = [];
-
-        $partiesQuery = Party::query()->where('user_id', $userId);
+        $query = InvoicePayment::query()
+            ->where('user_id', $userId)
+            ->whereNotNull('freight_invoice_id');
 
         if ($partyId !== null) {
-            $partiesQuery->whereKey($partyId);
+            $query->where('party_id', $partyId);
         }
 
-        foreach ($partiesQuery->get(['id']) as $party) {
-            $invoices = FreightInvoice::query()
-                ->where('user_id', $userId)
-                ->where('party_id', $party->id)
-                ->orderBy('invoice_date')
-                ->orderBy('id')
-                ->get(['id', 'balance_amount']);
+        if ($excludePaymentId !== null) {
+            $query->where('id', '!=', $excludePaymentId);
+        }
 
-            $remaining = [];
+        $allocated = [];
 
-            foreach ($invoices as $invoice) {
-                $remaining[$invoice->id] = (float) $invoice->balance_amount;
-                $allocated[$invoice->id] = 0.0;
-            }
-
-            $paymentsQuery = InvoicePayment::query()
-                ->where('user_id', $userId)
-                ->where('party_id', $party->id)
-                ->orderBy('payment_date')
-                ->orderBy('id');
-
-            if ($excludePaymentId !== null) {
-                $paymentsQuery->where('id', '!=', $excludePaymentId);
-            }
-
-            foreach ($paymentsQuery->get(['id', 'freight_invoice_id', 'amount']) as $payment) {
-                $amount = (float) $payment->amount;
-
-                if ($payment->freight_invoice_id && isset($remaining[$payment->freight_invoice_id])) {
-                    $invId = $payment->freight_invoice_id;
-                    $apply = min($amount, max(0, $remaining[$invId]));
-                    $allocated[$invId] += $apply;
-                    $remaining[$invId] -= $apply;
-                    $amount -= $apply;
-                }
-
-                foreach ($invoices as $invoice) {
-                    if ($amount <= 0) {
-                        break;
-                    }
-
-                    if ($remaining[$invoice->id] <= 0) {
-                        continue;
-                    }
-
-                    $apply = min($amount, $remaining[$invoice->id]);
-                    $allocated[$invoice->id] += $apply;
-                    $remaining[$invoice->id] -= $apply;
-                    $amount -= $apply;
-                }
-            }
+        foreach ($query->get(['freight_invoice_id', 'amount']) as $payment) {
+            $invoiceId = (int) $payment->freight_invoice_id;
+            $allocated[$invoiceId] = round(($allocated[$invoiceId] ?? 0) + (float) $payment->amount, 2);
         }
 
         return $allocated;
@@ -120,13 +78,14 @@ class InvoicePaymentCalculator
             return 0.0;
         }
 
-        $allocated = self::fifoAllocatedReceivedByInvoice(
-            (int) $invoiceModel->user_id,
-            $excludePaymentId,
-            (int) $invoiceModel->party_id,
-        );
+        $query = InvoicePayment::query()
+            ->where('freight_invoice_id', $invoiceModel->id);
 
-        return round((float) ($allocated[$invoiceModel->id] ?? 0), 2);
+        if ($excludePaymentId !== null) {
+            $query->where('id', '!=', $excludePaymentId);
+        }
+
+        return round((float) $query->sum('amount'), 2);
     }
 
     public static function outstanding(FreightInvoice $invoice, ?int $excludePaymentId = null): float
@@ -195,7 +154,7 @@ class InvoicePaymentCalculator
         }
 
         $userId = (int) $invoices->first()->user_id;
-        $allocated = self::fifoAllocatedReceivedByInvoice($userId);
+        $allocated = self::receivedByInvoice($userId);
 
         return $invoices->map(function (FreightInvoice $invoice) use ($allocated) {
             $received = round((float) ($allocated[$invoice->id] ?? 0), 2);

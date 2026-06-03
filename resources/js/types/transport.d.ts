@@ -186,6 +186,7 @@ export interface PartyLedgerEntry {
     date: string;
     type: 'invoice' | 'payment';
     reference: string;
+    bill_number?: string;
     particulars: string;
     debit: number;
     credit: number;
@@ -262,6 +263,7 @@ export interface FreightInvoice {
 export interface InvoicePayment {
     id: number;
     freight_invoice_id: number | null;
+    bill_number?: string | null;
     party_id: number;
     payment_date: string;
     amount: string | number;

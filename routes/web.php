@@ -92,6 +92,7 @@ Route::get('/invoice-payments/create', function (Request $request) {
 
     return Inertia::render('InvoicePayments/Form', [
         'partyId' => $partyId,
+        'invoiceId' => is_numeric($invoice) ? (int) $invoice : null,
     ]);
 })->name('invoice-payments.create');
 Route::get('/invoice-payments/{id}/edit', fn (int $id) => Inertia::render('InvoicePayments/Form', ['invoicePaymentId' => $id]))->name('invoice-payments.edit');

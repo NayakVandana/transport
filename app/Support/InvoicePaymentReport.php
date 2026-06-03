@@ -41,7 +41,7 @@ class InvoicePaymentReport
             $summary = InvoicePaymentCalculator::invoiceSummary($invoice);
             $forceInclude = $includeInvoiceId !== null && $invoice->id === $includeInvoiceId;
 
-            if (! $forceInclude && $summary['outstanding'] <= 0 && $summary['received'] <= 0) {
+            if (! $forceInclude && $summary['outstanding'] <= 0) {
                 continue;
             }
 
@@ -125,6 +125,7 @@ class InvoicePaymentReport
                 $builder
                     ->where('reference_no', 'like', "%{$search}%")
                     ->orWhere('notes', 'like', "%{$search}%")
+                    ->orWhere('bill_number', 'like', "%{$search}%")
                     ->orWhereHas('freightInvoice', fn (Builder $q) => $q->where('bill_number', 'like', "%{$search}%"))
                     ->orWhereHas('party', fn (Builder $q) => $q->where('name', 'like', "%{$search}%"));
             });

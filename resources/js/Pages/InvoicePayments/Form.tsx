@@ -7,9 +7,11 @@ import { Head } from '@inertiajs/react';
 export default function InvoicePaymentForm({
     invoicePaymentId,
     partyId,
+    invoiceId,
 }: {
     invoicePaymentId?: number;
     partyId?: number | null;
+    invoiceId?: number | null;
 }) {
     const isEdit = Boolean(invoicePaymentId);
 
@@ -31,6 +33,7 @@ export default function InvoicePaymentForm({
                     <RecordPaymentForm
                         invoicePaymentId={invoicePaymentId}
                         partyId={partyId}
+                        invoiceId={invoiceId}
                         showCancelLink
                     />
                 </FormCard>

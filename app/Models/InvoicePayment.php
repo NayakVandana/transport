@@ -13,6 +13,7 @@ class InvoicePayment extends Model
     protected $fillable = [
         'user_id',
         'freight_invoice_id',
+        'bill_number',
         'party_id',
         'payment_date',
         'amount',

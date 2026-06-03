@@ -45,6 +45,14 @@ const emptyTotals: InvoicePaymentTotals = {
     amount: 0,
 };
 
+function paymentBillNumber(row: InvoicePayment): string | null {
+    return row.bill_number ?? row.freight_invoice?.bill_number ?? null;
+}
+
+function paymentInvoiceId(row: InvoicePayment): number | null {
+    return row.freight_invoice_id ?? row.freight_invoice?.id ?? null;
+}
+
 function TotalCard({ label, value }: { label: string; value: string }) {
     return (
         <div className="rounded-lg bg-white p-3 shadow">
@@ -196,19 +204,23 @@ export default function InvoicePaymentsIndex() {
                                     fields={[
                                         {
                                             label: 'Bill No.',
-                                            value: row.freight_invoice ? (
-                                                <Link
-                                                    href={route(
-                                                        'invoices.show',
-                                                        row.freight_invoice_id!,
-                                                    )}
-                                                    className="text-indigo-600 hover:underline"
-                                                >
-                                                    {row.freight_invoice.bill_number}
-                                                </Link>
-                                            ) : (
-                                                'Party account'
-                                            ),
+                                            value: (() => {
+                                                const billNumber = paymentBillNumber(row);
+                                                const invoiceId = paymentInvoiceId(row);
+
+                                                if (billNumber && invoiceId) {
+                                                    return (
+                                                        <Link
+                                                            href={route('invoices.show', invoiceId)}
+                                                            className="text-indigo-600 hover:underline"
+                                                        >
+                                                            {billNumber}
+                                                        </Link>
+                                                    );
+                                                }
+
+                                                return billNumber ?? '—';
+                                            })(),
                                             fullWidth: true,
                                         },
                                         {
@@ -245,16 +257,27 @@ export default function InvoicePaymentsIndex() {
                                         <PartyLink partyId={row.party_id} name={row.party?.name} />
                                     </td>
                                     <td className="px-4 py-3">
-                                        {row.freight_invoice ? (
-                                            <Link
-                                                href={route('invoices.show', row.freight_invoice_id!)}
-                                                className="text-indigo-600 hover:underline"
-                                            >
-                                                {row.freight_invoice.bill_number}
-                                            </Link>
-                                        ) : (
-                                            <span className="text-gray-500">Party account</span>
-                                        )}
+                                        {(() => {
+                                            const billNumber = paymentBillNumber(row);
+                                            const invoiceId = paymentInvoiceId(row);
+
+                                            if (billNumber && invoiceId) {
+                                                return (
+                                                    <Link
+                                                        href={route('invoices.show', invoiceId)}
+                                                        className="font-mono text-indigo-600 hover:underline"
+                                                    >
+                                                        {billNumber}
+                                                    </Link>
+                                                );
+                                            }
+
+                                            return (
+                                                <span className="font-mono text-gray-700">
+                                                    {billNumber ?? '—'}
+                                                </span>
+                                            );
+                                        })()}
                                     </td>
                                     <td className="px-4 py-3 text-right font-medium">
                                         ₹ {formatMoney(row.amount)}

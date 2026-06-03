@@ -51,8 +51,25 @@ class InvoicePaymentApiController extends Controller
             $includeInvoiceId = $request->input('freight_invoice_id')
                 ? (int) $request->input('freight_invoice_id')
                 : null;
+            $billNumber = trim((string) $request->input('bill_number', ''));
+
+            if ($billNumber !== '') {
+                $invoiceByBill = FreightInvoice::query()
+                    ->where('user_id', $userId)
+                    ->where('bill_number', $billNumber)
+                    ->first();
+
+                if ($invoiceByBill) {
+                    $includeInvoiceId = $invoiceByBill->id;
+
+                    if ($partyId === null) {
+                        $partyId = (int) $invoiceByBill->party_id;
+                    }
+                }
+            }
 
             $partySummary = null;
+            $invoiceSummary = null;
 
             if ($partyId !== null) {
                 $ownsParty = \App\Models\Party::query()
@@ -65,15 +82,68 @@ class InvoicePaymentApiController extends Controller
                 }
             }
 
+            if ($includeInvoiceId !== null) {
+                $invoice = FreightInvoice::query()
+                    ->where('user_id', $userId)
+                    ->find($includeInvoiceId);
+
+                if ($invoice) {
+                    $invoiceSummary = InvoicePaymentCalculator::invoiceSummary($invoice);
+                }
+            }
+
             return $this->sendJsonResponse(true, 'Payment form data loaded.', [
                 'parties' => InvoicePaymentReport::partiesForUser($userId),
                 'openInvoices' => InvoicePaymentReport::openInvoicesForUser($userId, $partyId, $includeInvoiceId),
                 'partySummary' => $partySummary,
+                'invoiceSummary' => $invoiceSummary,
                 'paymentModes' => ['cash', 'cheque', 'neft', 'upi', 'other'],
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
         }
+    }
+
+    /**
+     * @return array{0: ?FreightInvoice, 1: array<string, list<string>>}
+     */
+    private function resolveFreightInvoice(int $userId, ?int $freightInvoiceId, ?string $billNumber): array
+    {
+        $billNumber = trim((string) $billNumber);
+
+        if ($freightInvoiceId !== null) {
+            $invoice = FreightInvoice::query()
+                ->where('user_id', $userId)
+                ->find($freightInvoiceId);
+
+            if (! $invoice) {
+                return [null, ['freight_invoice_id' => ['Invalid bill.']]];
+            }
+
+            if ($billNumber !== '' && strcasecmp($invoice->bill_number, $billNumber) !== 0) {
+                return [null, ['bill_number' => ['Bill number does not match the selected invoice.']]];
+            }
+
+            return [$invoice, []];
+        }
+
+        if ($billNumber === '') {
+            return [null, [
+                'bill_number' => ['Enter a bill number.'],
+                'freight_invoice_id' => ['Select a bill (invoice).'],
+            ]];
+        }
+
+        $invoice = FreightInvoice::query()
+            ->where('user_id', $userId)
+            ->where('bill_number', $billNumber)
+            ->first();
+
+        if (! $invoice) {
+            return [null, ['bill_number' => ['Bill number not found.']]];
+        }
+
+        return [$invoice, []];
     }
 
     public function postInvoicePaymentShow(Request $request)
@@ -125,6 +195,7 @@ class InvoicePaymentApiController extends Controller
             $validation = Validator::make($request->all(), [
                 'party_id' => ['required', 'integer', 'exists:parties,id'],
                 'freight_invoice_id' => ['nullable', 'integer', 'exists:freight_invoices,id'],
+                'bill_number' => ['nullable', 'string', 'max:50'],
                 'payment_date' => ['required', 'date'],
                 'amount' => ['required', 'numeric', 'min:0.01'],
                 'payment_mode' => ['nullable', 'string', 'max:20'],
@@ -138,7 +209,27 @@ class InvoicePaymentApiController extends Controller
 
             $validated = $validation->validated();
             $userId = (int) $request->user()->id;
-            $partyId = (int) $validated['party_id'];
+            $amount = round((float) $validated['amount'], 2);
+
+            [$invoice, $resolveErrors] = $this->resolveFreightInvoice(
+                $userId,
+                isset($validated['freight_invoice_id']) ? (int) $validated['freight_invoice_id'] : null,
+                $validated['bill_number'] ?? null,
+            );
+
+            if ($resolveErrors !== []) {
+                return $this->sendJsonResponse(false, collect($resolveErrors)->flatten()->first(), $resolveErrors, 200);
+            }
+
+            $freightInvoiceId = (int) $invoice->id;
+
+            $partyId = (int) $invoice->party_id;
+
+            if ((int) $validated['party_id'] !== $partyId) {
+                return $this->sendJsonResponse(false, 'Party does not match the selected bill.', [
+                    'party_id' => ['Party does not match the selected bill.'],
+                ], 200);
+            }
 
             $party = \App\Models\Party::query()
                 ->where('user_id', $userId)
@@ -150,44 +241,19 @@ class InvoicePaymentApiController extends Controller
                 ], 200);
             }
 
-            $amount = round((float) $validated['amount'], 2);
-            $partyOutstanding = InvoicePaymentCalculator::partySummary($userId, $partyId)['outstanding'];
+            $invoiceOutstanding = InvoicePaymentCalculator::outstanding($invoice);
 
-            if ($amount > $partyOutstanding) {
-                $message = 'Payment amount exceeds party outstanding (₹ '.number_format($partyOutstanding, 2).').';
+            if ($amount > $invoiceOutstanding) {
+                $message = 'Payment amount exceeds bill outstanding (₹ '.number_format($invoiceOutstanding, 2).').';
 
                 return $this->sendJsonResponse(false, $message, [
                     'amount' => [$message],
                 ], 200);
             }
 
-            $freightInvoiceId = isset($validated['freight_invoice_id']) ? (int) $validated['freight_invoice_id'] : null;
-
-            if ($freightInvoiceId !== null) {
-                $invoice = FreightInvoice::query()
-                    ->where('user_id', $userId)
-                    ->where('party_id', $partyId)
-                    ->find($freightInvoiceId);
-
-                if (! $invoice) {
-                    return $this->sendJsonResponse(false, 'Invalid invoice for this party.', [
-                        'freight_invoice_id' => ['Invalid invoice for this party.'],
-                    ], 200);
-                }
-
-                $invoiceOutstanding = InvoicePaymentCalculator::outstanding($invoice);
-
-                if ($amount > $invoiceOutstanding) {
-                    $message = 'Payment amount exceeds invoice outstanding (₹ '.number_format($invoiceOutstanding, 2).').';
-
-                    return $this->sendJsonResponse(false, $message, [
-                        'amount' => [$message],
-                    ], 200);
-                }
-            }
-
             $payment = InvoicePayment::query()->create([
                 'freight_invoice_id' => $freightInvoiceId,
+                'bill_number' => $invoice->bill_number,
                 'party_id' => $partyId,
                 'payment_date' => $validated['payment_date'],
                 'amount' => $amount,
@@ -212,6 +278,7 @@ class InvoicePaymentApiController extends Controller
                 'id' => ['required', 'integer'],
                 'party_id' => ['required', 'integer', 'exists:parties,id'],
                 'freight_invoice_id' => ['nullable', 'integer', 'exists:freight_invoices,id'],
+                'bill_number' => ['nullable', 'string', 'max:50'],
                 'payment_date' => ['required', 'date'],
                 'amount' => ['required', 'numeric', 'min:0.01'],
                 'payment_mode' => ['nullable', 'string', 'max:20'],
@@ -229,56 +296,41 @@ class InvoicePaymentApiController extends Controller
                 ->where('user_id', $userId)
                 ->findOrFail($validated['id']);
 
-            $partyId = (int) $validated['party_id'];
+            $amount = round((float) $validated['amount'], 2);
 
-            $party = \App\Models\Party::query()
-                ->where('user_id', $userId)
-                ->find($partyId);
+            [$invoice, $resolveErrors] = $this->resolveFreightInvoice(
+                $userId,
+                isset($validated['freight_invoice_id']) ? (int) $validated['freight_invoice_id'] : null,
+                $validated['bill_number'] ?? null,
+            );
 
-            if (! $party) {
-                return $this->sendJsonResponse(false, 'Invalid party.', [
-                    'party_id' => ['Invalid party.'],
+            if ($resolveErrors !== []) {
+                return $this->sendJsonResponse(false, collect($resolveErrors)->flatten()->first(), $resolveErrors, 200);
+            }
+
+            $freightInvoiceId = (int) $invoice->id;
+
+            $partyId = (int) $invoice->party_id;
+
+            if ((int) $validated['party_id'] !== $partyId) {
+                return $this->sendJsonResponse(false, 'Party does not match the selected bill.', [
+                    'party_id' => ['Party does not match the selected bill.'],
                 ], 200);
             }
 
-            $amount = round((float) $validated['amount'], 2);
-            $partyOutstanding = InvoicePaymentCalculator::partySummary($userId, $partyId, $payment->id)['outstanding'];
+            $invoiceOutstanding = InvoicePaymentCalculator::outstanding($invoice, $payment->id);
 
-            if ($amount > $partyOutstanding) {
-                $message = 'Payment amount exceeds party outstanding (₹ '.number_format($partyOutstanding, 2).').';
+            if ($amount > $invoiceOutstanding) {
+                $message = 'Payment amount exceeds bill outstanding (₹ '.number_format($invoiceOutstanding, 2).').';
 
                 return $this->sendJsonResponse(false, $message, [
                     'amount' => [$message],
                 ], 200);
             }
 
-            $freightInvoiceId = isset($validated['freight_invoice_id']) ? (int) $validated['freight_invoice_id'] : null;
-
-            if ($freightInvoiceId !== null) {
-                $invoice = FreightInvoice::query()
-                    ->where('user_id', $userId)
-                    ->where('party_id', $partyId)
-                    ->find($freightInvoiceId);
-
-                if (! $invoice) {
-                    return $this->sendJsonResponse(false, 'Invalid invoice for this party.', [
-                        'freight_invoice_id' => ['Invalid invoice for this party.'],
-                    ], 200);
-                }
-
-                $invoiceOutstanding = InvoicePaymentCalculator::outstanding($invoice, $payment->id);
-
-                if ($amount > $invoiceOutstanding) {
-                    $message = 'Payment amount exceeds invoice outstanding (₹ '.number_format($invoiceOutstanding, 2).').';
-
-                    return $this->sendJsonResponse(false, $message, [
-                        'amount' => [$message],
-                    ], 200);
-                }
-            }
-
             $payment->update([
                 'freight_invoice_id' => $freightInvoiceId,
+                'bill_number' => $invoice->bill_number,
                 'party_id' => $partyId,
                 'payment_date' => $validated['payment_date'],
                 'amount' => $amount,
@@ -335,7 +387,7 @@ class InvoicePaymentApiController extends Controller
                 ['Date', 'Bill No.', 'Party', 'Amount', 'Mode', 'Reference', 'Notes'],
                 $rows->map(fn ($row) => [
                     ListExport::formatDate($row->payment_date),
-                    $row->freightInvoice?->bill_number ?? '',
+                    $row->bill_number ?? $row->freightInvoice?->bill_number ?? '',
                     $row->party?->name ?? '',
                     $row->amount,
                     $row->payment_mode ?? '',
@@ -374,7 +426,7 @@ class InvoicePaymentApiController extends Controller
                 ['Date', 'Bill No.', 'Party', 'Amount', 'Mode', 'Reference'],
                 $rows->map(fn ($row) => [
                     ListExport::formatDate($row->payment_date),
-                    $row->freightInvoice?->bill_number ?? '—',
+                    $row->bill_number ?? $row->freightInvoice?->bill_number ?? '—',
                     $row->party?->name ?? '—',
                     ListExport::formatMoney($row->amount),
                     $row->payment_mode ?? '—',

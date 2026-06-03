@@ -404,6 +404,7 @@ class TransportSeeder extends Seeder
                 ],
                 [
                     'party_id' => $invoice->party_id,
+                    'bill_number' => $invoice->bill_number,
                     'payment_date' => $paymentData['payment_date'],
                     'amount' => $paymentData['amount'],
                     'payment_mode' => $paymentData['payment_mode'],

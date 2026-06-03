@@ -10,7 +10,12 @@ import {
     validateInvoicePaymentForm,
     type InvoicePaymentFormData,
 } from '@/lib/invoicePaymentValidation';
-import type { InvoicePayment, Party, PartyPaymentSummary } from '@/types/transport';
+import type {
+    InvoicePayment,
+    InvoicePaymentSummary,
+    OpenInvoiceOption,
+    Party,
+} from '@/types/transport';
 import { Link, router } from '@inertiajs/react';
 import { FormEventHandler, useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -18,11 +23,36 @@ function dateInputValue(value?: string | null): string {
     return value?.slice(0, 10) ?? '';
 }
 
+function billNumberFromPayment(
+    payment: Pick<InvoicePayment, 'bill_number' | 'freight_invoice'>,
+): string {
+    return payment.bill_number ?? payment.freight_invoice?.bill_number ?? '';
+}
+
+function matchOpenInvoice(
+    openInvoices: OpenInvoiceOption[],
+    billNumber: string,
+    partyId?: string,
+): OpenInvoiceOption | undefined {
+    const normalized = billNumber.trim().toLowerCase();
+    if (!normalized) {
+        return undefined;
+    }
+
+    return openInvoices.find(
+        (inv) =>
+            inv.bill_number.toLowerCase() === normalized &&
+            (!partyId || String(inv.party_id) === partyId),
+    );
+}
+
+
 type PaymentFormData = InvoicePaymentFormData;
 
 type InvoicePaymentMetaData = {
     parties: Pick<Party, 'id' | 'name'>[];
-    partySummary: PartyPaymentSummary | null;
+    openInvoices: OpenInvoiceOption[];
+    invoiceSummary?: InvoicePaymentSummary | null;
     paymentModes: string[];
 };
 
@@ -38,28 +68,43 @@ export type LockedPaymentParty = {
     outstanding: number | string;
 };
 
+export type LockedPaymentInvoice = {
+    id: number;
+    bill_number: string;
+    party_id: number;
+    balance_amount: number | string;
+    received: number | string;
+    outstanding: number | string;
+};
+
 export default function RecordPaymentForm({
     partyId,
+    invoiceId,
     invoicePaymentId,
     lockedParty,
+    lockedInvoice,
     onSuccess,
     onCancel,
     showCancelLink = false,
 }: {
     partyId?: number | null;
+    invoiceId?: number | null;
     invoicePaymentId?: number;
     lockedParty?: LockedPaymentParty | null;
+    lockedInvoice?: LockedPaymentInvoice | null;
     onSuccess?: () => void;
     onCancel?: () => void;
     showCancelLink?: boolean;
 }) {
     const isEdit = Boolean(invoicePaymentId);
     const fixedParty = lockedParty ?? null;
-    const resolvedPartyId = fixedParty?.id ?? partyId ?? null;
-    const partyLocked = Boolean(fixedParty || resolvedPartyId);
+    const fixedInvoice = lockedInvoice ?? null;
+    const resolvedPartyId = fixedParty?.id ?? fixedInvoice?.party_id ?? partyId ?? null;
+    const resolvedInvoiceId = fixedInvoice?.id ?? invoiceId ?? null;
 
     const [parties, setParties] = useState<Pick<Party, 'id' | 'name'>[]>([]);
-    const [partySummary, setPartySummary] = useState<PartyPaymentSummary | null>(null);
+    const [openInvoices, setOpenInvoices] = useState<OpenInvoiceOption[]>([]);
+    const [invoiceSummary, setInvoiceSummary] = useState<InvoicePaymentSummary | null>(null);
     const [paymentModes, setPaymentModes] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
@@ -67,6 +112,8 @@ export default function RecordPaymentForm({
     const [errors, setErrors] = useState<Partial<Record<keyof PaymentFormData, string>>>({});
     const [data, setData] = useState<PaymentFormData>({
         party_id: resolvedPartyId ? String(resolvedPartyId) : '',
+        freight_invoice_id: resolvedInvoiceId ? String(resolvedInvoiceId) : '',
+        bill_number: fixedInvoice?.bill_number ?? '',
         payment_date: new Date().toISOString().slice(0, 10),
         amount: '',
         payment_mode: 'neft',
@@ -74,25 +121,41 @@ export default function RecordPaymentForm({
         notes: '',
     });
 
-    const loadMeta = useCallback(async (selectedPartyId?: string) => {
-        const payload: Record<string, string | number> = {};
-        if (selectedPartyId) {
-            payload.party_id = selectedPartyId;
-        }
+    const loadMeta = useCallback(
+        async (options?: {
+            partyId?: string;
+            invoiceId?: string;
+            billNumber?: string;
+        }) => {
+            const payload: Record<string, string | number> = {};
+            if (options?.partyId) {
+                payload.party_id = options.partyId;
+            }
+            if (options?.invoiceId) {
+                payload.freight_invoice_id = options.invoiceId;
+            }
+            if (options?.billNumber?.trim()) {
+                payload.bill_number = options.billNumber.trim();
+            }
 
-        const res = await appApiPost<ApiEnvelope<InvoicePaymentMetaData>>(
-            '/invoice-payments/invoice-payment-meta',
-            payload,
-        );
+            const res = await appApiPost<ApiEnvelope<InvoicePaymentMetaData>>(
+                '/invoice-payments/invoice-payment-meta',
+                payload,
+            );
 
-        if (!res.success || !res.data) {
-            throw new Error(res.message || 'Could not load form data.');
-        }
+            if (!res.success || !res.data) {
+                throw new Error(res.message || 'Could not load form data.');
+            }
 
-        setParties(res.data.parties);
-        setPartySummary(res.data.partySummary);
-        setPaymentModes(res.data.paymentModes);
-    }, []);
+            setParties(res.data.parties);
+            setOpenInvoices(res.data.openInvoices ?? []);
+            setInvoiceSummary(res.data.invoiceSummary ?? null);
+            setPaymentModes(res.data.paymentModes);
+
+            return res.data;
+        },
+        [],
+    );
 
     useEffect(() => {
         setLoading(true);
@@ -113,26 +176,44 @@ export default function RecordPaymentForm({
 
                     const row = res.data.invoicePayment;
                     setParties(res.data.parties);
-                    setPartySummary(res.data.partySummary);
+                    setOpenInvoices(res.data.openInvoices ?? []);
+                    setInvoiceSummary(res.data.invoiceSummary ?? null);
                     setPaymentModes(res.data.paymentModes);
                     setData({
                         party_id: String(row.party_id),
+                        freight_invoice_id: row.freight_invoice_id
+                            ? String(row.freight_invoice_id)
+                            : '',
+                        bill_number: billNumberFromPayment(row),
                         payment_date: dateInputValue(row.payment_date),
                         amount: String(row.amount),
                         payment_mode: row.payment_mode ?? 'neft',
                         reference_no: row.reference_no ?? '',
                         notes: row.notes ?? '',
                     });
-
-                    if (!res.data.partySummary) {
-                        await loadMeta(String(row.party_id));
-                    }
                 } else {
-                    await loadMeta(resolvedPartyId ? String(resolvedPartyId) : undefined);
+                    const partyKey = resolvedPartyId ? String(resolvedPartyId) : undefined;
+                    const invoiceKey = resolvedInvoiceId ? String(resolvedInvoiceId) : undefined;
+                    const meta = await loadMeta({
+                        partyId: partyKey,
+                        invoiceId: invoiceKey,
+                        billNumber: fixedInvoice?.bill_number,
+                    });
+
+                    const matchedInvoice = invoiceKey
+                        ? meta.openInvoices.find((inv) => String(inv.id) === invoiceKey)
+                        : undefined;
 
                     setData((prev) => ({
                         ...prev,
-                        party_id: resolvedPartyId ? String(resolvedPartyId) : prev.party_id,
+                        party_id:
+                            partyKey ??
+                            (matchedInvoice ? String(matchedInvoice.party_id) : prev.party_id),
+                        freight_invoice_id: invoiceKey ?? prev.freight_invoice_id,
+                        bill_number:
+                            fixedInvoice?.bill_number ??
+                            matchedInvoice?.bill_number ??
+                            prev.bill_number,
                     }));
                 }
             } catch {
@@ -143,31 +224,70 @@ export default function RecordPaymentForm({
         };
 
         void load();
-    }, [invoicePaymentId, resolvedPartyId, loadMeta]);
+    }, [invoicePaymentId, resolvedPartyId, resolvedInvoiceId, loadMeta]);
 
-    const activePartySummary = useMemo((): PartyPaymentSummary | null => {
-        if (fixedParty) {
+    const billOptions = useMemo(() => {
+        const partyFilter = data.party_id || (fixedParty ? String(fixedParty.id) : '');
+
+        if (!partyFilter) {
+            return openInvoices;
+        }
+
+        return openInvoices.filter((inv) => String(inv.party_id) === partyFilter);
+    }, [openInvoices, data.party_id, fixedParty]);
+
+    const selectedOpenInvoice = useMemo(
+        () =>
+            openInvoices.find((inv) => String(inv.id) === data.freight_invoice_id) ??
+            matchOpenInvoice(openInvoices, data.bill_number, data.party_id || undefined),
+        [openInvoices, data.freight_invoice_id, data.bill_number, data.party_id],
+    );
+
+    const activeInvoiceSummary = useMemo((): InvoicePaymentSummary | null => {
+        if (fixedInvoice) {
             return {
-                balance_due: Number(fixedParty.balance_due),
-                received: Number(fixedParty.received),
-                outstanding: Number(fixedParty.outstanding),
+                received: Number(fixedInvoice.received),
+                outstanding: Number(fixedInvoice.outstanding),
+                payment_status:
+                    Number(fixedInvoice.outstanding) <= 0
+                        ? 'paid'
+                        : Number(fixedInvoice.received) > 0
+                          ? 'partial'
+                          : 'pending',
             };
         }
 
-        return partySummary;
-    }, [fixedParty, partySummary]);
+        if (invoiceSummary) {
+            return invoiceSummary;
+        }
+
+        if (selectedOpenInvoice) {
+            return {
+                received: selectedOpenInvoice.received,
+                outstanding: selectedOpenInvoice.outstanding,
+                payment_status:
+                    selectedOpenInvoice.outstanding <= 0
+                        ? 'paid'
+                        : selectedOpenInvoice.received > 0
+                          ? 'partial'
+                          : 'pending',
+            };
+        }
+
+        return null;
+    }, [fixedInvoice, invoiceSummary, selectedOpenInvoice]);
 
     const maxAmount = useMemo(() => {
-        if (!activePartySummary) {
+        if (!activeInvoiceSummary) {
             return null;
         }
 
         if (isEdit && invoicePaymentId) {
-            return activePartySummary.outstanding + Number(data.amount || 0);
+            return activeInvoiceSummary.outstanding + Number(data.amount || 0);
         }
 
-        return activePartySummary.outstanding;
-    }, [activePartySummary, isEdit, invoicePaymentId, data.amount]);
+        return activeInvoiceSummary.outstanding;
+    }, [activeInvoiceSummary, isEdit, invoicePaymentId, data.amount]);
 
     const setField = (field: keyof PaymentFormData, value: string) => {
         setData((prev) => ({ ...prev, [field]: value }));
@@ -179,12 +299,55 @@ export default function RecordPaymentForm({
     };
 
     const onPartyChange = async (nextPartyId: string) => {
-        setField('party_id', nextPartyId);
+        setData((prev) => ({
+            ...prev,
+            party_id: nextPartyId,
+            freight_invoice_id: '',
+            bill_number: '',
+        }));
+        setInvoiceSummary(null);
 
         try {
-            await loadMeta(nextPartyId || undefined);
+            await loadMeta({ partyId: nextPartyId || undefined });
         } catch {
-            setLoadError('Could not load party outstanding.');
+            setLoadError('Could not load bills for this party.');
+        }
+    };
+
+    const urlLockedParty = Boolean(resolvedPartyId && !fixedParty && !fixedInvoice && !isEdit);
+    const activePartyId =
+        data.party_id ||
+        (fixedParty ? String(fixedParty.id) : '') ||
+        (resolvedPartyId ? String(resolvedPartyId) : '');
+    const activePartyName =
+        fixedParty?.name ??
+        parties.find((party) => String(party.id) === activePartyId)?.name ??
+        selectedOpenInvoice?.party_name ??
+        '';
+
+    const onBillSelect = async (nextInvoiceId: string) => {
+        const invoice = billOptions.find((inv) => String(inv.id) === nextInvoiceId);
+
+        setData((prev) => ({
+            ...prev,
+            freight_invoice_id: nextInvoiceId,
+            bill_number: invoice?.bill_number ?? '',
+            party_id: invoice ? String(invoice.party_id) : prev.party_id,
+        }));
+
+        if (!invoice) {
+            setInvoiceSummary(null);
+            return;
+        }
+
+        try {
+            await loadMeta({
+                partyId: String(invoice.party_id),
+                invoiceId: String(invoice.id),
+                billNumber: invoice.bill_number,
+            });
+        } catch {
+            setLoadError('Could not load bill details.');
         }
     };
 
@@ -204,6 +367,10 @@ export default function RecordPaymentForm({
         try {
             const payload = {
                 party_id: Number(data.party_id),
+                freight_invoice_id: data.freight_invoice_id
+                    ? Number(data.freight_invoice_id)
+                    : null,
+                bill_number: data.bill_number.trim() || null,
                 payment_date: data.payment_date,
                 amount: Number(data.amount),
                 payment_mode: data.payment_mode || null,
@@ -245,9 +412,10 @@ export default function RecordPaymentForm({
             'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500',
         );
 
-    const selectedPartyName =
-        parties.find((party) => String(party.id) === data.party_id)?.name ??
-        fixedParty?.name ??
+    const selectedBillNumber =
+        fixedInvoice?.bill_number ??
+        data.bill_number ??
+        selectedOpenInvoice?.bill_number ??
         '';
 
     if (loading) {
@@ -263,74 +431,120 @@ export default function RecordPaymentForm({
             )}
 
             <form onSubmit={submit} className="space-y-5">
-                {fixedParty ? (
+                {fixedInvoice ? (
                     <div className="rounded-lg bg-gray-50 p-4 text-sm">
-                        <p className="font-medium text-gray-900">{fixedParty.name}</p>
-                        <p className="mt-1 text-gray-600">Party account (receiver)</p>
+                        <p className="font-mono font-semibold text-gray-900">
+                            {fixedInvoice.bill_number}
+                        </p>
+                        <p className="mt-1 text-gray-600">Bill (tax invoice)</p>
                         <dl className="mt-3 grid gap-2 sm:grid-cols-3">
                             <div>
                                 <dt className="text-gray-500">Balance due</dt>
                                 <dd className="font-medium">
-                                    ₹ {formatMoney(fixedParty.balance_due)}
+                                    ₹ {formatMoney(fixedInvoice.balance_amount)}
                                 </dd>
                             </div>
                             <div>
                                 <dt className="text-gray-500">Already received</dt>
                                 <dd className="font-medium text-green-700">
-                                    ₹ {formatMoney(fixedParty.received)}
+                                    ₹ {formatMoney(fixedInvoice.received)}
                                 </dd>
                             </div>
                             <div>
                                 <dt className="text-gray-500">Outstanding</dt>
                                 <dd className="font-semibold text-indigo-700">
-                                    ₹ {formatMoney(fixedParty.outstanding)}
+                                    ₹ {formatMoney(fixedInvoice.outstanding)}
                                 </dd>
                             </div>
                         </dl>
                     </div>
                 ) : (
-                    <div>
-                        <InputLabel value="Party (receiver)" />
-                        <select
-                            className={inputClass('party_id')}
-                            value={data.party_id}
-                            onChange={(e) => void onPartyChange(e.target.value)}
-                            disabled={partyLocked && Boolean(resolvedPartyId) && !isEdit}
-                        >
-                            <option value="">Select party</option>
-                            {parties.map((party) => (
-                                <option key={party.id} value={party.id}>
-                                    {party.name}
-                                </option>
-                            ))}
-                        </select>
-                        <InputError message={errors.party_id} className="mt-1" />
-                    </div>
+                    <>
+                        {fixedParty || urlLockedParty ? (
+                            <div className="rounded-lg bg-gray-50 p-4 text-sm">
+                                <p className="font-medium text-gray-900">{activePartyName}</p>
+                                <p className="mt-1 text-gray-600">Party (receiver)</p>
+                            </div>
+                        ) : (
+                            <div>
+                                <InputLabel value="Party (receiver)" />
+                                <select
+                                    className={inputClass('party_id')}
+                                    value={data.party_id}
+                                    onChange={(e) => void onPartyChange(e.target.value)}
+                                >
+                                    <option value="">Select party</option>
+                                    {parties.map((party) => (
+                                        <option key={party.id} value={party.id}>
+                                            {party.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError message={errors.party_id} className="mt-1" />
+                            </div>
+                        )}
+
+                        <div>
+                            <InputLabel value="Bill No." />
+                            <select
+                                className={`${inputClass('freight_invoice_id')} font-mono`}
+                                value={data.freight_invoice_id}
+                                onChange={(e) => void onBillSelect(e.target.value)}
+                                disabled={!activePartyId}
+                            >
+                                <option value="">Select bill</option>
+                                {billOptions.map((inv) => (
+                                    <option key={inv.id} value={inv.id}>
+                                        {inv.bill_number} — received ₹ {formatMoney(inv.received)} —
+                                        outstanding ₹ {formatMoney(inv.outstanding)}
+                                    </option>
+                                ))}
+                            </select>
+                            <InputError
+                                message={errors.freight_invoice_id ?? errors.bill_number}
+                                className="mt-1"
+                            />
+                            {!activePartyId && (
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Select a party first to see open bills.
+                                </p>
+                            )}
+                            {activePartyId && billOptions.length === 0 && (
+                                <p className="mt-1 text-xs text-amber-700">
+                                    No bills with outstanding balance for this party.
+                                </p>
+                            )}
+                        </div>
+                    </>
                 )}
 
-                {activePartySummary && data.party_id && !fixedParty && (
+                {activeInvoiceSummary &&
+                    data.freight_invoice_id &&
+                    !fixedInvoice &&
+                    selectedOpenInvoice && (
                     <div className="rounded-lg bg-gray-50 p-4 text-sm">
-                        <p className="font-medium text-gray-900">{selectedPartyName}</p>
+                        <p className="font-mono font-semibold text-gray-900">{selectedBillNumber}</p>
                         <p className="mt-1 text-gray-600">
-                            Payment is recorded against the party account, not a specific bill.
+                            Payment is recorded against this bill only.
+                            {activePartyName ? ` · ${activePartyName}` : ''}
                         </p>
                         <dl className="mt-3 grid gap-2 sm:grid-cols-3">
                             <div>
                                 <dt className="text-gray-500">Balance due</dt>
                                 <dd className="font-medium">
-                                    ₹ {formatMoney(activePartySummary.balance_due)}
+                                    ₹ {formatMoney(selectedOpenInvoice.balance_amount)}
                                 </dd>
                             </div>
                             <div>
                                 <dt className="text-gray-500">Already received</dt>
                                 <dd className="font-medium text-green-700">
-                                    ₹ {formatMoney(activePartySummary.received)}
+                                    ₹ {formatMoney(activeInvoiceSummary.received)}
                                 </dd>
                             </div>
                             <div>
-                                <dt className="text-gray-500">Outstanding</dt>
+                                <dt className="text-gray-500">Bill outstanding</dt>
                                 <dd className="font-semibold text-indigo-700">
-                                    ₹ {formatMoney(activePartySummary.outstanding)}
+                                    ₹ {formatMoney(activeInvoiceSummary.outstanding)}
                                 </dd>
                             </div>
                         </dl>

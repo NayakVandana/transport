@@ -9,7 +9,7 @@ import Modal from '@/Components/Modal';
 import InvoicePaymentStatusBadge, {
     invoicePaymentStatusFromAmounts,
 } from '@/Components/InvoicePaymentStatusBadge';
-import RecordPaymentForm from '@/Components/RecordPaymentForm';
+import RecordPaymentForm, { type LockedPaymentInvoice } from '@/Components/RecordPaymentForm';
 import TaxInvoiceDocument from '@/invoices/TaxInvoiceDocument';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { useAppQuery } from '@/hooks/useAppQuery';
@@ -21,7 +21,6 @@ import type {
     FreightInvoice,
     InvoicePayment,
     InvoicePaymentSummary,
-    PartyPaymentSummary,
 } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
@@ -29,7 +28,6 @@ import { useState } from 'react';
 type InvoiceShowData = {
     invoice: FreightInvoice;
     paymentSummary: InvoicePaymentSummary;
-    partySummary: PartyPaymentSummary;
 };
 
 export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
@@ -49,7 +47,6 @@ export default function InvoiceShow({ invoiceId }: { invoiceId: number }) {
 
     const invoice = data?.invoice;
     const paymentSummary = data?.paymentSummary;
-    const partySummary = data?.partySummary;
     const payments = invoice?.payments ?? [];
 
 const headerBtnClass =
@@ -65,7 +62,7 @@ const headerBtnClass =
             actions={
                 invoice ? (
                     <>
-                        {partySummary && partySummary.outstanding > 0 && (
+                        {paymentSummary && paymentSummary.outstanding > 0 && (
                             <PrimaryButton
                                 type="button"
                                 className={headerBtnClass}
@@ -98,7 +95,7 @@ const headerBtnClass =
                 ) : undefined
             }
         />,
-        [invoice?.id, invoice?.bill_number, partySummary?.outstanding],
+        [invoice?.id, invoice?.bill_number, paymentSummary?.outstanding],
     );
 
     return (
@@ -263,8 +260,20 @@ const headerBtnClass =
                     {invoice && (
                         <div className="mt-4">
                             <RecordPaymentForm
-                                key={invoice.party_id}
-                                partyId={invoice.party_id}
+                                key={invoice.id}
+                                invoiceId={invoice.id}
+                                lockedInvoice={
+                                    paymentSummary
+                                        ? ({
+                                              id: invoice.id,
+                                              bill_number: invoice.bill_number,
+                                              party_id: invoice.party_id,
+                                              balance_amount: invoice.balance_amount,
+                                              received: paymentSummary.received,
+                                              outstanding: paymentSummary.outstanding,
+                                          } satisfies LockedPaymentInvoice)
+                                        : undefined
+                                }
                                 onSuccess={() => {
                                     setPaymentOpen(false);
                                     void refresh();

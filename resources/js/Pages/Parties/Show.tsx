@@ -313,6 +313,23 @@ export default function PartyShow({
     );
 }
 
+function LedgerBillCell({ row }: { row: PartyLedgerEntry }) {
+    const billNumber = row.bill_number ?? (row.type === 'invoice' ? row.reference : '');
+
+    if (billNumber && row.invoice_id) {
+        return (
+            <Link
+                href={route('invoices.show', row.invoice_id)}
+                className="font-mono text-indigo-600 hover:underline"
+            >
+                {billNumber}
+            </Link>
+        );
+    }
+
+    return <span className="font-mono text-gray-700">{billNumber || '—'}</span>;
+}
+
 function LedgerTable({ rows }: { rows: PartyLedgerEntry[] }) {
     return (
         <ListingTableShell
@@ -339,6 +356,11 @@ function LedgerTable({ rows }: { rows: PartyLedgerEntry[] }) {
                         value: `₹ ${formatMoney(row.balance)}`,
                     }}
                     fields={[
+                        {
+                            label: 'Bill No.',
+                            value: <LedgerBillCell row={row} />,
+                            fullWidth: true,
+                        },
                         ...(row.debit > 0
                             ? [
                                   {
@@ -361,6 +383,7 @@ function LedgerTable({ rows }: { rows: PartyLedgerEntry[] }) {
                 <tr>
                     <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-500">Particulars</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Bill No.</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-500">Reference</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Debit</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Credit</th>
@@ -380,17 +403,9 @@ function LedgerTable({ rows }: { rows: PartyLedgerEntry[] }) {
                     <td className="px-4 py-3">{formatAppDateTime(row.date)}</td>
                     <td className="px-4 py-3">{row.particulars}</td>
                     <td className="px-4 py-3">
-                        {row.invoice_id ? (
-                            <Link
-                                href={route('invoices.show', row.invoice_id)}
-                                className="text-indigo-600 hover:underline"
-                            >
-                                {row.reference}
-                            </Link>
-                        ) : (
-                            row.reference || '—'
-                        )}
+                        <LedgerBillCell row={row} />
                     </td>
+                    <td className="px-4 py-3">{row.reference || '—'}</td>
                     <td className="px-4 py-3 text-right">
                         {row.debit > 0 ? `₹ ${formatMoney(row.debit)}` : '—'}
                     </td>

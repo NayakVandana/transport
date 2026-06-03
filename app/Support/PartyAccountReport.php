@@ -45,6 +45,7 @@ class PartyAccountReport
      *         date: string,
      *         type: string,
      *         reference: string,
+     *         bill_number: string,
      *         particulars: string,
      *         debit: float,
      *         credit: float,
@@ -118,7 +119,7 @@ class PartyAccountReport
             'reference_no' => $payment->reference_no,
             'notes' => $payment->notes,
             'freight_invoice_id' => $payment->freight_invoice_id,
-            'bill_number' => $payment->freightInvoice?->bill_number ?? '',
+            'bill_number' => $payment->bill_number ?? $payment->freightInvoice?->bill_number ?? '',
         ])->values()->all();
 
         $lastPaymentDate = $payments->first()?->payment_date?->format('Y-m-d');
@@ -199,6 +200,7 @@ class PartyAccountReport
                 'date' => $date,
                 'type' => 'invoice',
                 'reference' => $invoice->bill_number,
+                'bill_number' => $invoice->bill_number,
                 'particulars' => 'Tax Invoice',
                 'debit' => round((float) $invoice->balance_amount, 2),
                 'credit' => 0.0,
@@ -216,14 +218,15 @@ class PartyAccountReport
                 continue;
             }
 
-            $reference = $payment->reference_no
-                ?: ($payment->freightInvoice?->bill_number ?? 'Party payment');
+            $billNumber = $payment->bill_number ?: ($payment->freightInvoice?->bill_number ?? '');
+            $reference = $payment->reference_no ?? '';
             $mode = $payment->payment_mode ? strtoupper($payment->payment_mode) : 'Payment';
 
             $entries[] = [
                 'date' => $date,
                 'type' => 'payment',
                 'reference' => $reference,
+                'bill_number' => $billNumber,
                 'particulars' => "Received — {$mode}",
                 'debit' => 0.0,
                 'credit' => round((float) $payment->amount, 2),
