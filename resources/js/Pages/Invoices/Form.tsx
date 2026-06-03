@@ -64,6 +64,8 @@ function buildEmptyLine(existing?: FreightInvoiceLine): FreightInvoiceLine {
         advance_paid: 0,
         empty_container_charge: 0,
         detention: 0,
+        weightman: 0,
+        parking: 0,
     };
 }
 
@@ -687,6 +689,40 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                                                             }
                                                         />
                                                     </div>
+                                                    <div>
+                                                        <InputLabel value="Weightman" />
+                                                        <TextInput
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                            value={line.weightman ?? 0}
+                                                            onChange={(e) =>
+                                                                updateLine(
+                                                                    i,
+                                                                    'weightman',
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <InputLabel value="Parking" />
+                                                        <TextInput
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                            value={line.parking ?? 0}
+                                                            onChange={(e) =>
+                                                                updateLine(
+                                                                    i,
+                                                                    'parking',
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -722,6 +758,22 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                                             <dt className="text-gray-500">Detention</dt>
                                             <dd className="font-medium">
                                                 ₹ {formatMoney(totals.total_detention)}
+                                            </dd>
+                                        </div>
+                                    )}
+                                    {totals.total_weightman > 0 && (
+                                        <div className="flex justify-between gap-4 sm:block">
+                                            <dt className="text-gray-500">Weightman</dt>
+                                            <dd className="font-medium">
+                                                ₹ {formatMoney(totals.total_weightman)}
+                                            </dd>
+                                        </div>
+                                    )}
+                                    {totals.total_parking > 0 && (
+                                        <div className="flex justify-between gap-4 sm:block">
+                                            <dt className="text-gray-500">Parking</dt>
+                                            <dd className="font-medium">
+                                                ₹ {formatMoney(totals.total_parking)}
                                             </dd>
                                         </div>
                                     )}

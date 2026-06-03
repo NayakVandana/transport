@@ -3,7 +3,7 @@ import type { FreightInvoiceLine, InvoiceTotals } from '@/types/transport';
 export function calculateFreightInvoice(
     lines: Pick<
         FreightInvoiceLine,
-        'weight' | 'rate' | 'advance_paid' | 'empty_container_charge' | 'detention'
+        'weight' | 'rate' | 'advance_paid' | 'empty_container_charge' | 'detention' | 'weightman' | 'parking'
     >[],
     igstRate = 5,
 ): InvoiceTotals {
@@ -11,6 +11,8 @@ export function calculateFreightInvoice(
     let totalFreight = 0;
     let totalEmptyContainer = 0;
     let totalDetention = 0;
+    let totalWeightman = 0;
+    let totalParking = 0;
     let totalAdvance = 0;
 
     for (const line of lines) {
@@ -21,11 +23,16 @@ export function calculateFreightInvoice(
         totalFreight += freight;
         totalEmptyContainer += Number(line.empty_container_charge) || 0;
         totalDetention += Number(line.detention) || 0;
+        totalWeightman += Number(line.weightman) || 0;
+        totalParking += Number(line.parking) || 0;
         totalAdvance += Number(line.advance_paid) || 0;
     }
 
     const netValue =
-        Math.round((totalFreight + totalEmptyContainer + totalDetention) * 100) / 100;
+        Math.round(
+            (totalFreight + totalEmptyContainer + totalDetention + totalWeightman + totalParking) *
+                100,
+        ) / 100;
     const balance = Math.round((netValue - totalAdvance) * 100) / 100;
     const igstAmount = Math.round(netValue * (igstRate / 100) * 100) / 100;
 
@@ -35,6 +42,8 @@ export function calculateFreightInvoice(
         total_empty_container_charge:
             Math.round(totalEmptyContainer * 100) / 100,
         total_detention: Math.round(totalDetention * 100) / 100,
+        total_weightman: Math.round(totalWeightman * 100) / 100,
+        total_parking: Math.round(totalParking * 100) / 100,
         net_value: netValue,
         total_advance: Math.round(totalAdvance * 100) / 100,
         balance_amount: balance,

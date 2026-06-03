@@ -22,6 +22,8 @@ class FreightInvoiceLine extends Model
         'advance_paid',
         'empty_container_charge',
         'detention',
+        'weightman',
+        'parking',
     ];
 
     protected function casts(): array
@@ -34,6 +36,8 @@ class FreightInvoiceLine extends Model
             'advance_paid' => 'decimal:2',
             'empty_container_charge' => 'decimal:2',
             'detention' => 'decimal:2',
+            'weightman' => 'decimal:2',
+            'parking' => 'decimal:2',
         ];
     }
 

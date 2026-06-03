@@ -229,7 +229,7 @@
                     <td class="right nowrap">{{ ListExport::formatMoney($row->rate) }}</td>
                     <td class="right nowrap">{{ ListExport::formatMoney(TaxInvoicePdf::lineFreight($row)) }}</td>
                 </tr>
-                @if ((float) $row->advance_paid > 0 || (float) $row->empty_container_charge > 0 || (float) $row->detention > 0)
+                @if ((float) $row->advance_paid > 0 || (float) $row->empty_container_charge > 0 || (float) $row->detention > 0 || (float) $row->weightman > 0 || (float) $row->parking > 0)
                     <tr class="sub-line">
                         <td colspan="9">
                             @if ((float) $row->advance_paid > 0)
@@ -242,6 +242,14 @@
                             @if ((float) $row->detention > 0)
                                 @if ((float) $row->advance_paid > 0 || (float) $row->empty_container_charge > 0) &nbsp;&nbsp; @endif
                                 DETENTION : {{ ListExport::formatMoney($row->detention) }}
+                            @endif
+                            @if ((float) $row->weightman > 0)
+                                @if ((float) $row->advance_paid > 0 || (float) $row->empty_container_charge > 0 || (float) $row->detention > 0) &nbsp;&nbsp; @endif
+                                WEIGHTMAN : {{ ListExport::formatMoney($row->weightman) }}
+                            @endif
+                            @if ((float) $row->parking > 0)
+                                @if ((float) $row->advance_paid > 0 || (float) $row->empty_container_charge > 0 || (float) $row->detention > 0 || (float) $row->weightman > 0) &nbsp;&nbsp; @endif
+                                PARKING : {{ ListExport::formatMoney($row->parking) }}
                             @endif
                         </td>
                     </tr>
@@ -281,6 +289,18 @@
                         <tr>
                             <td class="label">Detention</td>
                             <td class="value">: {{ ListExport::formatMoney($invoice->total_detention) }}</td>
+                        </tr>
+                    @endif
+                    @if ((float) $invoice->total_weightman > 0)
+                        <tr>
+                            <td class="label">Weightman</td>
+                            <td class="value">: {{ ListExport::formatMoney($invoice->total_weightman) }}</td>
+                        </tr>
+                    @endif
+                    @if ((float) $invoice->total_parking > 0)
+                        <tr>
+                            <td class="label">Parking</td>
+                            <td class="value">: {{ ListExport::formatMoney($invoice->total_parking) }}</td>
                         </tr>
                     @endif
                     <tr>

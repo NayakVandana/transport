@@ -5,12 +5,14 @@ namespace App\Support;
 class FreightInvoiceCalculator
 {
     /**
-     * @param  list<array{weight: float|int|string, rate: float|int|string, advance_paid?: float|int|string, empty_container_charge?: float|int|string, detention?: float|int|string}>  $lines
+     * @param  list<array{weight: float|int|string, rate: float|int|string, advance_paid?: float|int|string, empty_container_charge?: float|int|string, detention?: float|int|string, weightman?: float|int|string, parking?: float|int|string}>  $lines
      * @return array{
      *     total_weight: float,
      *     total_freight: float,
      *     total_empty_container_charge: float,
      *     total_detention: float,
+     *     total_weightman: float,
+     *     total_parking: float,
      *     net_value: float,
      *     total_advance: float,
      *     balance_amount: float,
@@ -25,6 +27,8 @@ class FreightInvoiceCalculator
         $totalFreight = 0.0;
         $totalEmptyContainer = 0.0;
         $totalDetention = 0.0;
+        $totalWeightman = 0.0;
+        $totalParking = 0.0;
         $totalAdvance = 0.0;
         $lineFreights = [];
 
@@ -35,16 +39,23 @@ class FreightInvoiceCalculator
             $advance = (float) ($line['advance_paid'] ?? 0);
             $emptyCharge = (float) ($line['empty_container_charge'] ?? 0);
             $detention = (float) ($line['detention'] ?? 0);
+            $weightman = (float) ($line['weightman'] ?? 0);
+            $parking = (float) ($line['parking'] ?? 0);
 
             $lineFreights[] = $freight;
             $totalWeight += $weight;
             $totalFreight += $freight;
             $totalEmptyContainer += $emptyCharge;
             $totalDetention += $detention;
+            $totalWeightman += $weightman;
+            $totalParking += $parking;
             $totalAdvance += $advance;
         }
 
-        $netValue = round($totalFreight + $totalEmptyContainer + $totalDetention, 2);
+        $netValue = round(
+            $totalFreight + $totalEmptyContainer + $totalDetention + $totalWeightman + $totalParking,
+            2,
+        );
         $balance = round($netValue - $totalAdvance, 2);
         $grossFreight = $netValue;
         $igstAmount = round($grossFreight * ($igstRate / 100), 2);
@@ -54,6 +65,8 @@ class FreightInvoiceCalculator
             'total_freight' => round($totalFreight, 2),
             'total_empty_container_charge' => round($totalEmptyContainer, 2),
             'total_detention' => round($totalDetention, 2),
+            'total_weightman' => round($totalWeightman, 2),
+            'total_parking' => round($totalParking, 2),
             'net_value' => $netValue,
             'total_advance' => round($totalAdvance, 2),
             'balance_amount' => $balance,
@@ -64,7 +77,7 @@ class FreightInvoiceCalculator
     }
 
     /**
-     * @param  list<array{weight: float|int|string, rate: float|int|string, advance_paid?: float|int|string, empty_container_charge?: float|int|string, detention?: float|int|string}>  $lines
+     * @param  list<array{weight: float|int|string, rate: float|int|string, advance_paid?: float|int|string, empty_container_charge?: float|int|string, detention?: float|int|string, weightman?: float|int|string, parking?: float|int|string}>  $lines
      * @return array{0: array<string, float>, 1: list<float>}
      */
     public static function forPersistence(array $lines, float $igstRate = 5): array

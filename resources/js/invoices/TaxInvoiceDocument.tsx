@@ -198,7 +198,9 @@ export default function TaxInvoiceDocument({
                                                     </tr>
                                                 {(Number(row.advance_paid) > 0 ||
                                                     Number(row.empty_container_charge) > 0 ||
-                                                    Number(row.detention) > 0) && (
+                                                    Number(row.detention) > 0 ||
+                                                    Number(row.weightman) > 0 ||
+                                                    Number(row.parking) > 0) && (
                                                     <tr>
                                                         <td
                                                             colSpan={9}
@@ -222,6 +224,18 @@ export default function TaxInvoiceDocument({
                                                                 <span className="ml-2 sm:ml-4">
                                                                     DETENTION :{' '}
                                                                     {formatMoney(row.detention ?? 0)}
+                                                                </span>
+                                                            )}
+                                                            {Number(row.weightman) > 0 && (
+                                                                <span className="ml-2 sm:ml-4">
+                                                                    WEIGHTMAN :{' '}
+                                                                    {formatMoney(row.weightman ?? 0)}
+                                                                </span>
+                                                            )}
+                                                            {Number(row.parking) > 0 && (
+                                                                <span className="ml-2 sm:ml-4">
+                                                                    PARKING :{' '}
+                                                                    {formatMoney(row.parking ?? 0)}
                                                                 </span>
                                                             )}
                                                         </td>
@@ -270,6 +284,22 @@ export default function TaxInvoiceDocument({
                                             <td className="py-0.5 pr-4 text-right">Detention</td>
                                             <td className="whitespace-nowrap py-0.5 text-right">
                                                 : {formatMoney(invoice.total_detention)}
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {Number(invoice.total_weightman) > 0 && (
+                                        <tr>
+                                            <td className="py-0.5 pr-4 text-right">Weightman</td>
+                                            <td className="whitespace-nowrap py-0.5 text-right">
+                                                : {formatMoney(invoice.total_weightman)}
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {Number(invoice.total_parking) > 0 && (
+                                        <tr>
+                                            <td className="py-0.5 pr-4 text-right">Parking</td>
+                                            <td className="whitespace-nowrap py-0.5 text-right">
+                                                : {formatMoney(invoice.total_parking)}
                                             </td>
                                         </tr>
                                     )}

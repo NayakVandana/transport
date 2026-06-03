@@ -243,6 +243,8 @@ class FreightInvoiceApiController extends Controller
                 'lines.*.advance_paid' => ['nullable', 'numeric', 'min:0'],
                 'lines.*.empty_container_charge' => ['nullable', 'numeric', 'min:0'],
                 'lines.*.detention' => ['nullable', 'numeric', 'min:0'],
+                'lines.*.weightman' => ['nullable', 'numeric', 'min:0'],
+                'lines.*.parking' => ['nullable', 'numeric', 'min:0'],
             ]);
 
             if ($validation->fails()) {
@@ -337,6 +339,8 @@ class FreightInvoiceApiController extends Controller
                 'lines.*.advance_paid' => ['nullable', 'numeric', 'min:0'],
                 'lines.*.empty_container_charge' => ['nullable', 'numeric', 'min:0'],
                 'lines.*.detention' => ['nullable', 'numeric', 'min:0'],
+                'lines.*.weightman' => ['nullable', 'numeric', 'min:0'],
+                'lines.*.parking' => ['nullable', 'numeric', 'min:0'],
             ]);
 
             if ($validation->fails()) {
@@ -504,6 +508,8 @@ class FreightInvoiceApiController extends Controller
                 'advance_paid' => $line['advance_paid'] ?? 0,
                 'empty_container_charge' => $line['empty_container_charge'] ?? 0,
                 'detention' => $line['detention'] ?? 0,
+                'weightman' => $line['weightman'] ?? 0,
+                'parking' => $line['parking'] ?? 0,
             ]);
         }
     }

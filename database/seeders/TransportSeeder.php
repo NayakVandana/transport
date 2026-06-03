@@ -356,6 +356,8 @@ class TransportSeeder extends Seeder
                     'advance_paid' => $line['advance_paid'],
                     'empty_container_charge' => $line['empty_container_charge'],
                     'detention' => $line['detention'] ?? 0,
+                    'weightman' => $line['weightman'] ?? 0,
+                    'parking' => $line['parking'] ?? 0,
                 ]);
             }
         }
