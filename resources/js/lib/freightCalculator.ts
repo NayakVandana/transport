@@ -54,8 +54,11 @@ export function formatMoney(value: number | string): string {
 export function calculateEntrybookBalance(
     freight: number | string,
     advance: number | string,
+    detention: number | string = 0,
 ): number {
-    return Math.round(((Number(freight) || 0) - (Number(advance) || 0)) * 100) / 100;
+    return Math.round(
+        ((Number(freight) || 0) + (Number(detention) || 0) - (Number(advance) || 0)) * 100,
+    ) / 100;
 }
 
 export function calculateVehicleExpenseBalance(

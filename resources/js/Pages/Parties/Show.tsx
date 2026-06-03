@@ -436,6 +436,10 @@ function EntrybooksTable({ rows }: { rows: PartyEntrybookRow[] }) {
                             label: 'Freight',
                             value: `₹ ${formatMoney(row.freight)}`,
                         },
+                        {
+                            label: 'Detention',
+                            value: `₹ ${formatMoney(row.detention ?? 0)}`,
+                        },
                     ]}
                     actions={
                         <ListingMobileAction
@@ -455,6 +459,7 @@ function EntrybooksTable({ rows }: { rows: PartyEntrybookRow[] }) {
                     <th className="px-4 py-3 text-left font-medium text-gray-500">From</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Detention</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
                 </tr>
@@ -467,6 +472,7 @@ function EntrybooksTable({ rows }: { rows: PartyEntrybookRow[] }) {
                     <td className="px-4 py-3">{row.route_from || '—'}</td>
                     <td className="px-4 py-3 text-right">₹ {formatMoney(row.freight)}</td>
                     <td className="px-4 py-3 text-right">₹ {formatMoney(row.advance)}</td>
+                    <td className="px-4 py-3 text-right">₹ {formatMoney(row.detention ?? 0)}</td>
                     <td className="px-4 py-3 text-right font-medium">
                         ₹ {formatMoney(row.balance)}
                     </td>

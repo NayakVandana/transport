@@ -114,9 +114,10 @@ class EntrybookApiController extends Controller
                         fn ($query) => $query->where('user_id', $request->user()->id),
                     ),
                 ],
-                'route_from' => ['nullable', 'string', 'max:255'],
+                'route_from' => ['required', 'string', 'max:255'],
                 'freight' => ['required', 'numeric', 'min:0'],
                 'advance' => ['nullable', 'numeric', 'min:0'],
+                'detention' => ['nullable', 'numeric', 'min:0'],
             ]);
 
             if ($validation->fails()) {
@@ -129,11 +130,13 @@ class EntrybookApiController extends Controller
             $validated = $validation->validated();
             $freight = (float) $validated['freight'];
             $advance = (float) ($validated['advance'] ?? 0);
+            $detention = (float) ($validated['detention'] ?? 0);
 
             $entrybook = Entrybook::query()->create([
                 ...$validated,
                 'advance' => $advance,
-                'balance' => EntrybookCalculator::balance($freight, $advance),
+                'detention' => $detention,
+                'balance' => EntrybookCalculator::balance($freight, $advance, $detention),
                 'entry_number' => $entryNumber,
                 'user_id' => $userId,
             ]);
@@ -171,9 +174,10 @@ class EntrybookApiController extends Controller
                         fn ($query) => $query->where('user_id', $request->user()->id),
                     ),
                 ],
-                'route_from' => ['nullable', 'string', 'max:255'],
+                'route_from' => ['required', 'string', 'max:255'],
                 'freight' => ['required', 'numeric', 'min:0'],
                 'advance' => ['nullable', 'numeric', 'min:0'],
+                'detention' => ['nullable', 'numeric', 'min:0'],
             ]);
 
             if ($validation->fails()) {
@@ -189,11 +193,13 @@ class EntrybookApiController extends Controller
             unset($validated['id']);
             $freight = (float) $validated['freight'];
             $advance = (float) ($validated['advance'] ?? 0);
+            $detention = (float) ($validated['detention'] ?? 0);
 
             $entrybook->update([
                 ...$validated,
                 'advance' => $advance,
-                'balance' => EntrybookCalculator::balance($freight, $advance),
+                'detention' => $detention,
+                'balance' => EntrybookCalculator::balance($freight, $advance, $detention),
             ]);
 
             return $this->sendJsonResponse(true, 'Entry updated.', [
@@ -244,7 +250,7 @@ class EntrybookApiController extends Controller
                 'entrybook',
                 'Entrybook Export',
                 $filterSummary,
-                ['Entry No.', 'Date', 'Party', 'Vehicle', 'From', 'Freight', 'Advance', 'Balance'],
+                ['Entry No.', 'Date', 'Party', 'Vehicle', 'From', 'Freight', 'Advance', 'Detention', 'Balance'],
                 $entries->map(fn ($entry) => [
                     $entry->entry_number,
                     ListExport::formatDate($entry->entry_date),
@@ -253,6 +259,7 @@ class EntrybookApiController extends Controller
                     $entry->route_from ?? '',
                     $entry->freight,
                     $entry->advance,
+                    $entry->detention,
                     $entry->balance,
                 ]),
                 [
@@ -263,6 +270,7 @@ class EntrybookApiController extends Controller
                     '',
                     ListExport::formatMoney($totals['freight']),
                     ListExport::formatMoney($totals['advance']),
+                    ListExport::formatMoney($totals['detention']),
                     ListExport::formatMoney($totals['balance']),
                 ],
             );
@@ -288,7 +296,7 @@ class EntrybookApiController extends Controller
                 'entrybook',
                 'Entrybook Report',
                 $filterSummary,
-                ['Entry No.', 'Date', 'Party', 'Vehicle', 'From', 'Freight', 'Advance', 'Balance'],
+                ['Entry No.', 'Date', 'Party', 'Vehicle', 'From', 'Freight', 'Advance', 'Detention', 'Balance'],
                 $entries->map(fn ($entry) => [
                     $entry->entry_number,
                     ListExport::formatDate($entry->entry_date),
@@ -297,6 +305,7 @@ class EntrybookApiController extends Controller
                     $entry->route_from ?? '—',
                     ListExport::formatMoney($entry->freight),
                     ListExport::formatMoney($entry->advance),
+                    ListExport::formatMoney($entry->detention),
                     ListExport::formatMoney($entry->balance),
                 ]),
                 $entries->count(),
@@ -308,6 +317,7 @@ class EntrybookApiController extends Controller
                     '',
                     ListExport::formatMoney($totals['freight']),
                     ListExport::formatMoney($totals['advance']),
+                    ListExport::formatMoney($totals['detention']),
                     ListExport::formatMoney($totals['balance']),
                 ],
                 [

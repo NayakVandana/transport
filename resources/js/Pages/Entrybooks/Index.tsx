@@ -93,7 +93,7 @@ export default function EntrybooksIndex() {
     });
 
     const entries = data?.entrybooks.data ?? [];
-    const totals = data?.totals ?? { count: 0, freight: 0, advance: 0, balance: 0 };
+    const totals = data?.totals ?? { count: 0, freight: 0, advance: 0, detention: 0, balance: 0 };
 
     const displayError = actionError ?? error;
 
@@ -176,10 +176,11 @@ export default function EntrybooksIndex() {
                     ) : (
                         <>
                             {totals.count > 0 && (
-                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                                     <TotalCard label="Entries" value={String(totals.count)} />
                                     <TotalCard label="Freight" value={`₹ ${formatMoney(totals.freight)}`} />
                                     <TotalCard label="Advance" value={`₹ ${formatMoney(totals.advance)}`} />
+                                    <TotalCard label="Detention" value={`₹ ${formatMoney(totals.detention)}`} />
                                     <TotalCard label="Balance" value={`₹ ${formatMoney(totals.balance)}`} />
                                 </div>
                             )}
@@ -226,6 +227,10 @@ export default function EntrybooksIndex() {
                                                 label: 'Freight',
                                                 value: `₹ ${formatMoney(entry.freight)}`,
                                             },
+                                            {
+                                                label: 'Detention',
+                                                value: `₹ ${formatMoney(entry.detention ?? 0)}`,
+                                            },
                                         ]}
                                         actions={
                                             <ListingMobileAction
@@ -246,6 +251,7 @@ export default function EntrybooksIndex() {
                                         <th className="px-4 py-3 text-left font-medium text-gray-500">From</th>
                                         <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
                                         <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
+                                        <th className="px-4 py-3 text-right font-medium text-gray-500">Detention</th>
                                         <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
                                         <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
                                         <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
@@ -274,6 +280,9 @@ export default function EntrybooksIndex() {
                                         </td>
                                         <td className="px-4 py-3 text-right">
                                             ₹ {formatMoney(entry.advance)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            ₹ {formatMoney(entry.detention ?? 0)}
                                         </td>
                                         <td className="px-4 py-3 text-right font-medium">
                                             ₹ {formatMoney(entry.balance)}

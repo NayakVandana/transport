@@ -140,6 +140,7 @@ class PartyAccountReport
                 'route_from' => $entry->route_from ?? '',
                 'freight' => round((float) $entry->freight, 2),
                 'advance' => round((float) $entry->advance, 2),
+                'detention' => round((float) $entry->detention, 2),
                 'balance' => round((float) $entry->balance, 2),
             ])
             ->values()

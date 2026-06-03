@@ -5,6 +5,7 @@ export type EntrybookFormData = {
     route_from: string;
     freight: string;
     advance: string;
+    detention: string;
 };
 
 function isValidAmount(value: string): boolean {
@@ -28,6 +29,10 @@ export function validateEntrybookForm(
         errors.party_id = 'Please select a party.';
     }
 
+    if (!data.route_from.trim()) {
+        errors.route_from = 'Please select a route.';
+    }
+
     if (!data.freight.trim()) {
         errors.freight = 'Please enter the freight amount.';
     } else if (!isValidAmount(data.freight)) {
@@ -36,6 +41,10 @@ export function validateEntrybookForm(
 
     if (data.advance.trim() && !isValidAmount(data.advance)) {
         errors.advance = 'Advance must be a valid amount.';
+    }
+
+    if (data.detention.trim() && !isValidAmount(data.detention)) {
+        errors.detention = 'Detention must be a valid amount.';
     }
 
     return errors;

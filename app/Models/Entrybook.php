@@ -20,6 +20,7 @@ class Entrybook extends Model
         'route_from',
         'freight',
         'advance',
+        'detention',
         'balance',
     ];
 
@@ -29,6 +30,7 @@ class Entrybook extends Model
             'entry_date' => 'date',
             'freight' => 'decimal:2',
             'advance' => 'decimal:2',
+            'detention' => 'decimal:2',
             'balance' => 'decimal:2',
         ];
     }

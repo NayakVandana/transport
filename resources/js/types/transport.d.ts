@@ -66,6 +66,7 @@ export interface Entrybook {
     route_from?: string | null;
     freight: string | number;
     advance: string | number;
+    detention: string | number;
     balance: string | number;
     vehicle?: Pick<Vehicle, 'id' | 'vehicle_number'>;
     party?: Pick<Party, 'id' | 'name'>;
@@ -76,6 +77,7 @@ export interface EntrybookTotals {
     count: number;
     freight: number;
     advance: number;
+    detention: number;
     balance: number;
 }
 
@@ -161,6 +163,7 @@ export interface PartyEntrybookRow {
     route_from: string;
     freight: number;
     advance: number;
+    detention: number;
     balance: number;
 }
 

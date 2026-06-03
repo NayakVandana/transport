@@ -460,6 +460,7 @@ class TransportSeeder extends Seeder
         foreach ($entries as $row) {
             $freight = (float) $row['freight'];
             $advance = (float) $row['advance'];
+            $detention = (float) ($row['detention'] ?? 0);
 
             $result[$row['entry_number']] = Entrybook::query()->updateOrCreate(
                 [
@@ -473,7 +474,8 @@ class TransportSeeder extends Seeder
                     'route_from' => $row['route_from'],
                     'freight' => $freight,
                     'advance' => $advance,
-                    'balance' => round($freight - $advance, 2),
+                    'detention' => $detention,
+                    'balance' => round($freight + $detention - $advance, 2),
                 ],
             );
         }
