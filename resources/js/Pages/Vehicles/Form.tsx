@@ -25,6 +25,18 @@ function dateInputValue(value?: string | null): string {
     return value?.slice(0, 10) ?? '';
 }
 
+function useReturnContext() {
+    return useMemo(() => {
+        const params = new URLSearchParams(window.location.search);
+
+        if (params.get('return') === 'profile') {
+            return 'profile' as const;
+        }
+
+        return 'index' as const;
+    }, []);
+}
+
 function useInvoiceReturn() {
     return useMemo(() => {
         const params = new URLSearchParams(window.location.search);
@@ -52,7 +64,9 @@ type VehicleMetaData = {
 
 export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
     const { return_route, return_id, return_label } = useInvoiceReturn();
+    const returnTo = useReturnContext();
     const isEdit = Boolean(vehicleId);
+    const backToProfile = isEdit && returnTo === 'profile';
     const [validationMessages, setValidationMessages] = useState<VehicleValidationMessages>({});
     const [fuelTypes, setFuelTypes] = useState<string[]>([]);
     const [documentTypes, setDocumentTypes] = useState<ExpenseOption[]>([]);
@@ -211,10 +225,9 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
 
             if (documentDrafts.length > 0) {
                 const uploaded = await uploadDocumentDrafts(
-                    savedId,
-                    'vehicle_id',
                     '/vehicles/vehicle-document-store',
                     documentDrafts,
+                    { id: savedId, field: 'vehicle_id' },
                 );
 
                 if (!uploaded) {
@@ -238,7 +251,9 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                 return;
             }
 
-            router.visit(route('vehicles.index'));
+            router.visit(
+                backToProfile ? route('vehicles.show', savedId) : route('vehicles.index'),
+            );
         } catch {
             setLoadError('Could not save vehicle.');
         } finally {
@@ -246,15 +261,16 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
         }
     };
 
-    const backHref =
-        return_route && route().has(return_route)
-            ? route(
-                  return_route,
-                  return_id && return_route === 'invoices.edit'
-                      ? { invoice: return_id }
-                      : {},
-              )
-            : route('vehicles.index');
+    const backHref = backToProfile
+        ? route('vehicles.show', vehicleId!)
+        : return_route && route().has(return_route)
+          ? route(
+                return_route,
+                return_id && return_route === 'invoices.edit'
+                    ? { invoice: return_id }
+                    : {},
+            )
+          : route('vehicles.index');
 
     const inputClass = (field: keyof VehicleFormData) =>
         `mt-1 block w-full${field === 'vehicle_number' ? ' uppercase' : ''}${
@@ -268,16 +284,34 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
 
     usePageHeader(
         <FormPageHeader
-            title={isEdit ? 'Edit Vehicle' : 'Add Vehicle'}
+            title={
+                isEdit
+                    ? backToProfile
+                        ? 'Edit Vehicle Profile'
+                        : 'Edit Vehicle'
+                    : 'Add Vehicle'
+            }
             backHref={backHref}
-            backLabel={return_label ?? (isEdit ? 'Back to list' : 'Cancel')}
+            backLabel={
+                backToProfile
+                    ? 'Back to profile'
+                    : (return_label ?? (isEdit ? 'Back to list' : 'Cancel'))
+            }
         />,
-        [isEdit, backHref, return_label],
+        [isEdit, backHref, backToProfile, return_label],
     );
 
     return (
         <>
-            <Head title={isEdit ? 'Edit Vehicle' : 'Add Vehicle'} />
+            <Head
+                title={
+                    isEdit
+                        ? backToProfile
+                            ? 'Edit Vehicle Profile'
+                            : 'Edit Vehicle'
+                        : 'Add Vehicle'
+                }
+            />
 
             <FormPage size="lg">
                     {loading ? (

@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\App\AuthApiController;
+use App\Http\Controllers\Api\App\CompanyDocumentApiController;
 use App\Http\Controllers\Api\App\CompanyApiController;
+use App\Http\Controllers\Api\App\PartyDocumentApiController;
 use App\Http\Controllers\Api\App\PartyApiController;
 use App\Http\Controllers\Api\App\DashboardApiController;
 use App\Http\Controllers\Api\App\DailyReportApiController;
@@ -11,6 +13,7 @@ use App\Http\Controllers\Api\App\EntrybookApiController;
 use App\Http\Controllers\Api\App\FreightInvoiceApiController;
 use App\Http\Controllers\Api\App\InvoicePaymentApiController;
 use App\Http\Controllers\Api\App\ProfileApiController;
+use App\Http\Controllers\Api\App\UserDocumentApiController;
 use App\Http\Controllers\Api\App\RouteLocationApiController;
 use App\Http\Controllers\Api\App\VehicleApiController;
 use App\Http\Controllers\Api\App\VehicleDocumentApiController;
@@ -21,15 +24,25 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/auth/auth-logout', [AuthApiController::class, 'postAuthLogout']);
 
     Route::post('/profile/profile-show', [ProfileApiController::class, 'postProfileShow']);
+    Route::post('/profile/profile-logo-update', [ProfileApiController::class, 'postProfileLogoUpdate']);
     Route::post('/profile/profile-update', [ProfileApiController::class, 'postProfileUpdate']);
     Route::post('/profile/profile-password-update', [ProfileApiController::class, 'postProfilePasswordUpdate']);
     Route::post('/profile/profile-destroy', [ProfileApiController::class, 'postProfileDestroy']);
+
+    Route::post('/profile/user-documents-list', [UserDocumentApiController::class, 'postUserDocumentsList']);
+    Route::post('/profile/user-document-store', [UserDocumentApiController::class, 'postUserDocumentStore']);
+    Route::post('/profile/user-document-destroy', [UserDocumentApiController::class, 'postUserDocumentDestroy']);
 
     Route::post('/dashboard/dashboard-summary', [DashboardApiController::class, 'postDashboardSummary']);
     Route::post('/dashboard/dashboard-chart', [DashboardApiController::class, 'postDashboardChart']);
 
     Route::post('/company/company-show', [CompanyApiController::class, 'postCompanyShow']);
     Route::post('/company/company-update', [CompanyApiController::class, 'postCompanyUpdate']);
+    Route::post('/company/company-logo-update', [CompanyApiController::class, 'postCompanyLogoUpdate']);
+
+    Route::post('/company/company-documents-list', [CompanyDocumentApiController::class, 'postCompanyDocumentsList']);
+    Route::post('/company/company-document-store', [CompanyDocumentApiController::class, 'postCompanyDocumentStore']);
+    Route::post('/company/company-document-destroy', [CompanyDocumentApiController::class, 'postCompanyDocumentDestroy']);
 
     Route::post('/parties/parties-list', [PartyApiController::class, 'postPartiesList']);
     Route::post('/parties/parties-export-csv', [PartyApiController::class, 'postPartiesExportCsv']);
@@ -39,6 +52,11 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/parties/party-store', [PartyApiController::class, 'postPartyStore']);
     Route::post('/parties/party-update', [PartyApiController::class, 'postPartyUpdate']);
     Route::post('/parties/party-destroy', [PartyApiController::class, 'postPartyDestroy']);
+
+    Route::post('/parties/party-document-meta', [PartyDocumentApiController::class, 'postPartyDocumentMeta']);
+    Route::post('/parties/party-documents-list', [PartyDocumentApiController::class, 'postPartyDocumentsList']);
+    Route::post('/parties/party-document-store', [PartyDocumentApiController::class, 'postPartyDocumentStore']);
+    Route::post('/parties/party-document-destroy', [PartyDocumentApiController::class, 'postPartyDocumentDestroy']);
 
     Route::post('/vehicles/vehicles-list', [VehicleApiController::class, 'postVehiclesList']);
     Route::post('/vehicles/vehicles-export-csv', [VehicleApiController::class, 'postVehiclesExportCsv']);

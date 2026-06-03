@@ -63,7 +63,7 @@ class VehicleDocumentApiController extends Controller
                 ],
                 'document_type' => ['required', 'string', Rule::in(DocumentValidation::vehicleDocumentTypes())],
                 'title' => ['nullable', 'string', 'max:255'],
-                'file' => ['required', DocumentValidation::fileRule()],
+                'file' => ['required', ...DocumentValidation::fileRule()],
                 'expiry_date' => ['nullable', 'date'],
                 'notes' => ['nullable', 'string'],
             ]);
@@ -113,7 +113,7 @@ class VehicleDocumentApiController extends Controller
                 ],
                 'document_type' => ['required', 'string', Rule::in(DocumentValidation::vehicleDocumentTypes())],
                 'title' => ['nullable', 'string', 'max:255'],
-                'file' => ['nullable', DocumentValidation::fileRule()],
+                'file' => ['nullable', ...DocumentValidation::fileRule()],
                 'expiry_date' => ['nullable', 'date'],
                 'notes' => ['nullable', 'string'],
             ]);

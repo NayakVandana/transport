@@ -7,17 +7,18 @@ import PageHeaderBar, { HeaderBackLink, InlineBackLink } from '@/Components/Page
 import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { usePageHeader } from '@/hooks/usePageHeader';
-import type { EntityDocument, ExpenseOption, Party } from '@/types/transport';
+import { formatAppDateTime } from '@/lib/dateUtils';
+import { formatMoney } from '@/lib/freightCalculator';
+import type { Driver, EntityDocument, ExpenseOption } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import { PartyTabs } from './PartyTabs';
 
 function DetailItemLocal({ label, value }: { label: string; value?: string | null }) {
     return <DetailItem label={label} value={value} />;
 }
 
-export default function PartyProfileShow({ partyId }: { partyId: number }) {
-    const [party, setParty] = useState<Party | null>(null);
+export default function DriverShow({ driverId }: { driverId: number }) {
+    const [driver, setDriver] = useState<Driver | null>(null);
     const [documents, setDocuments] = useState<EntityDocument[]>([]);
     const [documentTypes, setDocumentTypes] = useState<ExpenseOption[]>([]);
     const [loading, setLoading] = useState(true);
@@ -29,46 +30,45 @@ export default function PartyProfileShow({ partyId }: { partyId: number }) {
 
         void appApiPost<
             ApiEnvelope<{
-                party: Party;
-                documents: EntityDocument[];
+                driver: Driver;
                 document_types: ExpenseOption[];
             }>
-        >('/parties/party-show', { id: partyId })
+        >('/drivers/driver-show', { id: driverId })
             .then((res) => {
-                if (!res.success || !res.data?.party) {
-                    setError(res.message || 'Could not load party.');
+                if (!res.success || !res.data?.driver) {
+                    setError(res.message || 'Could not load driver.');
                     return;
                 }
 
-                setParty(res.data.party);
-                setDocuments(res.data.documents ?? []);
+                setDriver(res.data.driver);
+                setDocuments(res.data.driver.documents ?? []);
                 setDocumentTypes(res.data.document_types ?? []);
             })
             .catch(() => {
-                setError('Could not load party.');
+                setError('Could not load driver.');
             })
             .finally(() => setLoading(false));
-    }, [partyId]);
+    }, [driverId]);
 
     usePageHeader(
         <PageHeaderBar
             layout="compact"
-            title={party?.name ?? 'Party'}
-            subtitle={party?.mobile}
+            title={driver?.name ?? 'Driver'}
+            subtitle={driver?.mobile}
             actions={
                 <div className="hidden shrink-0 sm:block">
-                    <HeaderBackLink href={route('parties.index')} />
+                    <HeaderBackLink href={route('drivers.index')} />
                 </div>
             }
         />,
-        [party?.name, party?.mobile],
+        [driver?.name, driver?.mobile],
     );
 
-    const editHref = `${route('parties.edit', partyId)}?return=profile`;
+    const editHref = `${route('drivers.edit', driverId)}?return=profile`;
 
     return (
         <>
-            <Head title={`${party?.name ?? 'Party'} — Profile`} />
+            <Head title={`${driver?.name ?? 'Driver'} — Profile`} />
 
             <PageContainer className="space-y-4">
                 {error && (
@@ -77,19 +77,18 @@ export default function PartyProfileShow({ partyId }: { partyId: number }) {
                     </p>
                 )}
 
-                {loading && !party ? (
-                    <p className="text-center text-sm text-gray-500">Loading party profile…</p>
-                ) : party ? (
+                {loading && !driver ? (
+                    <p className="text-center text-sm text-gray-500">Loading driver profile…</p>
+                ) : driver ? (
                     <div className="rounded-lg bg-white shadow">
                         <div className="px-3 pt-2 sm:hidden">
-                            <InlineBackLink href={route('parties.index')} />
+                            <InlineBackLink href={route('drivers.index')} />
                         </div>
-                        <PartyTabs partyId={partyId} activeTab="profile" />
 
                         <div className="p-4 sm:p-6">
-                            <FormPage size="sm" className="!mx-0 !max-w-none space-y-5">
+                            <FormPage size="md" className="!mx-0 !max-w-none space-y-5">
                                 <PageToolbar>
-                                    <h3 className="text-lg font-medium text-gray-900">Party Profile</h3>
+                                    <h3 className="text-lg font-medium text-gray-900">Driver Profile</h3>
                                     <PageToolbarActions>
                                         <Link href={editHref}>
                                             <PrimaryButton type="button">Edit Profile</PrimaryButton>
@@ -98,17 +97,46 @@ export default function PartyProfileShow({ partyId }: { partyId: number }) {
                                 </PageToolbar>
 
                                 <FormCard className="!shadow-none ring-1 ring-gray-200">
-                                    <FormSectionHeader title="Contact Details" />
+                                    <FormSectionHeader title="Personal Details" />
                                     <DetailGrid>
-                                        <DetailItemLocal label="Name" value={party.name} />
-                                        <DetailItemLocal label="Mobile" value={party.mobile} />
-                                        <DetailItemLocal label="State Code" value={party.state_code} />
+                                        <DetailItemLocal label="Name" value={driver.name} />
+                                        <DetailItemLocal label="Mobile" value={driver.mobile} />
+                                        <DetailItemLocal
+                                            label="Status"
+                                            value={driver.status === 'active' ? 'Active' : 'Inactive'}
+                                        />
+                                        <DetailItemLocal
+                                            label="Joining Date"
+                                            value={formatAppDateTime(driver.joining_date)}
+                                        />
+                                        <DetailItemLocal
+                                            label="Salary"
+                                            value={
+                                                driver.salary != null && driver.salary !== ''
+                                                    ? `₹ ${formatMoney(driver.salary)}`
+                                                    : null
+                                            }
+                                        />
                                     </DetailGrid>
-                                    {party.address?.trim() && (
+                                    {driver.address?.trim() && (
                                         <DetailGrid className="mt-4">
-                                            <DetailItemLocal label="Address" value={party.address} />
+                                            <DetailItemLocal label="Address" value={driver.address} />
                                         </DetailGrid>
                                     )}
+                                </FormCard>
+
+                                <FormCard className="!shadow-none ring-1 ring-gray-200">
+                                    <FormSectionHeader title="License" />
+                                    <DetailGrid>
+                                        <DetailItemLocal
+                                            label="License Number"
+                                            value={driver.license_number}
+                                        />
+                                        <DetailItemLocal
+                                            label="License Expiry"
+                                            value={formatAppDateTime(driver.license_expiry)}
+                                        />
+                                    </DetailGrid>
                                 </FormCard>
 
                                 {documents.length > 0 && (

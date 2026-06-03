@@ -16,7 +16,15 @@ import type { Driver, EntityDocument, ExpenseOption } from '@/types/transport';
 import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { validateDriverForm } from '@/lib/driverValidation';
 import { Head, Link, router } from '@inertiajs/react';
-import { FormEventHandler, useEffect, useState } from 'react';
+import { FormEventHandler, useEffect, useMemo, useState } from 'react';
+
+function useReturnContext() {
+    return useMemo(() => {
+        const params = new URLSearchParams(window.location.search);
+
+        return params.get('return') === 'profile' ? 'profile' : 'index';
+    }, []);
+}
 
 function dateInputValue(value?: string | null): string {
     return value?.slice(0, 10) ?? '';
@@ -24,12 +32,19 @@ function dateInputValue(value?: string | null): string {
 
 export default function DriverForm({ driverId }: { driverId?: number }) {
     const isEdit = Boolean(driverId);
+    const returnTo = useReturnContext();
+    const backToProfile = isEdit && returnTo === 'profile';
+    const backHref = backToProfile
+        ? route('drivers.show', driverId!)
+        : route('drivers.index');
 
     usePageHeader(
         <FormPageHeader
-            title={isEdit ? 'Edit Driver' : 'New Driver'}
-            backHref={route('drivers.index')}
+            title={isEdit ? (backToProfile ? 'Edit Driver Profile' : 'Edit Driver') : 'New Driver'}
+            backHref={backHref}
+            backLabel={backToProfile ? 'Back to profile' : 'Back to list'}
         />,
+        [isEdit, backToProfile, backHref],
     );
 
     const [loading, setLoading] = useState(true);
@@ -158,10 +173,9 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
 
             if (documentDrafts.length > 0) {
                 const uploaded = await uploadDocumentDrafts(
-                    savedId,
-                    'driver_id',
                     '/drivers/driver-document-store',
                     documentDrafts,
+                    { id: savedId, field: 'driver_id' },
                 );
 
                 if (!uploaded) {
@@ -173,7 +187,11 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                 }
             }
 
-            router.visit(route('drivers.index'));
+            router.visit(
+                backToProfile
+                    ? route('drivers.show', savedId)
+                    : route('drivers.index'),
+            );
         } catch {
             setLoadError('Could not save driver.');
         } finally {
@@ -183,7 +201,7 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
 
     return (
         <>
-            <Head title={isEdit ? 'Edit Driver' : 'New Driver'} />
+            <Head title={isEdit ? (backToProfile ? 'Edit Driver Profile' : 'Edit Driver') : 'New Driver'} />
 
             <FormPage size="md">
                     {loading ? (
@@ -299,7 +317,7 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                             <PrimaryButton disabled={processing}>
                                 {processing ? 'Saving…' : 'Save'}
                             </PrimaryButton>
-                            <Link href={route('drivers.index')}>
+                            <Link href={backHref}>
                                 <SecondaryButton type="button">Cancel</SecondaryButton>
                             </Link>
                             </FormActions>

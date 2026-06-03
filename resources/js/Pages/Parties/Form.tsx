@@ -11,10 +11,14 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
+import EntityDocumentsSection, {
+    uploadDocumentDrafts,
+    type DocumentDraft,
+} from '@/Components/EntityDocumentsSection';
 import { invalidateAppQuery } from '@/hooks/useAppQuery';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import type { Party } from '@/types/transport';
+import type { EntityDocument, ExpenseOption, Party } from '@/types/transport';
 import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { validatePartyForm } from '@/lib/partyValidation';
 import { Head, Link, router } from '@inertiajs/react';
@@ -50,6 +54,9 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
     const [loadError, setLoadError] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [documentTypes, setDocumentTypes] = useState<ExpenseOption[]>([]);
+    const [documents, setDocuments] = useState<EntityDocument[]>([]);
+    const [documentDrafts, setDocumentDrafts] = useState<DocumentDraft[]>([]);
     const [data, setData] = useState({
         name: '',
         mobile: '',
@@ -58,33 +65,53 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
     });
 
     useEffect(() => {
-        if (!partyId) {
+        if (partyId) {
+            setLoading(true);
+
+            void appApiPost<
+                ApiEnvelope<{
+                    party: Party;
+                    documents: EntityDocument[];
+                    document_types: ExpenseOption[];
+                }>
+            >('/parties/party-show', {
+                id: partyId,
+            })
+                .then((res) => {
+                    if (!res.success || !res.data?.party) {
+                        setLoadError(res.message || 'Could not load party.');
+                        return;
+                    }
+
+                    const party = res.data.party;
+                    setDocumentTypes(res.data.document_types ?? []);
+                    setDocuments(res.data.documents ?? []);
+                    setDocumentDrafts([]);
+                    setData({
+                        name: party.name ?? '',
+                        mobile: party.mobile ?? '',
+                        address: party.address ?? '',
+                        state_code: party.state_code ?? '',
+                    });
+                })
+                .catch(() => {
+                    setLoadError('Could not load party.');
+                })
+                .finally(() => setLoading(false));
+
             return;
         }
 
-        setLoading(true);
-
-        void appApiPost<ApiEnvelope<{ party: Party }>>('/parties/party-show', {
-            id: partyId,
-        })
+        void appApiPost<ApiEnvelope<{ document_types: ExpenseOption[] }>>(
+            '/parties/party-document-meta',
+            {},
+        )
             .then((res) => {
-                if (!res.success || !res.data?.party) {
-                    setLoadError(res.message || 'Could not load party.');
-                    return;
+                if (res.success && res.data) {
+                    setDocumentTypes(res.data.document_types ?? []);
                 }
-
-                const party = res.data.party;
-                setData({
-                    name: party.name ?? '',
-                    mobile: party.mobile ?? '',
-                    address: party.address ?? '',
-                    state_code: party.state_code ?? '',
-                });
             })
-            .catch(() => {
-                setLoadError('Could not load party.');
-            })
-            .finally(() => setLoading(false));
+            .catch(() => {});
     }, [partyId]);
 
     const setField = (field: keyof typeof data, value: string) => {
@@ -104,6 +131,11 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
         const clientErrors = validatePartyForm(data);
         if (Object.keys(clientErrors).length > 0) {
             setErrors(clientErrors);
+            return;
+        }
+
+        if (documentDrafts.some((draft) => !draft.file)) {
+            setLoadError('Each document row needs a file, or remove empty rows.');
             return;
         }
 
@@ -128,9 +160,34 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
                 return;
             }
 
+            const savedId = res.data?.party?.id;
+            if (!savedId) {
+                return;
+            }
+
+            if (documentDrafts.length > 0) {
+                const uploaded = await uploadDocumentDrafts(
+                    '/parties/party-document-store',
+                    documentDrafts,
+                    { id: savedId, field: 'party_id' },
+                );
+
+                if (!uploaded) {
+                    setLoadError('Party saved, but some documents failed to upload.');
+                    if (!partyId) {
+                        router.visit(route('parties.edit', savedId), { replace: true });
+                    }
+                    return;
+                }
+            }
+
             invalidateAppQuery('parties-list');
             router.visit(
-                backToProfile ? route('parties.profile', partyId!) : route('parties.index'),
+                backToProfile
+                    ? route('parties.profile', savedId)
+                    : partyId
+                      ? route('parties.overview', savedId)
+                      : route('parties.index'),
             );
         } catch {
             setLoadError('Could not save party.');
@@ -146,7 +203,7 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
         <>
             <Head title={isEdit ? (backToProfile ? 'Edit Party Profile' : 'Edit Party') : 'New Party'} />
 
-            <FormPage size="sm">
+            <FormPage size="md">
                 {loading ? (
                     <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
                 ) : loadError && !data.name ? (
@@ -204,6 +261,13 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
                                 />
                                 <InputError message={errors.state_code} className="mt-1" />
                             </FormField>
+
+                            <EntityDocumentsSection
+                                documentTypes={documentTypes}
+                                drafts={documentDrafts}
+                                onDraftsChange={setDocumentDrafts}
+                                savedDocuments={documents}
+                            />
 
                             <FormActions>
                                 <PrimaryButton disabled={processing}>

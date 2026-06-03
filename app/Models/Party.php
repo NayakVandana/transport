@@ -35,4 +35,9 @@ class Party extends Model
     {
         return $this->hasMany(Entrybook::class);
     }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(PartyDocument::class);
+    }
 }

@@ -169,12 +169,20 @@ export default function DriversIndex() {
                                         },
                                     ]}
                                     actions={
-                                        <ListingMobileAction
-                                            href={route('drivers.edit', driver.id)}
-                                            variant="primary"
-                                        >
-                                            Edit
-                                        </ListingMobileAction>
+                                        <>
+                                            <ListingMobileAction
+                                                href={route('drivers.show', driver.id)}
+                                                variant="primary"
+                                            >
+                                                View
+                                            </ListingMobileAction>
+                                            <ListingMobileAction
+                                                href={route('drivers.edit', driver.id)}
+                                                variant="secondary"
+                                            >
+                                                Edit
+                                            </ListingMobileAction>
+                                        </>
                                     }
                                 />
                             ))}
@@ -193,7 +201,14 @@ export default function DriversIndex() {
                             }
                             tbody={drivers.map((driver) => (
                                 <tr key={driver.id}>
-                                    <td className="px-3 py-2 sm:px-6 sm:py-3 font-medium">{driver.name}</td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3 font-medium">
+                                        <Link
+                                            href={route('drivers.show', driver.id)}
+                                            className="text-indigo-600 hover:underline"
+                                        >
+                                            {driver.name}
+                                        </Link>
+                                    </td>
                                     <td className="px-3 py-2 sm:px-6 sm:py-3">{driver.mobile ?? '—'}</td>
                                     <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(driver.joining_date)}</td>
                                     <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
@@ -218,6 +233,12 @@ export default function DriversIndex() {
                                         {formatAppCreatedAt(driver.created_at)}
                                     </td>
                                     <td className="space-x-3 px-3 py-2 sm:px-6 sm:py-3 text-right">
+                                        <Link
+                                            href={route('drivers.show', driver.id)}
+                                            className="text-indigo-600 hover:underline"
+                                        >
+                                            View
+                                        </Link>
                                         <Link
                                             href={route('drivers.edit', driver.id)}
                                             className="text-indigo-600 hover:underline"

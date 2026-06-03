@@ -32,10 +32,12 @@ export function emptyDocumentDraft(
 }
 
 export async function uploadDocumentDrafts(
-    entityId: number,
-    entityIdField: 'vehicle_id' | 'driver_id',
     storePath: string,
     drafts: DocumentDraft[],
+    entity?: {
+        id: number;
+        field: 'vehicle_id' | 'driver_id' | 'company_id' | 'party_id';
+    },
 ): Promise<boolean> {
     for (const draft of drafts) {
         if (!draft.file) {
@@ -43,7 +45,9 @@ export async function uploadDocumentDrafts(
         }
 
         const formData = new FormData();
-        formData.append(entityIdField, String(entityId));
+        if (entity) {
+            formData.append(entity.field, String(entity.id));
+        }
         formData.append('document_type', draft.document_type);
         if (draft.title) {
             formData.append('title', draft.title);

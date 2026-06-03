@@ -1,3 +1,4 @@
+import LogoUploadField from '@/Components/LogoUploadField';
 import { FormPageHeader } from '@/Components/ListPageHeader';
 import FormPage, {
     FormActions,
@@ -12,9 +13,13 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
+import EntityDocumentsSection, {
+    uploadDocumentDrafts,
+    type DocumentDraft,
+} from '@/Components/EntityDocumentsSection';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import type { Company } from '@/types/transport';
+import type { Company, EntityDocument, ExpenseOption } from '@/types/transport';
 import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { validateCompanyForm, type CompanyFormData } from '@/lib/companyValidation';
 import { Head, Link, router } from '@inertiajs/react';
@@ -76,11 +81,22 @@ export default function CompanyEdit() {
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Partial<Record<keyof CompanyFormData, string>>>({});
     const [data, setData] = useState<CompanyFormData>(defaultData);
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [companyId, setCompanyId] = useState<number | null>(null);
+    const [documentTypes, setDocumentTypes] = useState<ExpenseOption[]>([]);
+    const [documents, setDocuments] = useState<EntityDocument[]>([]);
+    const [documentDrafts, setDocumentDrafts] = useState<DocumentDraft[]>([]);
 
     useEffect(() => {
         setLoading(true);
 
-        void appApiPost<ApiEnvelope<{ company: Company | null }>>('/company/company-show', {})
+        void appApiPost<
+            ApiEnvelope<{
+                company: Company | null;
+                documents: EntityDocument[];
+                document_types: ExpenseOption[];
+            }>
+        >('/company/company-show', {})
             .then((res) => {
                 if (!res.success) {
                     setLoadError(res.message || 'Could not load company.');
@@ -88,6 +104,11 @@ export default function CompanyEdit() {
                 }
 
                 const company = res.data?.company;
+                setDocumentTypes(res.data?.document_types ?? []);
+                setDocuments(res.data?.documents ?? []);
+                setDocumentDrafts([]);
+                setLogoUrl(company?.logo_url ?? null);
+                setCompanyId(company?.id ?? null);
                 if (company) {
                     setData(companyToFormData(company));
                 }
@@ -118,6 +139,11 @@ export default function CompanyEdit() {
             return;
         }
 
+        if (documentDrafts.some((draft) => !draft.file)) {
+            setLoadError('Each document row needs a file, or remove empty rows.');
+            return;
+        }
+
         setProcessing(true);
 
         try {
@@ -136,6 +162,27 @@ export default function CompanyEdit() {
                     setLoadError(res.message || 'Could not save company.');
                 }
                 return;
+            }
+
+            const savedCompanyId = res.data?.company?.id;
+            if (!savedCompanyId) {
+                return;
+            }
+
+            setCompanyId(savedCompanyId);
+            setLogoUrl(res.data?.company?.logo_url ?? null);
+
+            if (documentDrafts.length > 0) {
+                const uploaded = await uploadDocumentDrafts(
+                    '/company/company-document-store',
+                    documentDrafts,
+                    { id: savedCompanyId, field: 'company_id' },
+                );
+
+                if (!uploaded) {
+                    setLoadError('Company saved, but some documents failed to upload.');
+                    return;
+                }
             }
 
             router.visit(route('company.show'));
@@ -178,6 +225,19 @@ export default function CompanyEdit() {
                                         />
                                         <InputError message={errors.name} className="mt-1" />
                                     </FormField>
+
+                                    {companyId ? (
+                                        <LogoUploadField
+                                            label="Company logo"
+                                            logoUrl={logoUrl}
+                                            uploadPath="/company/company-logo-update"
+                                            onUpdated={setLogoUrl}
+                                        />
+                                    ) : (
+                                        <p className="text-sm text-gray-500">
+                                            Save the company profile first, then upload a logo.
+                                        </p>
+                                    )}
 
                                     <FormGrid cols={3}>
                                         <FormField width="md">
@@ -393,6 +453,13 @@ export default function CompanyEdit() {
                                         </FormField>
                                     </FormGrid>
                                 </section>
+
+                                <EntityDocumentsSection
+                                    documentTypes={documentTypes}
+                                    drafts={documentDrafts}
+                                    onDraftsChange={setDocumentDrafts}
+                                    savedDocuments={documents}
+                                />
 
                                 <FormActions>
                                     <PrimaryButton disabled={processing}>

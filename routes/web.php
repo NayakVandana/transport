@@ -47,10 +47,12 @@ Route::get('/parties/{id}/edit', fn (int $id) => Inertia::render('Parties/Form',
 
 Route::get('/vehicles', fn () => Inertia::render('Vehicles/Index'))->name('vehicles.index');
 Route::get('/vehicles/create', fn () => Inertia::render('Vehicles/Form'))->name('vehicles.create');
+Route::get('/vehicles/{id}', fn (int $id) => Inertia::render('Vehicles/Show', ['vehicleId' => $id]))->name('vehicles.show');
 Route::get('/vehicles/{id}/edit', fn (int $id) => Inertia::render('Vehicles/Form', ['vehicleId' => $id]))->name('vehicles.edit');
 
 Route::get('/drivers', fn () => Inertia::render('Drivers/Index'))->name('drivers.index');
 Route::get('/drivers/create', fn () => Inertia::render('Drivers/Form'))->name('drivers.create');
+Route::get('/drivers/{id}', fn (int $id) => Inertia::render('Drivers/Show', ['driverId' => $id]))->name('drivers.show');
 Route::get('/drivers/{id}/edit', fn (int $id) => Inertia::render('Drivers/Form', ['driverId' => $id]))->name('drivers.edit');
 
 Route::get('/vehicle-expenses', fn () => Inertia::render('VehicleExpenses/Index'))->name('vehicle-expenses.index');

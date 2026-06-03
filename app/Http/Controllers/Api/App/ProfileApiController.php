@@ -4,6 +4,10 @@ namespace App\Http\Controllers\Api\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\UserDocument;
+use App\Support\DocumentStorage;
+use App\Support\DocumentValidation;
+use App\Support\LogoValidation;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -18,8 +22,48 @@ class ProfileApiController extends Controller
         try {
             $user = $request->user();
 
+            $documents = UserDocument::query()
+                ->where('user_id', $user->id)
+                ->orderByDesc('created_at')
+                ->get();
+
             return $this->sendJsonResponse(true, 'Profile loaded.', [
                 'user' => $this->formatUser($user),
+                'documents' => $documents,
+                'document_types' => DocumentValidation::userOptionsForFrontend(),
+            ], 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postProfileLogoUpdate(Request $request)
+    {
+        try {
+            $validation = Validator::make($request->all(), [
+                'logo' => ['required_without:remove_logo', 'nullable', ...LogoValidation::fileRule()],
+                'remove_logo' => ['nullable', 'boolean'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
+            $user = $request->user();
+
+            if ($request->boolean('remove_logo')) {
+                $user->update(['logo_path' => null]);
+            } elseif ($request->hasFile('logo')) {
+                $user->update([
+                    'logo_path' => DocumentStorage::store(
+                        $request->file('logo'),
+                        "users/{$user->id}/logo",
+                    ),
+                ]);
+            }
+
+            return $this->sendJsonResponse(true, 'Profile logo updated.', [
+                'user' => $this->formatUser($user->fresh()),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -114,6 +158,7 @@ class ProfileApiController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'email_verified_at' => $user->email_verified_at,
+            'logo_url' => $user->logo_url,
         ];
     }
 }

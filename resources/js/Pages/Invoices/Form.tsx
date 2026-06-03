@@ -400,7 +400,7 @@ export default function InvoiceForm({
         fieldInputClass(
             Boolean(errors[field]),
             'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500',
-        );
+    );
 
     return (
         <>
@@ -422,57 +422,57 @@ export default function InvoiceForm({
                                 />
 
                                 <FormGrid cols={4}>
-                                    <div>
-                                        <InputLabel value="Party" />
-                                        <select
+                                <div>
+                                    <InputLabel value="Party" />
+                                    <select
                                             className={inputClass('party_id')}
-                                            value={data.party_id}
-                                            onChange={(e) => changeParty(e.target.value)}
-                                        >
+                                        value={data.party_id}
+                                        onChange={(e) => changeParty(e.target.value)}
+                                    >
                                             <option value="">Select party</option>
-                                            {parties.map((p) => (
-                                                <option key={p.id} value={p.id}>
-                                                    {p.name}
-                                                </option>
-                                            ))}
-                                        </select>
+                                        {parties.map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                         <InputError message={errors.party_id} className="mt-1" />
-                                    </div>
-                                    <div>
+                                </div>
+                                <div>
                                         <InputLabel value="Bill number" />
                                         <TextInput
                                             className={inputClass('bill_number')}
-                                            value={data.bill_number}
-                                            onChange={(e) => setField('bill_number', e.target.value)}
-                                        />
+                                        value={data.bill_number}
+                                        onChange={(e) => setField('bill_number', e.target.value)}
+                                    />
                                         <InputError message={errors.bill_number} className="mt-1" />
-                                    </div>
-                                    <div>
+                                </div>
+                                <div>
                                         <InputLabel value="Invoice date" />
                                         <TextInput
-                                            type="date"
+                                        type="date"
                                             className={inputClass('invoice_date')}
-                                            value={data.invoice_date}
-                                            onChange={(e) => setField('invoice_date', e.target.value)}
-                                        />
+                                        value={data.invoice_date}
+                                        onChange={(e) => setField('invoice_date', e.target.value)}
+                                    />
                                         <InputError message={errors.invoice_date} className="mt-1" />
-                                    </div>
-                                    <div>
-                                        <InputLabel value="Status" />
-                                        <select
+                                </div>
+                                <div>
+                                    <InputLabel value="Status" />
+                                    <select
                                             className={inputClass('status')}
-                                            value={data.status}
-                                            onChange={(e) =>
-                                                setField(
-                                                    'status',
-                                                    e.target.value as 'draft' | 'finalized',
-                                                )
-                                            }
-                                        >
-                                            <option value="draft">Draft</option>
-                                            <option value="finalized">Finalized</option>
-                                        </select>
-                                    </div>
+                                        value={data.status}
+                                        onChange={(e) =>
+                                            setField(
+                                                'status',
+                                                e.target.value as 'draft' | 'finalized',
+                                            )
+                                        }
+                                    >
+                                        <option value="draft">Draft</option>
+                                        <option value="finalized">Finalized</option>
+                                    </select>
+                                </div>
                                     <div>
                                         <InputLabel value="SAC code" />
                                         <TextInput
@@ -520,10 +520,10 @@ export default function InvoiceForm({
                                     >
                                         + Add line
                                     </SecondaryButton>
-                                </div>
+                            </div>
 
                                 <div className="mt-4 space-y-4">
-                                    {data.lines.map((line, i) => (
+                                        {data.lines.map((line, i) => (
                                         <div
                                             key={i}
                                             className="rounded-lg border border-gray-200 bg-gray-50/50 p-3 sm:p-4"
@@ -563,13 +563,13 @@ export default function InvoiceForm({
                                                     <div>
                                                         <InputLabel value="Date" />
                                                         <TextInput
-                                                            type="date"
+                                                        type="date"
                                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                                                             value={
                                                                 line.entry_date?.slice(0, 10) ??
                                                                 todayDate()
                                                             }
-                                                            onChange={(e) =>
+                                                        onChange={(e) =>
                                                                 updateLine(
                                                                     i,
                                                                     'entry_date',
@@ -580,36 +580,36 @@ export default function InvoiceForm({
                                                     </div>
                                                     <div>
                                                         <InputLabel value="Vehicle" />
-                                                        <MasterDataSelect
-                                                            value={line.vehicle_number ?? ''}
-                                                            options={vehicleOptions}
-                                                            emptyLabel="Select vehicle"
-                                                            addLabel="+ Add vehicle"
-                                                            addHref={vehiclesHref}
-                                                            onChange={(v) =>
-                                                                updateLine(i, 'vehicle_number', v)
-                                                            }
-                                                        />
+                                                    <MasterDataSelect
+                                                        value={line.vehicle_number ?? ''}
+                                                        options={vehicleOptions}
+                                                        emptyLabel="Select vehicle"
+                                                        addLabel="+ Add vehicle"
+                                                        addHref={vehiclesHref}
+                                                        onChange={(v) =>
+                                                            updateLine(i, 'vehicle_number', v)
+                                                        }
+                                                    />
                                                     </div>
                                                     <div>
                                                         <InputLabel value="From (route)" />
-                                                        <MasterDataSelect
-                                                            value={line.route_from ?? ''}
-                                                            options={routeOptions}
-                                                            emptyLabel="Select route"
-                                                            addLabel="+ Add route"
-                                                            addHref={routesHref}
-                                                            onChange={(v) =>
-                                                                updateLine(i, 'route_from', v)
-                                                            }
-                                                        />
+                                                    <MasterDataSelect
+                                                        value={line.route_from ?? ''}
+                                                        options={routeOptions}
+                                                        emptyLabel="Select route"
+                                                        addLabel="+ Add route"
+                                                        addHref={routesHref}
+                                                        onChange={(v) =>
+                                                            updateLine(i, 'route_from', v)
+                                                        }
+                                                    />
                                                     </div>
                                                     <div className="sm:col-span-2 lg:col-span-3">
                                                         <InputLabel value="Product name" />
                                                         <TextInput
                                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                                            value={line.product_name ?? ''}
-                                                            onChange={(e) =>
+                                                        value={line.product_name ?? ''}
+                                                        onChange={(e) =>
                                                                 updateLine(
                                                                     i,
                                                                     'product_name',
@@ -621,28 +621,28 @@ export default function InvoiceForm({
                                                     <div>
                                                         <InputLabel value="Weight" />
                                                         <TextInput
-                                                            type="number"
+                                                        type="number"
                                                             min="0"
-                                                            step="0.001"
+                                                        step="0.001"
                                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                                            value={line.weight}
-                                                            onChange={(e) =>
-                                                                updateLine(i, 'weight', e.target.value)
-                                                            }
-                                                        />
+                                                        value={line.weight}
+                                                        onChange={(e) =>
+                                                            updateLine(i, 'weight', e.target.value)
+                                                        }
+                                                    />
                                                     </div>
                                                     <div>
                                                         <InputLabel value="Rate" />
                                                         <TextInput
-                                                            type="number"
+                                                        type="number"
                                                             min="0"
-                                                            step="0.01"
+                                                        step="0.01"
                                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                                            value={line.rate}
-                                                            onChange={(e) =>
-                                                                updateLine(i, 'rate', e.target.value)
-                                                            }
-                                                        />
+                                                        value={line.rate}
+                                                        onChange={(e) =>
+                                                            updateLine(i, 'rate', e.target.value)
+                                                        }
+                                                    />
                                                     </div>
                                                     <div>
                                                         <InputLabel value="Freight" />
@@ -658,12 +658,12 @@ export default function InvoiceForm({
                                                     <div>
                                                         <InputLabel value="Advance" />
                                                         <TextInput
-                                                            type="number"
+                                                        type="number"
                                                             min="0"
                                                             step="0.01"
                                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                                            value={line.advance_paid ?? 0}
-                                                            onChange={(e) =>
+                                                        value={line.advance_paid ?? 0}
+                                                        onChange={(e) =>
                                                                 updateLine(
                                                                     i,
                                                                     'advance_paid',
@@ -675,19 +675,19 @@ export default function InvoiceForm({
                                                     <div>
                                                         <InputLabel value="Empty container charge" />
                                                         <TextInput
-                                                            type="number"
+                                                        type="number"
                                                             min="0"
                                                             step="0.01"
                                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                                            value={line.empty_container_charge ?? 0}
-                                                            onChange={(e) =>
-                                                                updateLine(
-                                                                    i,
-                                                                    'empty_container_charge',
-                                                                    e.target.value,
-                                                                )
-                                                            }
-                                                        />
+                                                        value={line.empty_container_charge ?? 0}
+                                                        onChange={(e) =>
+                                                            updateLine(
+                                                                i,
+                                                                'empty_container_charge',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                    />
                                                     </div>
                                                     <div>
                                                         <InputLabel value="Detention" />
@@ -825,13 +825,13 @@ export default function InvoiceForm({
                             </FormCard>
 
                             <FormActions>
-                                <PrimaryButton disabled={processing}>
+                            <PrimaryButton disabled={processing}>
                                     {processing
                                         ? 'Saving…'
                                         : isEdit
                                           ? 'Update invoice'
                                           : 'Create invoice'}
-                                </PrimaryButton>
+                            </PrimaryButton>
                                 <Link href={route('invoices.index')}>
                                     <SecondaryButton type="button">Cancel</SecondaryButton>
                                 </Link>

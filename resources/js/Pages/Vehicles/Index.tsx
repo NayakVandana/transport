@@ -225,12 +225,20 @@ export default function VehiclesIndex() {
                                         },
                                     ]}
                                     actions={
-                                        <ListingMobileAction
-                                            href={route('vehicles.edit', v.id)}
-                                            variant="primary"
-                                        >
-                                            Edit
-                                        </ListingMobileAction>
+                                        <>
+                                            <ListingMobileAction
+                                                href={route('vehicles.show', v.id)}
+                                                variant="primary"
+                                            >
+                                                View
+                                            </ListingMobileAction>
+                                            <ListingMobileAction
+                                                href={route('vehicles.edit', v.id)}
+                                                variant="secondary"
+                                            >
+                                                Edit
+                                            </ListingMobileAction>
+                                        </>
                                     }
                                 />
                             ))}
@@ -248,7 +256,14 @@ export default function VehiclesIndex() {
                             }
                             tbody={vehicles.map((v) => (
                                 <tr key={v.id}>
-                                    <td className="px-4 py-3 font-mono font-medium">{v.vehicle_number}</td>
+                                    <td className="px-4 py-3 font-mono font-medium">
+                                        <Link
+                                            href={route('vehicles.show', v.id)}
+                                            className="text-indigo-600 hover:underline"
+                                        >
+                                            {v.vehicle_number}
+                                        </Link>
+                                    </td>
                                     <td className="px-4 py-3 text-gray-600">{v.vehicle_type ?? '—'}</td>
                                     <td className="px-4 py-3 text-gray-600">
                                         {[v.brand, v.model].filter(Boolean).join(' ') || '—'}
@@ -272,6 +287,12 @@ export default function VehiclesIndex() {
                                         {formatAppCreatedAt(v.created_at)}
                                     </td>
                                     <td className="space-x-3 px-4 py-3 text-right">
+                                        <Link
+                                            href={route('vehicles.show', v.id)}
+                                            className="text-indigo-600 hover:underline"
+                                        >
+                                            View
+                                        </Link>
                                         <Link
                                             href={route('vehicles.edit', v.id)}
                                             className="text-indigo-600 hover:underline"

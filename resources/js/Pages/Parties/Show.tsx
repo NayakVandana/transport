@@ -188,6 +188,15 @@ export default function PartyShow({
                                                     </PrimaryButton>
                                                 </div>
                                             )}
+
+                                            <div className="flex flex-wrap gap-3">
+                                                <Link
+                                                    href={route('parties.edit', partyId)}
+                                                    className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                                                >
+                                                    Edit party
+                                                </Link>
+                                            </div>
                                         </div>
                                     )}
 

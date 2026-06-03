@@ -1,3 +1,4 @@
+import SavedDocumentsList from '@/Components/SavedDocumentsList';
 import { DetailGrid, DetailItem } from '@/Components/DetailShow';
 import FormPage, { FormCard, FormSectionHeader } from '@/Components/FormPage';
 import { DetailPageHeader, HeaderCreateButton } from '@/Components/ListPageHeader';
@@ -6,7 +7,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { formatAppDateTime } from '@/lib/dateUtils';
-import type { Company } from '@/types/transport';
+import type { Company, EntityDocument, ExpenseOption } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
@@ -18,6 +19,8 @@ export default function CompanyShow() {
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [company, setCompany] = useState<Company | null>(null);
+    const [documents, setDocuments] = useState<EntityDocument[]>([]);
+    const [documentTypes, setDocumentTypes] = useState<ExpenseOption[]>([]);
 
     usePageHeader(
         <DetailPageHeader
@@ -36,7 +39,13 @@ export default function CompanyShow() {
     useEffect(() => {
         setLoading(true);
 
-        void appApiPost<ApiEnvelope<{ company: Company | null }>>('/company/company-show', {})
+        void appApiPost<
+            ApiEnvelope<{
+                company: Company | null;
+                documents: EntityDocument[];
+                document_types: ExpenseOption[];
+            }>
+        >('/company/company-show', {})
             .then((res) => {
                 if (!res.success) {
                     setLoadError(res.message || 'Could not load company.');
@@ -44,6 +53,8 @@ export default function CompanyShow() {
                 }
 
                 setCompany(res.data?.company ?? null);
+                setDocuments(res.data?.documents ?? []);
+                setDocumentTypes(res.data?.document_types ?? []);
             })
             .catch(() => {
                 setLoadError('Could not load company.');
@@ -83,6 +94,15 @@ export default function CompanyShow() {
                     <div className="space-y-5">
                         <FormCard>
                             <FormSectionHeader title="Business Details" />
+                            {company.logo_url && (
+                                <div className="mb-4">
+                                    <img
+                                        src={company.logo_url}
+                                        alt="Company logo"
+                                        className="h-16 max-w-[12rem] rounded-lg border border-gray-200 bg-gray-50 object-contain"
+                                    />
+                                </div>
+                            )}
                             <DetailGrid cols={3}>
                                 <DetailItemLocal label="Company Name" value={company.name} />
                                 <DetailItemLocal label="PAN" value={company.pan} />
@@ -141,6 +161,15 @@ export default function CompanyShow() {
                                 <DetailItemLocal label="Branch" value={company.bank_branch} />
                             </DetailGrid>
                         </FormCard>
+
+                        {documents.length > 0 && (
+                            <FormCard>
+                                <SavedDocumentsList
+                                    documents={documents}
+                                    documentTypes={documentTypes}
+                                />
+                            </FormCard>
+                        )}
 
                         <div>
                             <Link href={route('company.edit')}>

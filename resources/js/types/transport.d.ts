@@ -16,6 +16,8 @@ export interface Company {
     bank_name?: string | null;
     bank_branch?: string | null;
     address?: string | null;
+    logo_url?: string | null;
+    documents?: EntityDocument[];
 }
 
 export interface Vehicle {
@@ -157,6 +159,7 @@ export interface Party {
     received?: number | string;
     outstanding?: number | string;
     created_at?: string | null;
+    documents?: EntityDocument[];
 }
 
 export interface PartyOverview {

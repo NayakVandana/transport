@@ -5,9 +5,11 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Support\DocumentStorage;
 
 class User extends Authenticatable
 {
@@ -23,6 +25,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'logo_path',
     ];
 
     /**
@@ -33,6 +36,11 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'logo_path',
+    ];
+
+    protected $appends = [
+        'logo_url',
     ];
 
     /**
@@ -46,5 +54,28 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(UserDocument::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (User $user) {
+            if ($user->isDirty('logo_path')) {
+                DocumentStorage::delete($user->getOriginal('logo_path'));
+            }
+        });
+
+        static::deleting(function (User $user) {
+            DocumentStorage::delete($user->logo_path);
+        });
+    }
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        return DocumentStorage::url($this->logo_path);
     }
 }

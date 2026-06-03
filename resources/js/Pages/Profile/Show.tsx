@@ -1,11 +1,15 @@
+import SavedDocumentsList from '@/Components/SavedDocumentsList';
 import { DetailGrid, DetailItem } from '@/Components/DetailShow';
 import FormPage, { FormCard, FormSectionHeader } from '@/Components/FormPage';
 import { DetailPageHeader, HeaderCreateButton } from '@/Components/ListPageHeader';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { useAuthUser } from '@/auth/useAuthUser';
+import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { formatAppDateTime } from '@/lib/dateUtils';
+import type { EntityDocument, ExpenseOption } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
 function DetailItemLocal({ label, value }: { label: string; value?: string | null }) {
     return <DetailItem label={label} value={value} />;
@@ -13,6 +17,24 @@ function DetailItemLocal({ label, value }: { label: string; value?: string | nul
 
 export default function ProfileShow() {
     const { user, loading } = useAuthUser();
+    const [documents, setDocuments] = useState<EntityDocument[]>([]);
+    const [documentTypes, setDocumentTypes] = useState<ExpenseOption[]>([]);
+
+    useEffect(() => {
+        void appApiPost<
+            ApiEnvelope<{
+                documents: EntityDocument[];
+                document_types: ExpenseOption[];
+            }>
+        >('/profile/profile-show', {})
+            .then((res) => {
+                if (res.success && res.data) {
+                    setDocuments(res.data.documents ?? []);
+                    setDocumentTypes(res.data.document_types ?? []);
+                }
+            })
+            .catch(() => {});
+    }, []);
 
     usePageHeader(
         <DetailPageHeader
@@ -42,6 +64,15 @@ export default function ProfileShow() {
                     <div className="space-y-5">
                         <FormCard>
                             <FormSectionHeader title="Account Information" />
+                            {user.logo_url && (
+                                <div className="mb-4">
+                                    <img
+                                        src={user.logo_url}
+                                        alt="User logo"
+                                        className="h-16 w-16 rounded-lg border border-gray-200 bg-gray-50 object-contain"
+                                    />
+                                </div>
+                            )}
                             <DetailGrid>
                                 <DetailItemLocal label="Name" value={user.name} />
                                 <DetailItemLocal label="Email" value={user.email} />
@@ -55,6 +86,15 @@ export default function ProfileShow() {
                                 />
                             </DetailGrid>
                         </FormCard>
+
+                        {documents.length > 0 && (
+                            <FormCard>
+                                <SavedDocumentsList
+                                    documents={documents}
+                                    documentTypes={documentTypes}
+                                />
+                            </FormCard>
+                        )}
 
                         <div className="flex flex-wrap gap-3">
                             <Link href={route('profile.edit')}>

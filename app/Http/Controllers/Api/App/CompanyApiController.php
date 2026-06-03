@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Api\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\CompanyDocument;
+use App\Support\DocumentStorage;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Support\DocumentValidation;
+use App\Support\LogoValidation;
 
 class CompanyApiController extends Controller
 {
@@ -17,8 +21,19 @@ class CompanyApiController extends Controller
                 ->where('user_id', $request->user()->id)
                 ->first();
 
+            $documents = $company
+                ? CompanyDocument::query()
+                    ->where('user_id', $request->user()->id)
+                    ->where('company_id', $company->id)
+                    ->where('document_type', '!=', 'logo')
+                    ->orderByDesc('created_at')
+                    ->get()
+                : collect();
+
             return $this->sendJsonResponse(true, 'Company loaded.', [
                 'company' => $company,
+                'documents' => $documents,
+                'document_types' => DocumentValidation::companyOptionsForFrontend(),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -64,6 +79,41 @@ class CompanyApiController extends Controller
 
             return $this->sendJsonResponse(true, 'Company profile saved.', [
                 'company' => $company,
+            ], 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postCompanyLogoUpdate(Request $request)
+    {
+        try {
+            $validation = Validator::make($request->all(), [
+                'logo' => ['required_without:remove_logo', 'nullable', ...LogoValidation::fileRule()],
+                'remove_logo' => ['nullable', 'boolean'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
+            $company = Company::query()
+                ->where('user_id', $request->user()->id)
+                ->firstOrFail();
+
+            if ($request->boolean('remove_logo')) {
+                $company->update(['logo_path' => null]);
+            } elseif ($request->hasFile('logo')) {
+                $company->update([
+                    'logo_path' => DocumentStorage::store(
+                        $request->file('logo'),
+                        "companies/{$request->user()->id}/{$company->id}/logo",
+                    ),
+                ]);
+            }
+
+            return $this->sendJsonResponse(true, 'Company logo updated.', [
+                'company' => $company->fresh(),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);

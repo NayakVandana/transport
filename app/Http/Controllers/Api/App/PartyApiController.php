@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\Party;
+use App\Models\PartyDocument;
+use App\Support\DocumentValidation;
 use App\Support\ListExport;
 use App\Support\ListFilter;
 use App\Support\InvoicePaymentCalculator;
@@ -114,8 +116,16 @@ class PartyApiController extends Controller
                 ->where('user_id', $request->user()->id)
                 ->findOrFail($request->input('id'));
 
+            $documents = PartyDocument::query()
+                ->where('user_id', $request->user()->id)
+                ->where('party_id', $party->id)
+                ->orderByDesc('created_at')
+                ->get();
+
             return $this->sendJsonResponse(true, 'Party loaded.', [
                 'party' => $party,
+                'documents' => $documents,
+                'document_types' => DocumentValidation::partyOptionsForFrontend(),
             ], 200);
         } catch (Exception $e) {
             return $this->sendError($e);
