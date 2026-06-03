@@ -196,30 +196,37 @@ export default function TaxInvoiceDocument({
                                                             {formatMoney(lineFreight(row))}
                                                         </td>
                                                     </tr>
-                                                    {(Number(row.advance_paid) > 0 ||
-                                                        Number(row.empty_container_charge) > 0) && (
-                                                        <tr>
-                                                            <td
-                                                                colSpan={9}
-                                                                className="px-1 pb-2 pl-4 text-[10px] sm:pl-8"
-                                                            >
-                                                                {Number(row.advance_paid) > 0 && (
-                                                                    <span>
-                                                                        Advance :{' '}
-                                                                        {formatMoney(row.advance_paid ?? 0)}
-                                                                    </span>
-                                                                )}
-                                                                {Number(row.empty_container_charge) > 0 && (
-                                                                    <span className="ml-2 sm:ml-4">
-                                                                        EMPTY CONTAINER CHARGE :{' '}
-                                                                        {formatMoney(
-                                                                            row.empty_container_charge ?? 0,
-                                                                        )}
-                                                                    </span>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    )}
+                                                {(Number(row.advance_paid) > 0 ||
+                                                    Number(row.empty_container_charge) > 0 ||
+                                                    Number(row.detention) > 0) && (
+                                                    <tr>
+                                                        <td
+                                                            colSpan={9}
+                                                            className="px-1 pb-2 pl-4 text-[10px] sm:pl-8"
+                                                        >
+                                                            {Number(row.advance_paid) > 0 && (
+                                                                <span>
+                                                                    Advance :{' '}
+                                                                    {formatMoney(row.advance_paid ?? 0)}
+                                                                </span>
+                                                            )}
+                                                            {Number(row.empty_container_charge) > 0 && (
+                                                                <span className="ml-2 sm:ml-4">
+                                                                    EMPTY CONTAINER CHARGE :{' '}
+                                                                    {formatMoney(
+                                                                        row.empty_container_charge ?? 0,
+                                                                    )}
+                                                                </span>
+                                                            )}
+                                                            {Number(row.detention) > 0 && (
+                                                                <span className="ml-2 sm:ml-4">
+                                                                    DETENTION :{' '}
+                                                                    {formatMoney(row.detention ?? 0)}
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                )}
                                                 </Fragment>
                                             ))
                                         )}
@@ -255,6 +262,14 @@ export default function TaxInvoiceDocument({
                                             <td className="whitespace-nowrap py-0.5 text-right">
                                                 :{' '}
                                                 {formatMoney(invoice.total_empty_container_charge)}
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {Number(invoice.total_detention) > 0 && (
+                                        <tr>
+                                            <td className="py-0.5 pr-4 text-right">Detention</td>
+                                            <td className="whitespace-nowrap py-0.5 text-right">
+                                                : {formatMoney(invoice.total_detention)}
                                             </td>
                                         </tr>
                                     )}

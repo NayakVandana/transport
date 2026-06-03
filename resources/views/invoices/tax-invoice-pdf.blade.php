@@ -229,7 +229,7 @@
                     <td class="right nowrap">{{ ListExport::formatMoney($row->rate) }}</td>
                     <td class="right nowrap">{{ ListExport::formatMoney(TaxInvoicePdf::lineFreight($row)) }}</td>
                 </tr>
-                @if ((float) $row->advance_paid > 0 || (float) $row->empty_container_charge > 0)
+                @if ((float) $row->advance_paid > 0 || (float) $row->empty_container_charge > 0 || (float) $row->detention > 0)
                     <tr class="sub-line">
                         <td colspan="9">
                             @if ((float) $row->advance_paid > 0)
@@ -238,6 +238,10 @@
                             @if ((float) $row->empty_container_charge > 0)
                                 @if ((float) $row->advance_paid > 0) &nbsp;&nbsp; @endif
                                 EMPTY CONTAINER CHARGE : {{ ListExport::formatMoney($row->empty_container_charge) }}
+                            @endif
+                            @if ((float) $row->detention > 0)
+                                @if ((float) $row->advance_paid > 0 || (float) $row->empty_container_charge > 0) &nbsp;&nbsp; @endif
+                                DETENTION : {{ ListExport::formatMoney($row->detention) }}
                             @endif
                         </td>
                     </tr>
@@ -271,6 +275,12 @@
                         <tr>
                             <td class="label">Empty Container Charge</td>
                             <td class="value">: {{ ListExport::formatMoney($invoice->total_empty_container_charge) }}</td>
+                        </tr>
+                    @endif
+                    @if ((float) $invoice->total_detention > 0)
+                        <tr>
+                            <td class="label">Detention</td>
+                            <td class="value">: {{ ListExport::formatMoney($invoice->total_detention) }}</td>
                         </tr>
                     @endif
                     <tr>

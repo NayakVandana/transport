@@ -217,6 +217,7 @@ export interface FreightInvoiceLine {
     freight?: number | string;
     advance_paid?: number | string;
     empty_container_charge?: number | string;
+    detention?: number | string;
 }
 
 export interface FreightInvoice {
@@ -228,6 +229,7 @@ export interface FreightInvoice {
     total_weight: string | number;
     total_freight: string | number;
     total_empty_container_charge: string | number;
+    total_detention: string | number;
     net_value: string | number;
     total_advance: string | number;
     balance_amount: string | number;
@@ -303,6 +305,7 @@ export interface InvoiceTotals {
     total_weight: number;
     total_freight: number;
     total_empty_container_charge: number;
+    total_detention: number;
     net_value: number;
     total_advance: number;
     balance_amount: number;

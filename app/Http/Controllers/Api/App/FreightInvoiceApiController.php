@@ -242,6 +242,7 @@ class FreightInvoiceApiController extends Controller
                 'lines.*.rate' => ['required', 'numeric', 'min:0'],
                 'lines.*.advance_paid' => ['nullable', 'numeric', 'min:0'],
                 'lines.*.empty_container_charge' => ['nullable', 'numeric', 'min:0'],
+                'lines.*.detention' => ['nullable', 'numeric', 'min:0'],
             ]);
 
             if ($validation->fails()) {
@@ -335,6 +336,7 @@ class FreightInvoiceApiController extends Controller
                 'lines.*.rate' => ['required', 'numeric', 'min:0'],
                 'lines.*.advance_paid' => ['nullable', 'numeric', 'min:0'],
                 'lines.*.empty_container_charge' => ['nullable', 'numeric', 'min:0'],
+                'lines.*.detention' => ['nullable', 'numeric', 'min:0'],
             ]);
 
             if ($validation->fails()) {
@@ -446,7 +448,7 @@ class FreightInvoiceApiController extends Controller
                 ->with(['vehicle:id,vehicle_number', 'party:id,name'])
                 ->orderByDesc('entry_date')
                 ->orderByDesc('id')
-                ->get(['id', 'entry_number', 'entry_date', 'vehicle_id', 'party_id', 'route_from', 'freight', 'advance', 'balance']),
+                ->get(['id', 'entry_number', 'entry_date', 'vehicle_id', 'party_id', 'route_from', 'freight', 'advance', 'detention', 'balance']),
             'entrySettings' => [
                 'prefix' => $company->entry_number_prefix,
                 'nextSequence' => $nextSequence,
@@ -501,6 +503,7 @@ class FreightInvoiceApiController extends Controller
                 'freight' => $freights[$index] ?? 0,
                 'advance_paid' => $line['advance_paid'] ?? 0,
                 'empty_container_charge' => $line['empty_container_charge'] ?? 0,
+                'detention' => $line['detention'] ?? 0,
             ]);
         }
     }

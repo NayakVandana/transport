@@ -63,6 +63,7 @@ function buildEmptyLine(existing?: FreightInvoiceLine): FreightInvoiceLine {
         rate: 0,
         advance_paid: 0,
         empty_container_charge: 0,
+        detention: 0,
     };
 }
 
@@ -79,6 +80,7 @@ function applyEntrybookToLine(
         route_from: entry.route_from ?? '',
         rate: entry.freight,
         advance_paid: entry.advance,
+        detention: entry.detention ?? 0,
         weight: line.weight || 1,
         product_name: line.product_name || 'AS PER INVOICES',
     };
@@ -668,6 +670,23 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                                                             }
                                                         />
                                                     </div>
+                                                    <div>
+                                                        <InputLabel value="Detention" />
+                                                        <TextInput
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                                            value={line.detention ?? 0}
+                                                            onChange={(e) =>
+                                                                updateLine(
+                                                                    i,
+                                                                    'detention',
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -695,6 +714,14 @@ export default function InvoiceForm({ invoiceId }: { invoiceId?: number }) {
                                             <dt className="text-gray-500">Empty container</dt>
                                             <dd className="font-medium">
                                                 ₹ {formatMoney(totals.total_empty_container_charge)}
+                                            </dd>
+                                        </div>
+                                    )}
+                                    {totals.total_detention > 0 && (
+                                        <div className="flex justify-between gap-4 sm:block">
+                                            <dt className="text-gray-500">Detention</dt>
+                                            <dd className="font-medium">
+                                                ₹ {formatMoney(totals.total_detention)}
                                             </dd>
                                         </div>
                                     )}

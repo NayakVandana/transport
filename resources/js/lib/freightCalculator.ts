@@ -3,13 +3,14 @@ import type { FreightInvoiceLine, InvoiceTotals } from '@/types/transport';
 export function calculateFreightInvoice(
     lines: Pick<
         FreightInvoiceLine,
-        'weight' | 'rate' | 'advance_paid' | 'empty_container_charge'
+        'weight' | 'rate' | 'advance_paid' | 'empty_container_charge' | 'detention'
     >[],
     igstRate = 5,
 ): InvoiceTotals {
     let totalWeight = 0;
     let totalFreight = 0;
     let totalEmptyContainer = 0;
+    let totalDetention = 0;
     let totalAdvance = 0;
 
     for (const line of lines) {
@@ -19,11 +20,12 @@ export function calculateFreightInvoice(
         totalWeight += weight;
         totalFreight += freight;
         totalEmptyContainer += Number(line.empty_container_charge) || 0;
+        totalDetention += Number(line.detention) || 0;
         totalAdvance += Number(line.advance_paid) || 0;
     }
 
     const netValue =
-        Math.round((totalFreight + totalEmptyContainer) * 100) / 100;
+        Math.round((totalFreight + totalEmptyContainer + totalDetention) * 100) / 100;
     const balance = Math.round((netValue - totalAdvance) * 100) / 100;
     const igstAmount = Math.round(netValue * (igstRate / 100) * 100) / 100;
 
@@ -32,6 +34,7 @@ export function calculateFreightInvoice(
         total_freight: Math.round(totalFreight * 100) / 100,
         total_empty_container_charge:
             Math.round(totalEmptyContainer * 100) / 100,
+        total_detention: Math.round(totalDetention * 100) / 100,
         net_value: netValue,
         total_advance: Math.round(totalAdvance * 100) / 100,
         balance_amount: balance,
