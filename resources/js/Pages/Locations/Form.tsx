@@ -9,7 +9,7 @@ import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { resolveReturnHref } from '@/lib/invoiceReturn';
-import { validateLocationForm } from '@/lib/locationValidation';
+import { locationFormPayload, normalizeLocationName, validateLocationForm } from '@/lib/locationValidation';
 import type { Location } from '@/types/transport';
 import { Head, Link, router } from '@inertiajs/react';
 import { FormEventHandler, useMemo, useState } from 'react';
@@ -62,9 +62,10 @@ export default function LocationForm() {
         setProcessing(true);
 
         try {
+            const payload = locationFormPayload({ name });
             const res = await appApiPost<ApiEnvelope<{ location: Location }>>(
                 '/locations/location-store',
-                { name: name.trim() },
+                payload,
             );
 
             if (!res.success) {
@@ -115,7 +116,8 @@ export default function LocationForm() {
                                 className={inputClass}
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="Silvassa"
+                                onBlur={() => setName((current) => normalizeLocationName(current))}
+                                placeholder="SILVASSA"
                                 autoFocus
                             />
                             <InputError message={errors.name} className="mt-1" />

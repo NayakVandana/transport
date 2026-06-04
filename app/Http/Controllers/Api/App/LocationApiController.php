@@ -90,10 +90,17 @@ class LocationApiController extends Controller
                 return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
             }
 
-            $location = RoutePairRegistry::ensureLocation(
-                (int) $request->user()->id,
-                $validation->validated()['name'],
-            );
+            $userId = (int) $request->user()->id;
+            $normalized = RoutePairRegistry::normalize($validation->validated()['name']);
+            $existing = RoutePairRegistry::findForUser($userId, $normalized);
+
+            if ($existing?->is_active) {
+                return $this->sendJsonResponse(false, 'This location already exists.', [
+                    'name' => ['This location already exists.'],
+                ], 200);
+            }
+
+            $location = RoutePairRegistry::ensureLocation($userId, $normalized);
 
             return $this->sendJsonResponse(true, 'Location saved.', [
                 'location' => $location,

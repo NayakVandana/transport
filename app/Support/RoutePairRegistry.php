@@ -9,7 +9,27 @@ class RoutePairRegistry
 {
     public static function normalize(string $name): string
     {
-        return preg_replace('/\s+/', ' ', trim($name)) ?? '';
+        $trimmed = preg_replace('/\s+/', ' ', trim($name)) ?? '';
+
+        if ($trimmed === '') {
+            return '';
+        }
+
+        return mb_strtoupper($trimmed);
+    }
+
+    public static function findForUser(int $userId, string $name): ?Location
+    {
+        $normalized = self::normalize($name);
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        return Location::query()
+            ->where('user_id', $userId)
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($normalized)])
+            ->first();
     }
 
     public static function ensureLocation(int $userId, string $name): Location
@@ -20,16 +40,31 @@ class RoutePairRegistry
             throw new InvalidArgumentException('Location name is required.');
         }
 
-        $location = Location::query()->firstOrCreate(
-            ['user_id' => $userId, 'name' => $normalized],
-            ['is_active' => true],
-        );
+        $location = self::findForUser($userId, $normalized);
 
-        if (! $location->is_active) {
-            $location->update(['is_active' => true]);
+        if ($location) {
+            $updates = [];
+
+            if ($location->name !== $normalized) {
+                $updates['name'] = $normalized;
+            }
+
+            if (! $location->is_active) {
+                $updates['is_active'] = true;
+            }
+
+            if ($updates !== []) {
+                $location->update($updates);
+            }
+
+            return $location->fresh();
         }
 
-        return $location;
+        return Location::query()->create([
+            'user_id' => $userId,
+            'name' => $normalized,
+            'is_active' => true,
+        ]);
     }
 
     /** @return array{from: string, to: string} */
