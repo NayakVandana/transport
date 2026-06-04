@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Company;
+use App\Models\DailyReport;
 use App\Models\Party;
 use App\Models\Driver;
 use App\Models\DriverDocument;
@@ -41,6 +42,7 @@ class TransportSeeder extends Seeder
         $this->seedInvoices($userId, $company, $parties, $vehicles, $entrybooks);
         $this->seedInvoicePayments($userId);
         $this->seedVehicleExpenses($userId, $vehicles);
+        $this->seedDailyReports($userId, $vehicles, $parties);
         $this->seedVehicleDocuments($userId, $vehicles);
         $this->seedDriverDocuments($userId, $drivers);
     }
@@ -706,6 +708,64 @@ class TransportSeeder extends Seeder
                         'notes' => $doc['notes'],
                     ],
                 );
+            }
+        }
+    }
+
+    /** @param  array<string, Vehicle>  $vehicles  @param  list<Party>  $parties */
+    private function seedDailyReports(int $userId, array $vehicles, array $parties): void
+    {
+        $activeVehicleNumbers = ['MH04JU9931', 'MH04JU9932'];
+        $locations = ['J N P T', 'SARIGAM', 'VAPI', 'MUNDRA', 'HAZIRA', 'NHAVA SHEVA', 'Silvassa'];
+        $descriptions = [
+            "Container load to port\n20ft export",
+            "Steel coils - Sarigam delivery",
+            "Empty return from Silvassa",
+            "Import cargo awaiting clearance",
+            "Chemical drums - Hazira route",
+            "Local transfer Vapi to J N P T",
+            "Detention at gate - docs pending",
+        ];
+
+        $currentPartyId = $parties[0]->id ?? null;
+        $planningPartyId = $parties[1]->id ?? null;
+
+        for ($dayOffset = 6; $dayOffset >= 0; $dayOffset--) {
+            $reportDate = now()->subDays($dayOffset)->toDateString();
+            $serial = 1;
+
+            foreach ($activeVehicleNumbers as $vehicleIndex => $vehicleNumber) {
+                $vehicle = $vehicles[$vehicleNumber] ?? null;
+                if ($vehicle === null) {
+                    continue;
+                }
+
+                $slot = (6 - $dayOffset + $vehicleIndex) % count($descriptions);
+                $detention = match (true) {
+                    $dayOffset === 0 && $vehicleIndex === 1 => 2500.00,
+                    $dayOffset === 1 => 1200.00 + ($vehicleIndex * 300),
+                    $dayOffset === 2 && $vehicleIndex === 0 => 800.00,
+                    default => 0.00,
+                };
+
+                DailyReport::query()->updateOrCreate(
+                    [
+                        'user_id' => $userId,
+                        'report_date' => $reportDate,
+                        'vehicle_id' => $vehicle->id,
+                    ],
+                    [
+                        'serial_number' => $serial,
+                        'description' => $descriptions[$slot],
+                        'current_party_id' => $vehicleIndex === 0 ? $currentPartyId : $planningPartyId,
+                        'planning_party_id' => $vehicleIndex === 0 ? $planningPartyId : $currentPartyId,
+                        'location' => $locations[$slot],
+                        'detention' => $detention,
+                        'day' => $dayOffset <= 2 ? (7 - $dayOffset) : null,
+                    ],
+                );
+
+                $serial++;
             }
         }
     }
