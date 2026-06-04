@@ -47,7 +47,7 @@ class VehicleApiController extends Controller
                 'vehicles',
                 'Vehicles Export',
                 $filterSummary,
-                ['Number', 'Type', 'Brand', 'Model', 'Capacity', 'Fuel', 'Insurance Expiry', 'Permit Expiry', 'PUC Expiry', 'Fitness Expiry', 'Status'],
+                ['Number', 'Type', 'Brand', 'Model', 'Capacity', 'Fuel', 'Insurance Expiry', 'Permit Expiry', 'PUC Expiry', 'Fitness Expiry', 'Tax', 'Tax Expiry', 'Status'],
                 $vehicles->map(fn ($vehicle) => [
                     $vehicle->vehicle_number,
                     $vehicle->vehicle_type ?? '',
@@ -59,9 +59,11 @@ class VehicleApiController extends Controller
                     ListExport::formatDate($vehicle->permit_expiry),
                     ListExport::formatDate($vehicle->pollution_expiry),
                     ListExport::formatDate($vehicle->fitness_expiry),
+                    $vehicle->tax_name ?? '',
+                    ListExport::formatDate($vehicle->tax_expiry),
                     ucfirst($vehicle->status),
                 ]),
-                ['TOTAL', $vehicles->count().' vehicles', '', '', '', '', '', '', '', '', ''],
+                ['TOTAL', $vehicles->count().' vehicles', '', '', '', '', '', '', '', '', '', '', ''],
             );
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -78,7 +80,7 @@ class VehicleApiController extends Controller
                 'vehicles',
                 'Vehicles Report',
                 $filterSummary,
-                ['Number', 'Type', 'Brand', 'Model', 'Capacity', 'Fuel', 'Insurance', 'Permit', 'PUC', 'Fitness', 'Status'],
+                ['Number', 'Type', 'Brand', 'Model', 'Capacity', 'Fuel', 'Insurance', 'Permit', 'PUC', 'Fitness', 'Tax', 'Tax Expiry', 'Status'],
                 $vehicles->map(fn ($vehicle) => [
                     $vehicle->vehicle_number,
                     $vehicle->vehicle_type ?? '—',
@@ -90,6 +92,8 @@ class VehicleApiController extends Controller
                     ListExport::formatDate($vehicle->permit_expiry) ?: '—',
                     ListExport::formatDate($vehicle->pollution_expiry) ?: '—',
                     ListExport::formatDate($vehicle->fitness_expiry) ?: '—',
+                    $vehicle->tax_name ?? '—',
+                    ListExport::formatDate($vehicle->tax_expiry) ?: '—',
                     ucfirst($vehicle->status),
                 ]),
                 $vehicles->count(),
@@ -105,6 +109,7 @@ class VehicleApiController extends Controller
             return $this->sendJsonResponse(true, 'Vehicle form data loaded.', [
                 'validationMessages' => VehicleValidation::forFrontend(),
                 'fuelTypes' => VehicleValidation::fuelTypes(),
+                'taxNames' => VehicleValidation::taxNames(),
                 'document_types' => DocumentValidation::vehicleOptionsForFrontend(),
             ], 200);
         } catch (Exception $e) {
@@ -132,6 +137,7 @@ class VehicleApiController extends Controller
                 'vehicle' => $vehicle,
                 'validationMessages' => VehicleValidation::forFrontend(),
                 'fuelTypes' => VehicleValidation::fuelTypes(),
+                'taxNames' => VehicleValidation::taxNames(),
                 'document_types' => DocumentValidation::vehicleOptionsForFrontend(),
             ], 200);
         } catch (Exception $e) {
@@ -169,6 +175,8 @@ class VehicleApiController extends Controller
                 'permit_expiry' => ['required', 'date'],
                 'pollution_expiry' => ['required', 'date'],
                 'fitness_expiry' => ['required', 'date'],
+                'tax_name' => ['nullable', 'string', 'max:100', 'required_with:tax_expiry'],
+                'tax_expiry' => ['nullable', 'date', 'required_with:tax_name'],
                 'status' => ['required', 'string', 'in:active,inactive'],
             ]);
 
@@ -223,6 +231,8 @@ class VehicleApiController extends Controller
                 'permit_expiry' => ['required', 'date'],
                 'pollution_expiry' => ['required', 'date'],
                 'fitness_expiry' => ['required', 'date'],
+                'tax_name' => ['nullable', 'string', 'max:100', 'required_with:tax_expiry'],
+                'tax_expiry' => ['nullable', 'date', 'required_with:tax_name'],
                 'status' => ['required', 'string', 'in:active,inactive'],
             ]);
 

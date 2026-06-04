@@ -227,6 +227,12 @@ export default function VehiclesIndex() {
                                             label: 'PUC',
                                             value: formatAppDateTime(v.pollution_expiry),
                                         },
+                                        {
+                                            label: 'Tax',
+                                            value: v.tax_name
+                                                ? `${v.tax_name}${v.tax_expiry ? ` · ${formatAppDateTime(v.tax_expiry)}` : ''}`
+                                                : '—',
+                                        },
                                     ]}
                                     actions={
                                         <>
@@ -254,6 +260,7 @@ export default function VehiclesIndex() {
                                     <th className="px-4 py-3 text-left font-medium text-gray-500">Insurance Expiry</th>
                                     <th className="px-4 py-3 text-left font-medium text-gray-500">Permit Expiry</th>
                                     <th className="px-4 py-3 text-left font-medium text-gray-500">PUC Expiry</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">Tax</th>
                                     <th className="px-4 py-3 text-left font-medium text-gray-500">Status</th>
                                     <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
                                     <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
@@ -281,6 +288,20 @@ export default function VehiclesIndex() {
                                     </td>
                                     <td className="px-4 py-3 text-gray-600">
                                         {formatAppDateTime(v.pollution_expiry)}
+                                    </td>
+                                    <td className="px-4 py-3 text-gray-600">
+                                        {v.tax_name ? (
+                                            <>
+                                                {v.tax_name}
+                                                {v.tax_expiry ? (
+                                                    <span className="block text-xs text-gray-500">
+                                                        {formatAppDateTime(v.tax_expiry)}
+                                                    </span>
+                                                ) : null}
+                                            </>
+                                        ) : (
+                                            '—'
+                                        )}
                                     </td>
                                     <td className="px-4 py-3">
                                         <span

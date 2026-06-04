@@ -151,6 +151,8 @@ class TransportSeeder extends Seeder
                 'permit_expiry' => '2026-06-30',
                 'pollution_expiry' => '2026-05-15',
                 'fitness_expiry' => '2026-07-20',
+                'tax_name' => 'Gujarat Tax',
+                'tax_expiry' => '2026-12-31',
                 'status' => 'active',
             ],
             'MH04JU9932' => [
@@ -165,6 +167,8 @@ class TransportSeeder extends Seeder
                 'permit_expiry' => '2026-08-10',
                 'pollution_expiry' => '2026-06-01',
                 'fitness_expiry' => '2026-08-05',
+                'tax_name' => 'Maharashtra Tax',
+                'tax_expiry' => '2026-11-30',
                 'status' => 'active',
             ],
             'GJ18BT4521' => [
@@ -179,6 +183,8 @@ class TransportSeeder extends Seeder
                 'permit_expiry' => '2026-09-30',
                 'pollution_expiry' => '2026-07-01',
                 'fitness_expiry' => '2026-09-15',
+                'tax_name' => 'Gujarat Tax',
+                'tax_expiry' => '2027-03-31',
                 'status' => 'inactive',
             ],
         ];

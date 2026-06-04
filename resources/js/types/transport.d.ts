@@ -41,6 +41,8 @@ export interface Vehicle {
     permit_expiry?: string | null;
     pollution_expiry?: string | null;
     fitness_expiry?: string | null;
+    tax_name?: string | null;
+    tax_expiry?: string | null;
     status: 'active' | 'inactive';
     created_at?: string | null;
     documents?: EntityDocument[];

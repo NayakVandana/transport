@@ -11,11 +11,13 @@ export type VehicleFormData = {
     permit_expiry: string;
     pollution_expiry: string;
     fitness_expiry: string;
+    tax_name: string;
+    tax_expiry: string;
     status: 'active' | 'inactive';
 };
 
 export type VehicleFieldMessages = Partial<
-    Record<'required' | 'max' | 'date' | 'unique' | 'in', string>
+    Record<'required' | 'max' | 'date' | 'unique' | 'in' | 'required_with', string>
 >;
 
 export type VehicleValidationMessages = Partial<
@@ -35,6 +37,8 @@ export const VEHICLE_FIELD_LABELS: Record<keyof VehicleFormData, string> = {
     permit_expiry: 'Permit Expiry',
     pollution_expiry: 'PUC Expiry',
     fitness_expiry: 'Fitness Expiry',
+    tax_name: 'Tax Name',
+    tax_expiry: 'Tax Expiry',
     status: 'Status',
 };
 
@@ -46,6 +50,7 @@ const MAX_LENGTH: Partial<Record<keyof VehicleFormData, number>> = {
     capacity: 50,
     insurance_number: 50,
     permit_number: 50,
+    tax_name: 100,
 };
 
 const DEFAULT_MESSAGES: VehicleValidationMessages = {
@@ -96,6 +101,14 @@ const DEFAULT_MESSAGES: VehicleValidationMessages = {
     fitness_expiry: {
         required: 'Please select the fitness certificate expiry date.',
         date: 'Fitness expiry must be a valid date.',
+    },
+    tax_name: {
+        required_with: 'Please enter the tax name (e.g. Gujarat Tax).',
+        max: 'Tax name cannot exceed 100 characters.',
+    },
+    tax_expiry: {
+        required_with: 'Please select the tax expiry date.',
+        date: 'Tax expiry must be a valid date.',
     },
     status: {
         required: 'Please select whether the vehicle is active or inactive.',
@@ -209,6 +222,26 @@ export function validateVehicleForm(
             'fitness_expiry',
             'required',
             'Fitness expiry is required.',
+        );
+    }
+
+    checkMax('tax_name', data.tax_name);
+
+    if (data.tax_name.trim() && !data.tax_expiry) {
+        errors.tax_expiry = messageFor(
+            customMessages,
+            'tax_expiry',
+            'required_with',
+            'Please select the tax expiry date.',
+        );
+    }
+
+    if (data.tax_expiry && !data.tax_name.trim()) {
+        errors.tax_name = messageFor(
+            customMessages,
+            'tax_name',
+            'required_with',
+            'Please enter the tax name (e.g. Gujarat Tax).',
         );
     }
 

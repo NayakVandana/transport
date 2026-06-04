@@ -53,12 +53,14 @@ type VehicleShowData = {
     vehicle: Vehicle;
     validationMessages: VehicleValidationMessages;
     fuelTypes: string[];
+    taxNames: string[];
     document_types: ExpenseOption[];
 };
 
 type VehicleMetaData = {
     validationMessages: VehicleValidationMessages;
     fuelTypes: string[];
+    taxNames: string[];
     document_types: ExpenseOption[];
 };
 
@@ -69,6 +71,7 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
     const backToProfile = isEdit && returnTo === 'profile';
     const [validationMessages, setValidationMessages] = useState<VehicleValidationMessages>({});
     const [fuelTypes, setFuelTypes] = useState<string[]>([]);
+    const [taxNames, setTaxNames] = useState<string[]>([]);
     const [documentTypes, setDocumentTypes] = useState<ExpenseOption[]>([]);
     const [documents, setDocuments] = useState<EntityDocument[]>([]);
     const [documentDrafts, setDocumentDrafts] = useState<DocumentDraft[]>([]);
@@ -89,6 +92,8 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
         permit_expiry: '',
         pollution_expiry: '',
         fitness_expiry: '',
+        tax_name: '',
+        tax_expiry: '',
         status: 'active',
     });
 
@@ -112,6 +117,7 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                     const vehicle = res.data.vehicle;
                     setValidationMessages(res.data.validationMessages);
                     setFuelTypes(res.data.fuelTypes);
+                    setTaxNames(res.data.taxNames ?? []);
                     setDocumentTypes(res.data.document_types ?? []);
                     setDocuments(vehicle.documents ?? []);
                     setDocumentDrafts([]);
@@ -128,6 +134,8 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                         permit_expiry: dateInputValue(vehicle.permit_expiry),
                         pollution_expiry: dateInputValue(vehicle.pollution_expiry),
                         fitness_expiry: dateInputValue(vehicle.fitness_expiry),
+                        tax_name: vehicle.tax_name ?? '',
+                        tax_expiry: dateInputValue(vehicle.tax_expiry),
                         status: vehicle.status ?? 'active',
                     });
                 } else {
@@ -143,6 +151,7 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
 
                     setValidationMessages(res.data.validationMessages);
                     setFuelTypes(res.data.fuelTypes);
+                    setTaxNames(res.data.taxNames ?? []);
                     setDocumentTypes(res.data.document_types ?? []);
                 }
             } catch {
@@ -159,6 +168,11 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
         data.fuel_type && !fuelTypes.includes(data.fuel_type)
             ? [data.fuel_type, ...fuelTypes]
             : fuelTypes;
+
+    const taxNameOptions =
+        data.tax_name && !taxNames.includes(data.tax_name)
+            ? [data.tax_name, ...taxNames]
+            : taxNames;
 
     const setField = <K extends keyof VehicleFormData>(field: K, value: VehicleFormData[K]) => {
         setData((prev) => ({ ...prev, [field]: value }));
@@ -201,6 +215,8 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                 permit_expiry: data.permit_expiry,
                 pollution_expiry: data.pollution_expiry,
                 fitness_expiry: data.fitness_expiry,
+                tax_name: data.tax_name.trim() || null,
+                tax_expiry: data.tax_expiry || null,
                 status: data.status,
                 ...(vehicleId ? { id: vehicleId } : {}),
             };
@@ -471,6 +487,28 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                                             onChange={(e) =>
                                                 setField('fitness_expiry', e.target.value)
                                             }
+                                        />
+                                    </Field>
+                                    <Field label="Tax Name" error={errors.tax_name}>
+                                        <select
+                                            className={selectClass('tax_name')}
+                                            value={data.tax_name}
+                                            onChange={(e) => setField('tax_name', e.target.value)}
+                                        >
+                                            <option value="">Select tax (optional)</option>
+                                            {taxNameOptions.map((name) => (
+                                                <option key={name} value={name}>
+                                                    {name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </Field>
+                                    <Field label="Tax Expiry" error={errors.tax_expiry}>
+                                        <TextInput
+                                            type="date"
+                                            className={inputClass('tax_expiry')}
+                                            value={data.tax_expiry}
+                                            onChange={(e) => setField('tax_expiry', e.target.value)}
                                         />
                                     </Field>
                                 </div>

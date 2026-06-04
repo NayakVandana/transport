@@ -14,6 +14,8 @@ return [
         'permit_expiry' => 'Permit Expiry',
         'pollution_expiry' => 'PUC Expiry',
         'fitness_expiry' => 'Fitness Expiry',
+        'tax_name' => 'Tax Name',
+        'tax_expiry' => 'Tax Expiry',
         'status' => 'Status',
     ],
 
@@ -66,6 +68,14 @@ return [
             'required' => 'Please select the fitness certificate expiry date.',
             'date' => 'Fitness expiry must be a valid date.',
         ],
+        'tax_name' => [
+            'required_with' => 'Please enter the tax name (e.g. Gujarat Tax).',
+            'max' => 'Tax name cannot exceed 100 characters.',
+        ],
+        'tax_expiry' => [
+            'required_with' => 'Please select the tax expiry date.',
+            'date' => 'Tax expiry must be a valid date.',
+        ],
         'status' => [
             'required' => 'Please select whether the vehicle is active or inactive.',
             'in' => 'Status must be either Active or Inactive.',
@@ -73,4 +83,17 @@ return [
     ],
 
     'fuel_types' => ['Diesel', 'Petrol', 'CNG', 'Electric', 'LPG'],
+
+    'tax_names' => [
+        'Gujarat Tax',
+        'Maharashtra Tax',
+        'Rajasthan Tax',
+        'Madhya Pradesh Tax',
+        'Daman and Diu Tax',
+        'Dadra and Nagar Haveli Tax',
+        'Delhi Tax',
+        'Karnataka Tax',
+        'Tamil Nadu Tax',
+        'Uttar Pradesh Tax',
+    ],
 ];

@@ -58,4 +58,13 @@ class VehicleValidation
 
         return $types;
     }
+
+    /** @return list<string> */
+    public static function taxNames(): array
+    {
+        /** @var list<string> $names */
+        $names = __('vehicle.tax_names');
+
+        return $names;
+    }
 }

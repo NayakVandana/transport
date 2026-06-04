@@ -26,6 +26,8 @@ class Vehicle extends Model
         'permit_expiry',
         'pollution_expiry',
         'fitness_expiry',
+        'tax_name',
+        'tax_expiry',
         'status',
     ];
 
@@ -36,6 +38,7 @@ class Vehicle extends Model
             'permit_expiry' => 'date',
             'pollution_expiry' => 'date',
             'fitness_expiry' => 'date',
+            'tax_expiry' => 'date',
         ];
     }
 

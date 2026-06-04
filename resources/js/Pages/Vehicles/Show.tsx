@@ -145,6 +145,11 @@ export default function VehicleShow({ vehicleId }: { vehicleId: number }) {
                                             label="Fitness Expiry"
                                             value={formatAppDateTime(vehicle.fitness_expiry)}
                                         />
+                                        <DetailItemLocal label="Tax Name" value={vehicle.tax_name} />
+                                        <DetailItemLocal
+                                            label="Tax Expiry"
+                                            value={formatAppDateTime(vehicle.tax_expiry)}
+                                        />
                                     </DetailGrid>
                                 </FormCard>
 
