@@ -65,11 +65,11 @@ export default function ProfileShow() {
                     <div className="space-y-5">
                         <FormCard>
                             <FormSectionHeader title="Account Information" />
-                            {user.logo_url && (
+                            {user.photo_url && (
                                 <div className="mb-4">
                                     <img
-                                        src={user.logo_url}
-                                        alt="User logo"
+                                        src={user.photo_url}
+                                        alt="User photo"
                                         className="h-16 w-16 rounded-lg border border-gray-200 bg-gray-50 object-contain"
                                     />
                                 </div>

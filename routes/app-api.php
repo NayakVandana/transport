@@ -25,7 +25,7 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/auth/auth-logout', [AuthApiController::class, 'postAuthLogout']);
 
     Route::post('/profile/profile-show', [ProfileApiController::class, 'postProfileShow']);
-    Route::post('/profile/profile-logo-update', [ProfileApiController::class, 'postProfileLogoUpdate']);
+    Route::post('/profile/profile-photo-update', [ProfileApiController::class, 'postProfilePhotoUpdate']);
     Route::post('/profile/profile-update', [ProfileApiController::class, 'postProfileUpdate']);
     Route::post('/profile/profile-password-update', [ProfileApiController::class, 'postProfilePasswordUpdate']);
     Route::post('/profile/profile-destroy', [ProfileApiController::class, 'postProfileDestroy']);
@@ -54,7 +54,7 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/parties/party-account', [PartyApiController::class, 'postPartyAccount']);
     Route::post('/parties/party-store', [PartyApiController::class, 'postPartyStore']);
     Route::post('/parties/party-update', [PartyApiController::class, 'postPartyUpdate']);
-    Route::post('/parties/party-logo-update', [PartyApiController::class, 'postPartyLogoUpdate']);
+    Route::post('/parties/party-photo-update', [PartyApiController::class, 'postPartyPhotoUpdate']);
     Route::post('/parties/party-destroy', [PartyApiController::class, 'postPartyDestroy']);
 
     Route::post('/parties/party-document-meta', [PartyDocumentApiController::class, 'postPartyDocumentMeta']);
@@ -83,6 +83,7 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/drivers/driver-show', [DriverApiController::class, 'postDriverShow']);
     Route::post('/drivers/driver-store', [DriverApiController::class, 'postDriverStore']);
     Route::post('/drivers/driver-update', [DriverApiController::class, 'postDriverUpdate']);
+    Route::post('/drivers/driver-photo-update', [DriverApiController::class, 'postDriverPhotoUpdate']);
     Route::post('/drivers/driver-destroy', [DriverApiController::class, 'postDriverDestroy']);
 
     Route::post('/drivers/driver-documents-list', [DriverDocumentApiController::class, 'postDriverDocumentsList']);

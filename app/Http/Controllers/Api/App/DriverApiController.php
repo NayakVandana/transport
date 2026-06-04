@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Api\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\Driver;
+use App\Support\DocumentStorage;
 use App\Support\DocumentValidation;
+use App\Support\DriverProfileData;
 use App\Support\ListExport;
 use App\Support\ListFilter;
+use App\Support\LogoValidation;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -129,23 +132,14 @@ class DriverApiController extends Controller
     public function postDriverStore(Request $request)
     {
         try {
-            $validation = Validator::make($request->all(), [
-                'name' => ['required', 'string', 'max:255'],
-                'mobile' => ['nullable', 'string', 'max:15'],
-                'license_number' => ['nullable', 'string', 'max:50'],
-                'license_expiry' => ['nullable', 'date'],
-                'joining_date' => ['nullable', 'date'],
-                'salary' => ['nullable', 'numeric', 'min:0'],
-                'address' => ['nullable', 'string'],
-                'status' => ['required', 'string', Rule::in(['active', 'inactive'])],
-            ]);
+            $validation = Validator::make($request->all(), $this->driverValidationRules());
 
             if ($validation->fails()) {
                 return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
             }
 
             $driver = Driver::query()->create([
-                ...$validation->validated(),
+                ...DriverProfileData::prepareForPersistence($validation->validated()),
                 'user_id' => $request->user()->id,
             ]);
 
@@ -162,14 +156,7 @@ class DriverApiController extends Controller
         try {
             $validation = Validator::make($request->all(), [
                 'id' => ['required', 'integer'],
-                'name' => ['required', 'string', 'max:255'],
-                'mobile' => ['nullable', 'string', 'max:15'],
-                'license_number' => ['nullable', 'string', 'max:50'],
-                'license_expiry' => ['nullable', 'date'],
-                'joining_date' => ['nullable', 'date'],
-                'salary' => ['nullable', 'numeric', 'min:0'],
-                'address' => ['nullable', 'string'],
-                'status' => ['required', 'string', Rule::in(['active', 'inactive'])],
+                ...$this->driverValidationRules(),
             ]);
 
             if ($validation->fails()) {
@@ -180,11 +167,47 @@ class DriverApiController extends Controller
                 ->where('user_id', $request->user()->id)
                 ->findOrFail($request->input('id'));
 
-            $data = $validation->validated();
+            $data = DriverProfileData::prepareForPersistence($validation->validated());
             unset($data['id']);
             $driver->update($data);
 
             return $this->sendJsonResponse(true, 'Driver updated.', [
+                'driver' => $driver->fresh(),
+            ], 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postDriverPhotoUpdate(Request $request)
+    {
+        try {
+            $validation = Validator::make($request->all(), [
+                'id' => ['required', 'integer'],
+                'photo' => ['required_without:remove_photo', 'nullable', ...LogoValidation::fileRule()],
+                'remove_photo' => ['nullable', 'boolean'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
+            $driver = Driver::query()
+                ->where('user_id', $request->user()->id)
+                ->findOrFail($request->input('id'));
+
+            if ($request->boolean('remove_photo')) {
+                $driver->update(['photo_path' => null]);
+            } elseif ($request->hasFile('photo')) {
+                $driver->update([
+                    'photo_path' => DocumentStorage::store(
+                        $request->file('photo'),
+                        "drivers/{$request->user()->id}/{$driver->id}/photo",
+                    ),
+                ]);
+            }
+
+            return $this->sendJsonResponse(true, 'Driver photo updated.', [
                 'driver' => $driver->fresh(),
             ], 200);
         } catch (Exception $e) {
@@ -224,7 +247,16 @@ class DriverApiController extends Controller
         $status = ListFilter::statusFromRequest($request, ['active', 'inactive']);
 
         $query = Driver::query()->where('user_id', $userId);
-        ListFilter::applySearch($query, $search, ['name', 'mobile', 'license_number']);
+        ListFilter::applySearch($query, $search, [
+            'name',
+            'mobile',
+            'email',
+            'aadhaar_no',
+            'pan_no',
+            'license_number',
+            'city',
+            'district',
+        ]);
         ListFilter::applyDate($query, $dateFilters, 'joining_date');
         if ($status !== '') {
             $query->where('status', $status);
@@ -242,5 +274,19 @@ class DriverApiController extends Controller
             'status' => $status,
             ...$dateFilters,
         ]];
+    }
+
+    /** @return array<string, mixed> */
+    private function driverValidationRules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'license_number' => ['nullable', 'string', 'max:50'],
+            'license_expiry' => ['nullable', 'date'],
+            'joining_date' => ['nullable', 'date'],
+            'salary' => ['nullable', 'numeric', 'min:0'],
+            'status' => ['required', 'string', Rule::in(['active', 'inactive'])],
+            ...DriverProfileData::validationRules(),
+        ];
     }
 }

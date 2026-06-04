@@ -49,12 +49,24 @@ export interface Vehicle {
 export interface Driver {
     id: number;
     name: string;
+    photo_url?: string | null;
+    email?: string | null;
+    aadhaar_no?: string | null;
+    pan_no?: string | null;
     mobile?: string | null;
+    mobiles?: string[] | null;
     license_number?: string | null;
     license_expiry?: string | null;
     joining_date?: string | null;
     salary?: string | number | null;
     address?: string | null;
+    full_address?: string | null;
+    city?: string | null;
+    taluka?: string | null;
+    district?: string | null;
+    pincode?: string | null;
+    state_code?: string | null;
+    country?: string | null;
     status: 'active' | 'inactive';
     created_at?: string | null;
     documents?: EntityDocument[];
@@ -162,7 +174,7 @@ export interface Party {
     id: number;
     name: string;
     party_owner_name?: string | null;
-    logo_url?: string | null;
+    photo_url?: string | null;
     email?: string | null;
     pan_no?: string | null;
     gst_no?: string | null;

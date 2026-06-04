@@ -26,7 +26,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'logo_path',
+        'photo_path',
         'full_address',
         'city',
         'taluka',
@@ -45,11 +45,11 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
-        'logo_path',
+        'photo_path',
     ];
 
     protected $appends = [
-        'logo_url',
+        'photo_url',
     ];
 
     /**
@@ -73,18 +73,18 @@ class User extends Authenticatable
     protected static function booted(): void
     {
         static::updating(function (User $user) {
-            if ($user->isDirty('logo_path')) {
-                DocumentStorage::delete($user->getOriginal('logo_path'));
+            if ($user->isDirty('photo_path')) {
+                DocumentStorage::delete($user->getOriginal('photo_path'));
             }
         });
 
         static::deleting(function (User $user) {
-            DocumentStorage::delete($user->logo_path);
+            DocumentStorage::delete($user->photo_path);
         });
     }
 
-    public function getLogoUrlAttribute(): ?string
+    public function getPhotoUrlAttribute(): ?string
     {
-        return DocumentStorage::url($this->logo_path);
+        return DocumentStorage::url($this->photo_path);
     }
 }

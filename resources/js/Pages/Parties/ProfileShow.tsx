@@ -104,10 +104,10 @@ export default function PartyProfileShow({ partyId }: { partyId: number }) {
                                 <FormCard className="!shadow-none ring-1 ring-gray-200">
                                     <FormSectionHeader title="Basic Details" />
                                     <div className="mb-4 flex items-start gap-4">
-                                        {party.logo_url ? (
+                                        {party.photo_url ? (
                                             <img
-                                                src={party.logo_url}
-                                                alt={`${party.name} logo`}
+                                                src={party.photo_url}
+                                                alt={`${party.name} photo`}
                                                 className="h-20 w-20 rounded-lg border border-gray-200 bg-gray-50 object-contain"
                                             />
                                         ) : null}

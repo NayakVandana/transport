@@ -1,5 +1,5 @@
 import { FormPageHeader } from '@/Components/ListPageHeader';
-import LogoUploadField from '@/Components/LogoUploadField';
+import PhotoUploadField from '@/Components/PhotoUploadField';
 import FormPage, {
     FormActions,
     FormCard,
@@ -66,7 +66,7 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
     const [documentTypes, setDocumentTypes] = useState<ExpenseOption[]>([]);
     const [documents, setDocuments] = useState<EntityDocument[]>([]);
     const [documentDrafts, setDocumentDrafts] = useState<DocumentDraft[]>([]);
-    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [photoUrl, setPhotoUrl] = useState<string | null>(null);
     const [data, setData] = useState<PartyFormData>(emptyPartyForm());
 
     useEffect(() => {
@@ -92,7 +92,7 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
                     setDocumentTypes(res.data.document_types ?? []);
                     setDocuments(res.data.documents ?? []);
                     setDocumentDrafts([]);
-                    setLogoUrl(party.logo_url ?? null);
+                    setPhotoUrl(party.photo_url ?? null);
                     setData(partyToFormData(party));
                 })
                 .catch(() => {
@@ -276,16 +276,16 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
                                 </FormGrid>
 
                                 {partyId ? (
-                                    <LogoUploadField
-                                        label="Party logo"
-                                        logoUrl={logoUrl}
-                                        uploadPath="/parties/party-logo-update"
+                                    <PhotoUploadField
+                                        label="Party photo"
+                                        photoUrl={photoUrl}
+                                        uploadPath="/parties/party-photo-update"
                                         formFields={{ id: partyId }}
-                                        onUpdated={setLogoUrl}
+                                        onUpdated={setPhotoUrl}
                                     />
                                 ) : (
                                     <p className="text-sm text-gray-500">
-                                        Save the party first, then upload a logo.
+                                        Save the party first, then upload a photo.
                                     </p>
                                 )}
                             </div>

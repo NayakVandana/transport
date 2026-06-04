@@ -1,5 +1,14 @@
+import AddressFormFields from '@/Components/AddressFormFields';
+import PhotoUploadField from '@/Components/PhotoUploadField';
 import { FormPageHeader } from '@/Components/ListPageHeader';
-import FormPage, { FormActions, FormCard, FormGrid } from '@/Components/FormPage';
+import FormPage, {
+    FormActions,
+    FormCard,
+    FormField,
+    FormGrid,
+    FormSectionHeader,
+    formControlClass,
+} from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import EntityDocumentsSection, {
@@ -14,7 +23,13 @@ import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import type { Driver, EntityDocument, ExpenseOption } from '@/types/transport';
 import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
-import { validateDriverForm } from '@/lib/driverValidation';
+import {
+    driverFormPayload,
+    driverToFormData,
+    emptyDriverForm,
+    validateDriverForm,
+    type DriverFormData,
+} from '@/lib/driverValidation';
 import { Head, Link, router } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 
@@ -24,10 +39,6 @@ function useReturnContext() {
 
         return params.get('return') === 'profile' ? 'profile' : 'index';
     }, []);
-}
-
-function dateInputValue(value?: string | null): string {
-    return value?.slice(0, 10) ?? '';
 }
 
 export default function DriverForm({ driverId }: { driverId?: number }) {
@@ -54,16 +65,8 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
     const [documentTypes, setDocumentTypes] = useState<ExpenseOption[]>([]);
     const [documents, setDocuments] = useState<EntityDocument[]>([]);
     const [documentDrafts, setDocumentDrafts] = useState<DocumentDraft[]>([]);
-    const [data, setData] = useState({
-        name: '',
-        mobile: '',
-        license_number: '',
-        license_expiry: '',
-        joining_date: '',
-        salary: '',
-        address: '',
-        status: 'active' as 'active' | 'inactive',
-    });
+    const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+    const [data, setData] = useState<DriverFormData>(emptyDriverForm());
 
     useEffect(() => {
         setLoading(true);
@@ -85,16 +88,8 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                     setDocumentTypes(res.data.document_types ?? []);
                     setDocuments(driver.documents ?? []);
                     setDocumentDrafts([]);
-                    setData({
-                        name: driver.name ?? '',
-                        mobile: driver.mobile ?? '',
-                        license_number: driver.license_number ?? '',
-                        license_expiry: dateInputValue(driver.license_expiry),
-                        joining_date: dateInputValue(driver.joining_date),
-                        salary: driver.salary != null ? String(driver.salary) : '',
-                        address: driver.address ?? '',
-                        status: driver.status ?? 'active',
-                    });
+                    setPhotoUrl(driver.photo_url ?? null);
+                    setData(driverToFormData(driver));
                 } else {
                     const res = await appApiPost<
                         ApiEnvelope<{ document_types: ExpenseOption[] }>
@@ -117,13 +112,40 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
         void load();
     }, [driverId]);
 
-    const setField = <K extends keyof typeof data>(field: K, value: (typeof data)[K]) => {
+    const setField = <K extends keyof DriverFormData>(field: K, value: DriverFormData[K]) => {
         setData((prev) => ({ ...prev, [field]: value }));
         setErrors((prev) => {
             const next = { ...prev };
             delete next[field];
             return next;
         });
+    };
+
+    const setMobile = (index: number, value: string) => {
+        setData((prev) => {
+            const mobiles = [...prev.mobiles];
+            mobiles[index] = value;
+            return { ...prev, mobiles };
+        });
+        setErrors((prev) => {
+            const next = { ...prev };
+            delete next[`mobiles.${index}`];
+            return next;
+        });
+    };
+
+    const addMobile = () => {
+        setData((prev) => ({ ...prev, mobiles: [...prev.mobiles, ''] }));
+    };
+
+    const removeMobile = (index: number) => {
+        setData((prev) => ({
+            ...prev,
+            mobiles:
+                prev.mobiles.length <= 1
+                    ? ['']
+                    : prev.mobiles.filter((_, mobileIndex) => mobileIndex !== index),
+        }));
     };
 
     const submit: FormEventHandler = async (e) => {
@@ -133,7 +155,7 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
 
         const clientErrors = validateDriverForm(data);
         if (Object.keys(clientErrors).length > 0) {
-            setErrors(clientErrors);
+            setErrors(clientErrors as Record<string, string>);
             return;
         }
 
@@ -146,8 +168,10 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
 
         try {
             const payload = {
-                ...data,
+                ...driverFormPayload(data),
+                name: data.name.trim(),
                 salary: data.salary.trim() === '' ? null : Number(data.salary),
+                status: data.status,
                 ...(driverId ? { id: driverId } : {}),
             };
 
@@ -199,110 +223,209 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
         }
     };
 
+    const inputClass = (field: keyof DriverFormData) =>
+        fieldInputClass(Boolean(errors[field]), formControlClass);
+
     return (
         <>
             <Head title={isEdit ? (backToProfile ? 'Edit Driver Profile' : 'Edit Driver') : 'New Driver'} />
 
             <FormPage size="md">
-                    {loading ? (
-                        <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
-                    ) : loadError ? (
-                        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                            {loadError}
-                        </p>
-                    ) : (
-                        <FormCard>
+                {loading ? (
+                    <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
+                ) : loadError && !data.name ? (
+                    <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                        {loadError}
+                    </p>
+                ) : (
+                    <FormCard>
+                        {loadError && (
+                            <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                                {loadError}
+                            </p>
+                        )}
+
                         <form onSubmit={submit} className="space-y-6">
-                            <FormGrid>
-                            <div>
-                                <InputLabel value="Name" />
-                                <TextInput
-                                    className={fieldInputClass(Boolean(errors.name), 'mt-1 block w-full')}
-                                    value={data.name}
-                                    onChange={(e) => setField('name', e.target.value)}
-                                />
-                                <InputError message={errors.name} className="mt-1" />
-                            </div>
-                            <div>
-                                <InputLabel value="Mobile" />
-                                <TextInput
-                                    className={fieldInputClass(Boolean(errors.mobile), 'mt-1 block w-full')}
-                                    value={data.mobile}
-                                    onChange={(e) => setField('mobile', e.target.value)}
-                                />
-                                <InputError message={errors.mobile} className="mt-1" />
-                            </div>
-                            </FormGrid>
-                            <FormGrid>
-                            <div>
-                                <InputLabel value="License Number" />
-                                <TextInput
-                                    className="mt-1 block w-full"
-                                    value={data.license_number}
-                                    onChange={(e) => setField('license_number', e.target.value)}
-                                />
-                                <InputError message={errors.license_number} className="mt-1" />
-                            </div>
-                            <div>
-                                <InputLabel value="License Expiry" />
-                                <TextInput
-                                    type="date"
-                                    className="mt-1 block w-full"
-                                    value={data.license_expiry}
-                                    onChange={(e) => setField('license_expiry', e.target.value)}
-                                />
-                                <InputError message={errors.license_expiry} className="mt-1" />
-                            </div>
-                            </FormGrid>
-                            <FormGrid>
-                                <div>
-                                    <InputLabel value="Joining Date" />
+                            <div className="space-y-5">
+                                <FormSectionHeader title="Basic Details" />
+                                <FormField width="md">
+                                    <InputLabel value="Name" />
                                     <TextInput
-                                        type="date"
-                                        className="mt-1 block w-full"
-                                        value={data.joining_date}
-                                        onChange={(e) => setField('joining_date', e.target.value)}
+                                        className={inputClass('name')}
+                                        value={data.name}
+                                        onChange={(e) => setField('name', e.target.value)}
                                     />
-                                    <InputError message={errors.joining_date} className="mt-1" />
-                                </div>
-                                <div>
-                                    <InputLabel value="Salary (₹)" />
+                                    <InputError message={errors.name} className="mt-1" />
+                                </FormField>
+
+                                {driverId ? (
+                                    <PhotoUploadField
+                                        label="Driver photo"
+                                        photoUrl={photoUrl}
+                                        uploadPath="/drivers/driver-photo-update"
+                                        formFields={{ id: driverId }}
+                                        onUpdated={setPhotoUrl}
+                                    />
+                                ) : (
+                                    <p className="text-sm text-gray-500">
+                                        Save the driver first, then upload a photo.
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="space-y-5">
+                                <FormSectionHeader title="Contact Details" />
+                                <FormField width="md">
+                                    <InputLabel value="Email" />
                                     <TextInput
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        className="mt-1 block w-full"
-                                        value={data.salary}
-                                        onChange={(e) => setField('salary', e.target.value)}
-                                        placeholder="0.00"
+                                        type="email"
+                                        className={inputClass('email')}
+                                        value={data.email}
+                                        onChange={(e) => setField('email', e.target.value)}
                                     />
-                                    <InputError message={errors.salary} className="mt-1" />
+                                    <InputError message={errors.email} className="mt-1" />
+                                </FormField>
+
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <InputLabel value="Mobile Numbers" />
+                                        <button
+                                            type="button"
+                                            onClick={addMobile}
+                                            className="text-sm text-indigo-600 hover:underline"
+                                        >
+                                            + Add mobile
+                                        </button>
+                                    </div>
+                                    {data.mobiles.map((mobile, index) => (
+                                        <div key={index} className="flex items-start gap-2">
+                                            <div className="min-w-0 flex-1">
+                                                <TextInput
+                                                    className={fieldInputClass(
+                                                        Boolean(errors[`mobiles.${index}`]),
+                                                        formControlClass,
+                                                    )}
+                                                    value={mobile}
+                                                    onChange={(e) => setMobile(index, e.target.value)}
+                                                    placeholder="Mobile number"
+                                                />
+                                                <InputError
+                                                    message={errors[`mobiles.${index}`]}
+                                                    className="mt-1"
+                                                />
+                                            </div>
+                                            {data.mobiles.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeMobile(index)}
+                                                    className="mt-2 text-sm text-red-600 hover:underline"
+                                                >
+                                                    Remove
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
-                            </FormGrid>
-                            <div>
-                                <InputLabel value="Address" />
-                                <textarea
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    rows={3}
-                                    value={data.address}
-                                    onChange={(e) => setField('address', e.target.value)}
-                                />
-                                <InputError message={errors.address} className="mt-1" />
                             </div>
-                            <div className="sm:max-w-xs">
-                                <InputLabel value="Status" />
-                                <select
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    value={data.status}
-                                    onChange={(e) =>
-                                        setField('status', e.target.value as 'active' | 'inactive')
-                                    }
-                                >
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                                <InputError message={errors.status} className="mt-1" />
+
+                            <div className="space-y-5">
+                                <FormSectionHeader title="Identity Details" />
+                                <FormGrid cols={2}>
+                                    <FormField width="md">
+                                        <InputLabel value="Aadhaar No" />
+                                        <TextInput
+                                            className={inputClass('aadhaar_no')}
+                                            value={data.aadhaar_no}
+                                            onChange={(e) => setField('aadhaar_no', e.target.value)}
+                                            inputMode="numeric"
+                                            maxLength={12}
+                                        />
+                                        <InputError message={errors.aadhaar_no} className="mt-1" />
+                                    </FormField>
+                                    <FormField width="md">
+                                        <InputLabel value="PAN No" />
+                                        <TextInput
+                                            className={inputClass('pan_no')}
+                                            value={data.pan_no}
+                                            onChange={(e) => setField('pan_no', e.target.value)}
+                                        />
+                                        <InputError message={errors.pan_no} className="mt-1" />
+                                    </FormField>
+                                </FormGrid>
                             </div>
+
+                            <div className="space-y-5">
+                                <FormSectionHeader title="Employment Details" />
+                                <FormGrid>
+                                    <FormField width="md">
+                                        <InputLabel value="License Number" />
+                                        <TextInput
+                                            className={inputClass('license_number')}
+                                            value={data.license_number}
+                                            onChange={(e) => setField('license_number', e.target.value)}
+                                        />
+                                        <InputError message={errors.license_number} className="mt-1" />
+                                    </FormField>
+                                    <FormField width="md">
+                                        <InputLabel value="License Expiry" />
+                                        <TextInput
+                                            type="date"
+                                            className={inputClass('license_expiry')}
+                                            value={data.license_expiry}
+                                            onChange={(e) => setField('license_expiry', e.target.value)}
+                                        />
+                                        <InputError message={errors.license_expiry} className="mt-1" />
+                                    </FormField>
+                                </FormGrid>
+                                <FormGrid>
+                                    <FormField width="md">
+                                        <InputLabel value="Joining Date" />
+                                        <TextInput
+                                            type="date"
+                                            className={inputClass('joining_date')}
+                                            value={data.joining_date}
+                                            onChange={(e) => setField('joining_date', e.target.value)}
+                                        />
+                                        <InputError message={errors.joining_date} className="mt-1" />
+                                    </FormField>
+                                    <FormField width="md">
+                                        <InputLabel value="Salary (₹)" />
+                                        <TextInput
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            className={inputClass('salary')}
+                                            value={data.salary}
+                                            onChange={(e) => setField('salary', e.target.value)}
+                                            placeholder="0.00"
+                                        />
+                                        <InputError message={errors.salary} className="mt-1" />
+                                    </FormField>
+                                </FormGrid>
+                                <FormField width="sm">
+                                    <InputLabel value="Status" />
+                                    <select
+                                        className={fieldInputClass(
+                                            Boolean(errors.status),
+                                            formControlClass,
+                                        )}
+                                        value={data.status}
+                                        onChange={(e) =>
+                                            setField('status', e.target.value as 'active' | 'inactive')
+                                        }
+                                    >
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                    <InputError message={errors.status} className="mt-1" />
+                                </FormField>
+                            </div>
+
+                            <AddressFormFields
+                                data={data}
+                                errors={errors}
+                                onChange={(field, value) => setField(field, value)}
+                            />
 
                             {documentTypes.length > 0 && (
                                 <EntityDocumentsSection
@@ -314,16 +437,16 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                             )}
 
                             <FormActions>
-                            <PrimaryButton disabled={processing}>
-                                {processing ? 'Saving…' : 'Save'}
-                            </PrimaryButton>
-                            <Link href={backHref}>
-                                <SecondaryButton type="button">Cancel</SecondaryButton>
-                            </Link>
+                                <PrimaryButton disabled={processing}>
+                                    {processing ? 'Saving…' : 'Save'}
+                                </PrimaryButton>
+                                <Link href={backHref}>
+                                    <SecondaryButton type="button">Cancel</SecondaryButton>
+                                </Link>
                             </FormActions>
                         </form>
-                        </FormCard>
-                    )}
+                    </FormCard>
+                )}
             </FormPage>
         </>
     );

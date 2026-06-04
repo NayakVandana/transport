@@ -207,13 +207,13 @@ class PartyApiController extends Controller
         }
     }
 
-    public function postPartyLogoUpdate(Request $request)
+    public function postPartyPhotoUpdate(Request $request)
     {
         try {
             $validation = Validator::make($request->all(), [
                 'id' => ['required', 'integer'],
-                'logo' => ['required_without:remove_logo', 'nullable', ...LogoValidation::fileRule()],
-                'remove_logo' => ['nullable', 'boolean'],
+                'photo' => ['required_without:remove_photo', 'nullable', ...LogoValidation::fileRule()],
+                'remove_photo' => ['nullable', 'boolean'],
             ]);
 
             if ($validation->fails()) {
@@ -224,18 +224,18 @@ class PartyApiController extends Controller
                 ->where('user_id', $request->user()->id)
                 ->findOrFail($request->input('id'));
 
-            if ($request->boolean('remove_logo')) {
-                $party->update(['logo_path' => null]);
-            } elseif ($request->hasFile('logo')) {
+            if ($request->boolean('remove_photo')) {
+                $party->update(['photo_path' => null]);
+            } elseif ($request->hasFile('photo')) {
                 $party->update([
-                    'logo_path' => DocumentStorage::store(
-                        $request->file('logo'),
-                        "parties/{$request->user()->id}/{$party->id}/logo",
+                    'photo_path' => DocumentStorage::store(
+                        $request->file('photo'),
+                        "parties/{$request->user()->id}/{$party->id}/photo",
                     ),
                 ]);
             }
 
-            return $this->sendJsonResponse(true, 'Party logo updated.', [
+            return $this->sendJsonResponse(true, 'Party photo updated.', [
                 'party' => $party->fresh(),
             ], 200);
         } catch (Exception $e) {

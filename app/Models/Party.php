@@ -16,7 +16,7 @@ class Party extends Model
         'user_id',
         'name',
         'party_owner_name',
-        'logo_path',
+        'photo_path',
         'email',
         'pan_no',
         'gst_no',
@@ -34,11 +34,11 @@ class Party extends Model
     ];
 
     protected $hidden = [
-        'logo_path',
+        'photo_path',
     ];
 
     protected $appends = [
-        'logo_url',
+        'photo_url',
     ];
 
     protected function casts(): array
@@ -76,18 +76,18 @@ class Party extends Model
     protected static function booted(): void
     {
         static::updating(function (Party $party) {
-            if ($party->isDirty('logo_path')) {
-                DocumentStorage::delete($party->getOriginal('logo_path'));
+            if ($party->isDirty('photo_path')) {
+                DocumentStorage::delete($party->getOriginal('photo_path'));
             }
         });
 
         static::deleting(function (Party $party) {
-            DocumentStorage::delete($party->logo_path);
+            DocumentStorage::delete($party->photo_path);
         });
     }
 
-    public function getLogoUrlAttribute(): ?string
+    public function getPhotoUrlAttribute(): ?string
     {
-        return DocumentStorage::url($this->logo_path);
+        return DocumentStorage::url($this->photo_path);
     }
 }

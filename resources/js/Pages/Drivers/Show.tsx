@@ -1,3 +1,4 @@
+import AddressDetailSection from '@/Components/AddressDetailSection';
 import SavedDocumentsList from '@/Components/SavedDocumentsList';
 import { DetailGrid, DetailItem, PageToolbar, PageToolbarActions } from '@/Components/DetailShow';
 import PageContainer from '@/Components/PageContainer';
@@ -8,6 +9,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { formatAppDateTime } from '@/lib/dateUtils';
+import { formatDriverMobiles } from '@/lib/driverValidation';
 import { formatMoney } from '@/lib/freightCalculator';
 import type { Driver, EntityDocument, ExpenseOption } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
@@ -50,18 +52,20 @@ export default function DriverShow({ driverId }: { driverId: number }) {
             .finally(() => setLoading(false));
     }, [driverId]);
 
+    const mobileLabel = driver ? formatDriverMobiles(driver) : null;
+
     usePageHeader(
         <PageHeaderBar
             layout="compact"
             title={driver?.name ?? 'Driver'}
-            subtitle={driver?.mobile}
+            subtitle={mobileLabel || undefined}
             actions={
                 <div className="hidden shrink-0 sm:block">
                     <HeaderBackLink href={route('drivers.index')} />
                 </div>
             }
         />,
-        [driver?.name, driver?.mobile],
+        [driver?.name, mobileLabel],
     );
 
     const editHref = `${route('drivers.edit', driverId)}?return=profile`;
@@ -97,32 +101,51 @@ export default function DriverShow({ driverId }: { driverId: number }) {
                                 </PageToolbar>
 
                                 <FormCard className="!shadow-none ring-1 ring-gray-200">
-                                    <FormSectionHeader title="Personal Details" />
-                                    <DetailGrid>
-                                        <DetailItemLocal label="Name" value={driver.name} />
-                                        <DetailItemLocal label="Mobile" value={driver.mobile} />
-                                        <DetailItemLocal
-                                            label="Status"
-                                            value={driver.status === 'active' ? 'Active' : 'Inactive'}
-                                        />
-                                        <DetailItemLocal
-                                            label="Joining Date"
-                                            value={formatAppDateTime(driver.joining_date)}
-                                        />
-                                        <DetailItemLocal
-                                            label="Salary"
-                                            value={
-                                                driver.salary != null && driver.salary !== ''
-                                                    ? `₹ ${formatMoney(driver.salary)}`
-                                                    : null
-                                            }
-                                        />
-                                    </DetailGrid>
-                                    {driver.address?.trim() && (
-                                        <DetailGrid className="mt-4">
-                                            <DetailItemLocal label="Address" value={driver.address} />
+                                    <FormSectionHeader title="Basic Details" />
+                                    <div className="mb-4 flex items-start gap-4">
+                                        {driver.photo_url ? (
+                                            <img
+                                                src={driver.photo_url}
+                                                alt={`${driver.name} photo`}
+                                                className="h-20 w-20 rounded-lg border border-gray-200 bg-gray-50 object-contain"
+                                            />
+                                        ) : null}
+                                        <DetailGrid className="flex-1">
+                                            <DetailItemLocal label="Name" value={driver.name} />
+                                            <DetailItemLocal
+                                                label="Status"
+                                                value={driver.status === 'active' ? 'Active' : 'Inactive'}
+                                            />
+                                            <DetailItemLocal
+                                                label="Joining Date"
+                                                value={formatAppDateTime(driver.joining_date)}
+                                            />
+                                            <DetailItemLocal
+                                                label="Salary"
+                                                value={
+                                                    driver.salary != null && driver.salary !== ''
+                                                        ? `₹ ${formatMoney(driver.salary)}`
+                                                        : null
+                                                }
+                                            />
                                         </DetailGrid>
-                                    )}
+                                    </div>
+                                </FormCard>
+
+                                <FormCard className="!shadow-none ring-1 ring-gray-200">
+                                    <FormSectionHeader title="Contact Details" />
+                                    <DetailGrid>
+                                        <DetailItemLocal label="Email" value={driver.email} />
+                                        <DetailItemLocal label="Mobile" value={mobileLabel} />
+                                    </DetailGrid>
+                                </FormCard>
+
+                                <FormCard className="!shadow-none ring-1 ring-gray-200">
+                                    <FormSectionHeader title="Identity Details" />
+                                    <DetailGrid>
+                                        <DetailItemLocal label="Aadhaar No" value={driver.aadhaar_no} />
+                                        <DetailItemLocal label="PAN No" value={driver.pan_no} />
+                                    </DetailGrid>
                                 </FormCard>
 
                                 <FormCard className="!shadow-none ring-1 ring-gray-200">
@@ -137,6 +160,10 @@ export default function DriverShow({ driverId }: { driverId: number }) {
                                             value={formatAppDateTime(driver.license_expiry)}
                                         />
                                     </DetailGrid>
+                                </FormCard>
+
+                                <FormCard className="!shadow-none ring-1 ring-gray-200">
+                                    <AddressDetailSection data={driver} />
                                 </FormCard>
 
                                 {documents.length > 0 && (

@@ -3,7 +3,7 @@ export interface User {
     name: string;
     email: string;
     email_verified_at?: string;
-    logo_url?: string | null;
+    photo_url?: string | null;
     full_address?: string | null;
     city?: string | null;
     taluka?: string | null;

@@ -11,8 +11,8 @@ return new class extends Migration
     {
         Schema::table('parties', function (Blueprint $table) {
             $table->string('party_owner_name')->nullable()->after('name');
-            $table->string('logo_path')->nullable()->after('party_owner_name');
-            $table->string('email')->nullable()->after('logo_path');
+            $table->string('photo_path')->nullable()->after('party_owner_name');
+            $table->string('email')->nullable()->after('photo_path');
             $table->string('pan_no', 20)->nullable()->after('email');
             $table->string('gst_no', 20)->nullable()->after('pan_no');
             $table->string('international_tax_id', 50)->nullable()->after('gst_no');
@@ -42,7 +42,7 @@ return new class extends Migration
         Schema::table('parties', function (Blueprint $table) {
             $table->dropColumn([
                 'party_owner_name',
-                'logo_path',
+                'photo_path',
                 'email',
                 'pan_no',
                 'gst_no',

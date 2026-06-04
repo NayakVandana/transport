@@ -38,12 +38,12 @@ class ProfileApiController extends Controller
         }
     }
 
-    public function postProfileLogoUpdate(Request $request)
+    public function postProfilePhotoUpdate(Request $request)
     {
         try {
             $validation = Validator::make($request->all(), [
-                'logo' => ['required_without:remove_logo', 'nullable', ...LogoValidation::fileRule()],
-                'remove_logo' => ['nullable', 'boolean'],
+                'photo' => ['required_without:remove_photo', 'nullable', ...LogoValidation::fileRule()],
+                'remove_photo' => ['nullable', 'boolean'],
             ]);
 
             if ($validation->fails()) {
@@ -52,18 +52,18 @@ class ProfileApiController extends Controller
 
             $user = $request->user();
 
-            if ($request->boolean('remove_logo')) {
-                $user->update(['logo_path' => null]);
-            } elseif ($request->hasFile('logo')) {
+            if ($request->boolean('remove_photo')) {
+                $user->update(['photo_path' => null]);
+            } elseif ($request->hasFile('photo')) {
                 $user->update([
-                    'logo_path' => DocumentStorage::store(
-                        $request->file('logo'),
-                        "users/{$user->id}/logo",
+                    'photo_path' => DocumentStorage::store(
+                        $request->file('photo'),
+                        "users/{$user->id}/photo",
                     ),
                 ]);
             }
 
-            return $this->sendJsonResponse(true, 'Profile logo updated.', [
+            return $this->sendJsonResponse(true, 'Profile photo updated.', [
                 'user' => $this->formatUser($user->fresh()),
             ], 200);
         } catch (Exception $e) {
@@ -160,7 +160,7 @@ class ProfileApiController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'email_verified_at' => $user->email_verified_at,
-            'logo_url' => $user->logo_url,
+            'photo_url' => $user->photo_url,
             'full_address' => $user->full_address,
             'city' => $user->city,
             'taluka' => $user->taluka,

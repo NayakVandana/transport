@@ -3,30 +3,32 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPostFormData, type ApiEnvelope } from '@/api/appClient';
 import { useRef, useState } from 'react';
 
-type LogoUploadFieldProps = {
+type PhotoUploadFieldProps = {
     label: string;
-    logoUrl?: string | null;
+    photoUrl?: string | null;
     uploadPath: string;
     formFields?: Record<string, string | number>;
-    onUpdated: (logoUrl: string | null) => void;
+    onUpdated: (photoUrl: string | null) => void;
 };
 
-type LogoUploadResponse = ApiEnvelope<{
-    company?: { logo_url?: string | null };
+type PhotoUploadResponse = ApiEnvelope<{
+    driver?: { photo_url?: string | null };
+    party?: { photo_url?: string | null };
+    user?: { photo_url?: string | null };
 }>;
 
-export default function LogoUploadField({
+export default function PhotoUploadField({
     label,
-    logoUrl,
+    photoUrl,
     uploadPath,
     formFields,
     onUpdated,
-}: LogoUploadFieldProps) {
+}: PhotoUploadFieldProps) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const uploadLogo = async (file: File | null, remove = false) => {
+    const uploadPhoto = async (file: File | null, remove = false) => {
         setProcessing(true);
         setError(null);
 
@@ -34,9 +36,9 @@ export default function LogoUploadField({
             const formData = new FormData();
 
             if (remove) {
-                formData.append('remove_logo', '1');
+                formData.append('remove_photo', '1');
             } else if (file) {
-                formData.append('logo', file);
+                formData.append('photo', file);
             } else {
                 return;
             }
@@ -45,22 +47,25 @@ export default function LogoUploadField({
                 formData.append(key, String(value));
             });
 
-            const res = await appApiPostFormData<LogoUploadResponse>(uploadPath, formData);
+            const res = await appApiPostFormData<PhotoUploadResponse>(uploadPath, formData);
 
             if (!res.success) {
-                setError(res.message || 'Could not update logo.');
+                setError(res.message || 'Could not update photo.');
                 return;
             }
 
-            const nextUrl = res.data?.company?.logo_url ?? null;
-
-            onUpdated(nextUrl ?? null);
+            onUpdated(
+                res.data?.driver?.photo_url ??
+                    res.data?.party?.photo_url ??
+                    res.data?.user?.photo_url ??
+                    null,
+            );
 
             if (inputRef.current) {
                 inputRef.current.value = '';
             }
         } catch {
-            setError('Could not update logo.');
+            setError('Could not update photo.');
         } finally {
             setProcessing(false);
         }
@@ -71,10 +76,10 @@ export default function LogoUploadField({
             <InputLabel value={label} />
             <div className="mt-2 flex flex-wrap items-start gap-4">
                 <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-                    {logoUrl ? (
-                        <img src={logoUrl} alt={label} className="h-full w-full object-contain" />
+                    {photoUrl ? (
+                        <img src={photoUrl} alt={label} className="h-full w-full object-cover" />
                     ) : (
-                        <span className="px-2 text-center text-xs text-gray-400">No logo</span>
+                        <span className="px-2 text-center text-xs text-gray-400">No photo</span>
                     )}
                 </div>
 
@@ -88,17 +93,17 @@ export default function LogoUploadField({
                         onChange={(e) => {
                             const file = e.target.files?.[0] ?? null;
                             if (file) {
-                                void uploadLogo(file);
+                                void uploadPhoto(file);
                             }
                         }}
                     />
-                    {logoUrl && (
+                    {photoUrl && (
                         <SecondaryButton
                             type="button"
                             disabled={processing}
-                            onClick={() => void uploadLogo(null, true)}
+                            onClick={() => void uploadPhoto(null, true)}
                         >
-                            Remove logo
+                            Remove photo
                         </SecondaryButton>
                     )}
                     <p className="text-xs text-gray-500">JPEG or PNG, up to 2 MB.</p>

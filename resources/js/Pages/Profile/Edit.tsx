@@ -5,7 +5,7 @@ import { Head } from '@inertiajs/react';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 import ProfileDocumentsForm from './Partials/ProfileDocumentsForm';
-import ProfileLogoForm from './Partials/ProfileLogoForm';
+import ProfilePhotoForm from './Partials/ProfilePhotoForm';
 
 export default function ProfileEdit() {
     usePageHeader(
@@ -26,7 +26,7 @@ export default function ProfileEdit() {
                 </FormCard>
 
                 <FormCard>
-                    <ProfileLogoForm />
+                    <ProfilePhotoForm />
                 </FormCard>
 
                 <FormCard>

@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('logo_path')->nullable()->after('password');
+            $table->string('photo_path')->nullable()->after('password');
         });
 
         Schema::table('companies', function (Blueprint $table) {
@@ -20,7 +20,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('logo_path');
+            $table->dropColumn('photo_path');
         });
 
         Schema::table('companies', function (Blueprint $table) {
