@@ -85,7 +85,6 @@ export interface EntrybookTotals {
     count: number;
     freight: number;
     advance: number;
-    detention: number;
     balance: number;
 }
 
@@ -195,10 +194,8 @@ export interface PartyEntrybookRow {
     vehicle_number: string;
     route_from: string;
     route_to?: string | null;
-    route_to?: string | null;
     freight: number;
     advance: number;
-    detention: number;
     balance: number;
     invoice_id?: number | null;
     bill_number?: string | null;

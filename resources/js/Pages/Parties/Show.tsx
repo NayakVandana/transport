@@ -468,10 +468,6 @@ function EntrybooksTable({ rows, partyId }: { rows: PartyEntrybookRow[]; partyId
                             value: `₹ ${formatMoney(row.freight)}`,
                         },
                         {
-                            label: 'Detention',
-                            value: `₹ ${formatMoney(row.detention ?? 0)}`,
-                        },
-                        {
                             label: 'Bill',
                             value: row.bill_number ?? 'Pending',
                         },
@@ -516,7 +512,6 @@ function EntrybooksTable({ rows, partyId }: { rows: PartyEntrybookRow[]; partyId
                     <th className="px-4 py-3 text-left font-medium text-gray-500">To</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Advance</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-500">Detention</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Balance</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-500">Bill</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
@@ -531,7 +526,6 @@ function EntrybooksTable({ rows, partyId }: { rows: PartyEntrybookRow[]; partyId
                     <td className="px-4 py-3">{formatLocationLabel(row.route_to)}</td>
                     <td className="px-4 py-3 text-right">₹ {formatMoney(row.freight)}</td>
                     <td className="px-4 py-3 text-right">₹ {formatMoney(row.advance)}</td>
-                    <td className="px-4 py-3 text-right">₹ {formatMoney(row.detention ?? 0)}</td>
                     <td className="px-4 py-3 text-right font-medium">
                         ₹ {formatMoney(row.balance)}
                     </td>

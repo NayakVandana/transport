@@ -64,7 +64,6 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
         route_to: '',
         freight: '',
         advance: '0',
-        detention: '0',
     });
 
     useEffect(() => {
@@ -97,7 +96,6 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                         route_to: entry.route_to ?? '',
                         freight: entry.freight != null ? String(entry.freight) : '',
                         advance: entry.advance != null ? String(entry.advance) : '0',
-                        detention: entry.detention != null ? String(entry.detention) : '0',
                     });
                 } else {
                     const res = await appApiPost<ApiEnvelope<EntrybookMetaData>>(
@@ -126,8 +124,8 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
     }, [entrybookId]);
 
     const balance = useMemo(
-        () => calculateEntrybookBalance(data.freight, data.advance, data.detention),
-        [data.freight, data.advance, data.detention],
+        () => calculateEntrybookBalance(data.freight, data.advance),
+        [data.freight, data.advance],
     );
 
     const locationOptions = useMemo(
@@ -166,7 +164,6 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                 party_id: Number(data.party_id),
                 freight: Number(data.freight),
                 advance: Number(data.advance),
-                detention: Number(data.detention || 0),
                 route_from: data.route_from.trim(),
                 route_to: data.route_to.trim(),
                 ...(entrybookId ? { id: entrybookId } : {}),
@@ -295,7 +292,7 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                             }}
                         />
 
-                        <FormGrid cols={4}>
+                        <FormGrid cols={3}>
                             <FormField width="sm">
                                 <InputLabel value="Freight" />
                                 <TextInput
@@ -320,19 +317,6 @@ export default function EntrybookForm({ entrybookId }: { entrybookId?: number })
                                     onChange={(e) => setField('advance', e.target.value)}
                                 />
                                 <InputError message={errors.advance} className="mt-1" />
-                            </FormField>
-
-                            <FormField width="sm">
-                                <InputLabel value="Detention" />
-                                <TextInput
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    className={inputClass('detention')}
-                                    value={data.detention}
-                                    onChange={(e) => setField('detention', e.target.value)}
-                                />
-                                <InputError message={errors.detention} className="mt-1" />
                             </FormField>
 
                             <FormField width="sm">

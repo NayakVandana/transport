@@ -457,7 +457,7 @@ class FreightInvoiceApiController extends Controller
                 ->with(['vehicle:id,vehicle_number', 'party:id,name'])
                 ->orderByDesc('entry_date')
                 ->orderByDesc('id')
-                ->get(['id', 'entry_number', 'entry_date', 'vehicle_id', 'party_id', 'route_from', 'route_to', 'freight', 'advance', 'detention', 'balance']),
+                ->get(['id', 'entry_number', 'entry_date', 'vehicle_id', 'party_id', 'route_from', 'route_to', 'freight', 'advance', 'balance']),
             'entrySettings' => [
                 'prefix' => $company->entry_number_prefix,
                 'nextSequence' => $nextSequence,

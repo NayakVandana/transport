@@ -8,7 +8,6 @@ export type EntrybookFormData = {
     route_to: string;
     freight: string;
     advance: string;
-    detention: string;
 };
 
 function isValidAmount(value: string): boolean {
@@ -42,10 +41,6 @@ export function validateEntrybookForm(
 
     if (data.advance.trim() && !isValidAmount(data.advance)) {
         errors.advance = 'Advance must be a valid amount.';
-    }
-
-    if (data.detention.trim() && !isValidAmount(data.detention)) {
-        errors.detention = 'Detention must be a valid amount.';
     }
 
     return errors;

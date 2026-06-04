@@ -142,7 +142,6 @@ class PartyAccountReport
                 'route_to' => $entry->route_to ?? '',
                 'freight' => round((float) $entry->freight, 2),
                 'advance' => round((float) $entry->advance, 2),
-                'detention' => round((float) $entry->detention, 2),
                 'balance' => round((float) $entry->balance, 2),
                 'invoice_id' => $entry->invoiceLine?->freight_invoice_id,
                 'bill_number' => $entry->invoiceLine?->freightInvoice?->bill_number,

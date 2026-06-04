@@ -86,7 +86,6 @@ function applyEntrybookToLine(
         route_to: entry.route_to ?? '',
         rate: entry.freight,
         advance_paid: entry.advance,
-        detention: entry.detention ?? 0,
         weight: line.weight || 1,
         product_name: line.product_name || 'AS PER INVOICES',
     };

@@ -157,7 +157,7 @@ class EntrybookReport
         ], 'All entries');
     }
 
-    /** @return array{count: int, freight: float, advance: float, detention: float, balance: float} */
+    /** @return array{count: int, freight: float, advance: float, balance: float} */
     public static function totals(Builder $query): array
     {
         $base = (clone $query)->toBase();
@@ -166,7 +166,6 @@ class EntrybookReport
             'count' => (int) (clone $base)->count(),
             'freight' => round((float) (clone $base)->sum('freight'), 2),
             'advance' => round((float) (clone $base)->sum('advance'), 2),
-            'detention' => round((float) (clone $base)->sum('detention'), 2),
             'balance' => round((float) (clone $base)->sum('balance'), 2),
         ];
     }
