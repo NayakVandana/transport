@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasDefaultCountry;
 use App\Support\DocumentStorage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Party extends Model
 {
+    use HasDefaultCountry;
+
     protected $fillable = [
         'user_id',
         'name',

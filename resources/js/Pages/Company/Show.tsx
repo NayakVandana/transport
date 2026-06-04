@@ -1,4 +1,5 @@
 import SavedDocumentsList from '@/Components/SavedDocumentsList';
+import AddressDetailSection from '@/Components/AddressDetailSection';
 import { DetailGrid, DetailItem } from '@/Components/DetailShow';
 import FormPage, { FormCard, FormSectionHeader } from '@/Components/FormPage';
 import { DetailPageHeader, HeaderCreateButton } from '@/Components/ListPageHeader';
@@ -125,11 +126,9 @@ export default function CompanyShow() {
                                     }
                                 />
                             </DetailGrid>
-                            {company.address?.trim() && (
-                                <DetailGrid className="mt-4">
-                                    <DetailItemLocal label="Address" value={company.address} />
-                                </DetailGrid>
-                            )}
+                            <div className="mt-4">
+                                <AddressDetailSection data={company} />
+                            </div>
                         </FormCard>
 
                         <FormCard>

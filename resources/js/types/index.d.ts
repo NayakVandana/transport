@@ -4,6 +4,14 @@ export interface User {
     email: string;
     email_verified_at?: string;
     logo_url?: string | null;
+    full_address?: string | null;
+    city?: string | null;
+    taluka?: string | null;
+    district?: string | null;
+    pincode?: string | null;
+    state_code?: string | null;
+    country?: string | null;
+    address?: string | null;
 }
 
 export type PageProps<

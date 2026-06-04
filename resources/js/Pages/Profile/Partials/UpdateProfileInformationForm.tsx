@@ -1,3 +1,4 @@
+import AddressFormFields from '@/Components/AddressFormFields';
 import {
     FormActions,
     FormField,
@@ -11,32 +12,45 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { applyApiFormErrors, fieldInputClass } from '@/lib/apiFormErrors';
+import {
+    addressFromEntity,
+    defaultAddressForm,
+    normalizeAddressPayload,
+    validateAddressForm,
+    type AddressFormData,
+} from '@/lib/addressValidation';
 import { clearAuthUserCache, useAuthUser } from '@/auth/useAuthUser';
 import type { User } from '@/types';
 import { Link, router } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useState } from 'react';
 
+type ProfileFormData = {
+    name: string;
+    email: string;
+} & AddressFormData;
+
 export default function UpdateProfileInformation() {
     const { user, refresh } = useAuthUser();
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
+    const [data, setData] = useState<ProfileFormData>({
+        name: '',
+        email: '',
+        ...defaultAddressForm(),
+    });
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
         if (user) {
-            setName(user.name);
-            setEmail(user.email);
+            setData({
+                name: user.name,
+                email: user.email,
+                ...addressFromEntity(user),
+            });
         }
     }, [user]);
 
-    const setField = (field: 'name' | 'email', value: string) => {
-        if (field === 'name') {
-            setName(value);
-        } else {
-            setEmail(value);
-        }
-
+    const setField = <K extends keyof ProfileFormData>(field: K, value: ProfileFormData[K]) => {
+        setData((prev) => ({ ...prev, [field]: value }));
         setErrors((prev) => {
             const next = { ...prev };
             delete next[field];
@@ -49,11 +63,28 @@ export default function UpdateProfileInformation() {
         setProcessing(true);
         setErrors({});
 
+        const clientErrors: Record<string, string> = {
+            ...validateAddressForm(data),
+        };
+
+        if (!data.name.trim()) {
+            clientErrors.name = 'Name is required.';
+        }
+        if (!data.email.trim()) {
+            clientErrors.email = 'Email is required.';
+        }
+
+        if (Object.keys(clientErrors).length > 0) {
+            setErrors(clientErrors);
+            setProcessing(false);
+            return;
+        }
+
         try {
-            const res = await appApiPost<ApiEnvelope<{ user: User }>>('/profile/profile-update', {
-                name,
-                email,
-            });
+            const res = await appApiPost<ApiEnvelope<{ user: User }>>(
+                '/profile/profile-update',
+                normalizeAddressPayload(data),
+            );
 
             if (!res.success) {
                 setErrors(
@@ -79,10 +110,10 @@ export default function UpdateProfileInformation() {
         fieldInputClass(Boolean(errors[field]), formControlClass);
 
     return (
-        <form onSubmit={submit} className="space-y-5">
+        <form onSubmit={submit} className="space-y-6">
             <FormSectionHeader
                 title="Profile Information"
-                description="Update your name and email address."
+                description="Update your name, email, and address."
             />
 
             <FormField width="md">
@@ -90,7 +121,7 @@ export default function UpdateProfileInformation() {
                 <TextInput
                     id="name"
                     className={inputClass('name')}
-                    value={name}
+                    value={data.name}
                     onChange={(e) => setField('name', e.target.value)}
                     required
                     autoFocus
@@ -105,7 +136,7 @@ export default function UpdateProfileInformation() {
                     id="email"
                     type="email"
                     className={inputClass('email')}
-                    value={email}
+                    value={data.email}
                     onChange={(e) => setField('email', e.target.value)}
                     required
                     autoComplete="username"
@@ -116,6 +147,12 @@ export default function UpdateProfileInformation() {
             {user && !user.email_verified_at && (
                 <p className="text-sm text-amber-700">Your email address is unverified.</p>
             )}
+
+            <AddressFormFields
+                data={data}
+                errors={errors}
+                onChange={(field, value) => setField(field, value)}
+            />
 
             <FormActions>
                 <PrimaryButton disabled={processing}>

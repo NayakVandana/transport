@@ -8,6 +8,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { formatPartyMobiles } from '@/lib/partyValidation';
+import { normalizeCountry } from '@/lib/addressValidation';
 import type { EntityDocument, ExpenseOption, Party } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
@@ -156,7 +157,7 @@ export default function PartyProfileShow({ partyId }: { partyId: number }) {
                                         <DetailItemLocal label="District" value={party.district} />
                                         <DetailItemLocal label="Pincode" value={party.pincode} />
                                         <DetailItemLocal label="State Code" value={party.state_code} />
-                                        <DetailItemLocal label="Country" value={party.country} />
+                                        <DetailItemLocal label="Country" value={normalizeCountry(party.country)} />
                                     </DetailGrid>
                                 </FormCard>
 

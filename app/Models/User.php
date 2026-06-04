@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use App\Models\Concerns\HasDefaultCountry;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -14,7 +15,7 @@ use App\Support\DocumentStorage;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasDefaultCountry, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -26,6 +27,14 @@ class User extends Authenticatable
         'email',
         'password',
         'logo_path',
+        'full_address',
+        'city',
+        'taluka',
+        'district',
+        'pincode',
+        'state_code',
+        'country',
+        'address',
     ];
 
     /**

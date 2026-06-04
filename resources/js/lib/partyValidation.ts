@@ -1,4 +1,11 @@
 import type { Party } from '@/types/transport';
+import {
+    addressFromEntity,
+    defaultAddressForm,
+    normalizeAddressPayload,
+    validateAddressForm,
+    type AddressFormData,
+} from '@/lib/addressValidation';
 
 export type PartyFormData = {
     name: string;
@@ -8,14 +15,7 @@ export type PartyFormData = {
     gst_no: string;
     international_tax_id: string;
     mobiles: string[];
-    full_address: string;
-    city: string;
-    taluka: string;
-    district: string;
-    pincode: string;
-    state_code: string;
-    country: string;
-};
+} & AddressFormData;
 
 export function emptyPartyForm(): PartyFormData {
     return {
@@ -26,13 +26,7 @@ export function emptyPartyForm(): PartyFormData {
         gst_no: '',
         international_tax_id: '',
         mobiles: [''],
-        full_address: '',
-        city: '',
-        taluka: '',
-        district: '',
-        pincode: '',
-        state_code: '',
-        country: 'India',
+        ...defaultAddressForm(),
     };
 }
 
@@ -52,13 +46,7 @@ export function partyToFormData(party: Party): PartyFormData {
         gst_no: party.gst_no ?? '',
         international_tax_id: party.international_tax_id ?? '',
         mobiles,
-        full_address: party.full_address ?? party.address ?? '',
-        city: party.city ?? '',
-        taluka: party.taluka ?? '',
-        district: party.district ?? '',
-        pincode: party.pincode ?? '',
-        state_code: party.state_code ?? '',
-        country: party.country ?? 'India',
+        ...addressFromEntity(party),
     };
 }
 
@@ -76,7 +64,9 @@ export function formatPartyMobiles(party: Pick<Party, 'mobile' | 'mobiles'>): st
 export function validatePartyForm(
     data: PartyFormData,
 ): Partial<Record<keyof PartyFormData | `mobiles.${number}`, string>> {
-    const errors: Partial<Record<keyof PartyFormData | `mobiles.${number}`, string>> = {};
+    const errors: Partial<Record<keyof PartyFormData | `mobiles.${number}`, string>> = {
+        ...validateAddressForm(data),
+    };
 
     if (!data.name.trim()) {
         errors.name = 'Party name is required.';
@@ -92,20 +82,14 @@ export function validatePartyForm(
         }
     });
 
-    if (data.state_code.length > 5) {
-        errors.state_code = 'State code cannot exceed 5 characters.';
-    }
-
-    if (data.pincode.length > 10) {
-        errors.pincode = 'Pincode cannot exceed 10 characters.';
-    }
-
     return errors;
 }
 
 export function partyFormPayload(data: PartyFormData) {
+    const normalized = normalizeAddressPayload(data);
+
     return {
-        ...data,
+        ...normalized,
         mobiles: data.mobiles.map((mobile) => mobile.trim()).filter(Boolean),
     };
 }

@@ -37,50 +37,7 @@ class PartyProfileData
     /** @param  array<string, mixed>  $data */
     public static function buildInvoiceAddress(array $data): ?string
     {
-        $lines = [];
-
-        $fullAddress = trim((string) ($data['full_address'] ?? ''));
-        if ($fullAddress !== '') {
-            $lines = array_merge($lines, preg_split("/\r\n|\r|\n/", $fullAddress) ?: []);
-        }
-
-        $locality = array_filter([
-            trim((string) ($data['city'] ?? '')),
-            trim((string) ($data['taluka'] ?? '')),
-            trim((string) ($data['district'] ?? '')),
-        ]);
-
-        if ($locality !== []) {
-            $lines[] = implode(', ', $locality);
-        }
-
-        $pincode = trim((string) ($data['pincode'] ?? ''));
-        if ($pincode !== '') {
-            $lines[] = 'PIN: '.$pincode;
-        }
-
-        $stateCode = trim((string) ($data['state_code'] ?? ''));
-        if ($stateCode !== '') {
-            $lines[] = 'State Code: '.$stateCode;
-        }
-
-        $country = trim((string) ($data['country'] ?? ''));
-        if ($country !== '') {
-            $lines[] = $country;
-        }
-
-        $lines = array_values(array_filter(array_map(
-            fn (string $line) => trim($line),
-            $lines,
-        ), fn (string $line) => $line !== ''));
-
-        if ($lines === []) {
-            $legacyAddress = trim((string) ($data['address'] ?? ''));
-
-            return $legacyAddress !== '' ? $legacyAddress : null;
-        }
-
-        return implode("\n", $lines);
+        return AddressProfileData::buildFormattedAddress($data);
     }
 
     /** @param  array<string, mixed>  $validated */
@@ -95,8 +52,7 @@ class PartyProfileData
 
         $validated['mobiles'] = $mobiles === [] ? null : $mobiles;
         $validated['mobile'] = $mobiles[0] ?? null;
-        $validated['address'] = self::buildInvoiceAddress($validated);
 
-        return $validated;
+        return AddressProfileData::prepareForPersistence($validated);
     }
 }

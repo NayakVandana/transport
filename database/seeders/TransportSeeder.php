@@ -49,25 +49,38 @@ class TransportSeeder extends Seeder
 
     private function seedCompany(int $userId): Company
     {
+        $data = [
+            'name' => 'RELIABLE TRANS & LOGISTICS',
+            'pan' => 'AEJPD7847P',
+            'gst' => '24AEJPD7847P1ZX',
+            'udyam_reg_no' => 'UDYAM-GJ-25-0003960',
+            'udyam_date' => '2025-01-15',
+            'jurisdiction' => 'SUBJECT TO VAPI JURISDICTION',
+            'sac_code' => '996791',
+            'entry_number_prefix' => 'R2526',
+            'entry_next_sequence' => 1769,
+            'igst_rate' => 5,
+            'bank_account_name' => 'RELIABLE TRANS & LOGISTICS',
+            'bank_account_no' => '1234567890',
+            'bank_ifsc' => 'HDFC0001234',
+            'bank_name' => 'HDFC BANK',
+            'bank_branch' => 'VAPI',
+            'full_address' => 'Plot 12, GIDC, Vapi',
+            'city' => 'Vapi',
+            'taluka' => 'Vapi',
+            'district' => 'Valsad',
+            'pincode' => '396195',
+            'state_code' => '24',
+            'country' => 'India',
+        ];
+
         return Company::query()->updateOrCreate(
             ['user_id' => $userId],
             [
-                'name' => 'RELIABLE TRANS & LOGISTICS',
-                'pan' => 'AEJPD7847P',
-                'gst' => '24AEJPD7847P1ZX',
-                'udyam_reg_no' => 'UDYAM-GJ-25-0003960',
-                'udyam_date' => '2025-01-15',
-                'jurisdiction' => 'SUBJECT TO VAPI JURISDICTION',
-                'sac_code' => '996791',
-                'entry_number_prefix' => 'R2526',
-                'entry_next_sequence' => 1769,
-                'igst_rate' => 5,
-                'bank_account_name' => 'RELIABLE TRANS & LOGISTICS',
-                'bank_account_no' => '1234567890',
-                'bank_ifsc' => 'HDFC0001234',
-                'bank_name' => 'HDFC BANK',
-                'bank_branch' => 'VAPI',
-                'address' => "Plot 12, GIDC, Vapi\nGujarat - 396195",
+                ...\App\Support\AddressProfileData::prepareForPersistence($data),
+                'user_id' => $userId,
+                'entry_next_sequence' => $data['entry_next_sequence'],
+                'igst_rate' => $data['igst_rate'],
             ],
         );
     }

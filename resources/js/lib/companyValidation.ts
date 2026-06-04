@@ -1,3 +1,6 @@
+import type { AddressFormData } from '@/lib/addressValidation';
+import { validateAddressForm } from '@/lib/addressValidation';
+
 export type CompanyFormData = {
     name: string;
     pan: string;
@@ -14,13 +17,14 @@ export type CompanyFormData = {
     bank_ifsc: string;
     bank_name: string;
     bank_branch: string;
-    address: string;
-};
+} & AddressFormData;
 
 export function validateCompanyForm(
     data: CompanyFormData,
 ): Partial<Record<keyof CompanyFormData, string>> {
-    const errors: Partial<Record<keyof CompanyFormData, string>> = {};
+    const errors: Partial<Record<keyof CompanyFormData, string>> = {
+        ...validateAddressForm(data),
+    };
 
     if (!data.name.trim()) {
         errors.name = 'Company name is required.';

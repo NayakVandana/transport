@@ -17,6 +17,7 @@ import EntityDocumentsSection, {
     uploadDocumentDrafts,
     type DocumentDraft,
 } from '@/Components/EntityDocumentsSection';
+import AddressFormFields from '@/Components/AddressFormFields';
 import { invalidateAppQuery } from '@/hooks/useAppQuery';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
@@ -382,80 +383,11 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
                                 </FormGrid>
                             </div>
 
-                            <div className="space-y-5">
-                                <FormSectionHeader title="Address" />
-                                <FormField width="full">
-                                    <InputLabel value="Full Address" />
-                                    <textarea
-                                        className={`${inputClass('full_address')} rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500`}
-                                        rows={4}
-                                        value={data.full_address}
-                                        onChange={(e) => setField('full_address', e.target.value)}
-                                    />
-                                    <InputError message={errors.full_address} className="mt-1" />
-                                </FormField>
-
-                                <FormGrid cols={3}>
-                                    <FormField width="md">
-                                        <InputLabel value="City" />
-                                        <TextInput
-                                            className={inputClass('city')}
-                                            value={data.city}
-                                            onChange={(e) => setField('city', e.target.value)}
-                                        />
-                                        <InputError message={errors.city} className="mt-1" />
-                                    </FormField>
-                                    <FormField width="md">
-                                        <InputLabel value="Taluka" />
-                                        <TextInput
-                                            className={inputClass('taluka')}
-                                            value={data.taluka}
-                                            onChange={(e) => setField('taluka', e.target.value)}
-                                        />
-                                        <InputError message={errors.taluka} className="mt-1" />
-                                    </FormField>
-                                    <FormField width="md">
-                                        <InputLabel value="District" />
-                                        <TextInput
-                                            className={inputClass('district')}
-                                            value={data.district}
-                                            onChange={(e) => setField('district', e.target.value)}
-                                        />
-                                        <InputError message={errors.district} className="mt-1" />
-                                    </FormField>
-                                </FormGrid>
-
-                                <FormGrid cols={3}>
-                                    <FormField width="sm">
-                                        <InputLabel value="Pincode" />
-                                        <TextInput
-                                            className={inputClass('pincode')}
-                                            value={data.pincode}
-                                            onChange={(e) => setField('pincode', e.target.value)}
-                                        />
-                                        <InputError message={errors.pincode} className="mt-1" />
-                                    </FormField>
-                                    <FormField width="sm">
-                                        <InputLabel value="State Code" />
-                                        <TextInput
-                                            className={inputClass('state_code')}
-                                            value={data.state_code}
-                                            onChange={(e) => setField('state_code', e.target.value)}
-                                            placeholder="e.g. 27"
-                                        />
-                                        <InputError message={errors.state_code} className="mt-1" />
-                                    </FormField>
-                                    <FormField width="md">
-                                        <InputLabel value="Country" />
-                                        <TextInput
-                                            className={inputClass('country')}
-                                            value={data.country}
-                                            onChange={(e) => setField('country', e.target.value)}
-                                        />
-                                        <InputError message={errors.country} className="mt-1" />
-                                    </FormField>
-                                </FormGrid>
-                            </div>
+                            <AddressFormFields
+                                data={data}
+                                errors={errors}
+                                onChange={(field, value) => setField(field, value)}
+                            />
 
                             <EntityDocumentsSection
                                 documentTypes={documentTypes}

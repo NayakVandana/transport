@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\App;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\UserDocument;
+use App\Support\AddressProfileData;
 use App\Support\DocumentStorage;
 use App\Support\DocumentValidation;
 use App\Support\LogoValidation;
@@ -85,13 +86,14 @@ class ProfileApiController extends Controller
                     'max:255',
                     Rule::unique(User::class)->ignore($user->id),
                 ],
+                ...AddressProfileData::validationRules(),
             ]);
 
             if ($validation->fails()) {
                 return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
             }
 
-            $user->fill($validation->validated());
+            $user->fill(AddressProfileData::prepareForPersistence($validation->validated()));
 
             if ($user->isDirty('email')) {
                 $user->email_verified_at = null;
@@ -159,6 +161,14 @@ class ProfileApiController extends Controller
             'email' => $user->email,
             'email_verified_at' => $user->email_verified_at,
             'logo_url' => $user->logo_url,
+            'full_address' => $user->full_address,
+            'city' => $user->city,
+            'taluka' => $user->taluka,
+            'district' => $user->district,
+            'pincode' => $user->pincode,
+            'state_code' => $user->state_code,
+            'country' => $user->country,
+            'address' => $user->address,
         ];
     }
 }

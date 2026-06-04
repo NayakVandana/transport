@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\App;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\CompanyDocument;
+use App\Support\AddressProfileData;
 use App\Support\DocumentStorage;
 use Exception;
 use Illuminate\Http\Request;
@@ -59,14 +60,14 @@ class CompanyApiController extends Controller
                 'bank_ifsc' => ['nullable', 'string', 'max:20'],
                 'bank_name' => ['nullable', 'string', 'max:255'],
                 'bank_branch' => ['nullable', 'string', 'max:255'],
-                'address' => ['nullable', 'string'],
+                ...AddressProfileData::validationRules(),
             ]);
 
             if ($validation->fails()) {
                 return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
             }
 
-            $validated = $validation->validated();
+            $validated = AddressProfileData::prepareForPersistence($validation->validated());
 
             $company = Company::query()->updateOrCreate(
                 ['user_id' => $request->user()->id],

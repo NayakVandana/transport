@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Concerns\HasDefaultCountry;
 use App\Support\DocumentStorage;
+use Illuminate\Database\Eloquent\Model;
 
 class Company extends Model
 {
+    use HasDefaultCountry;
+
     protected $fillable = [
         'user_id',
         'name',
@@ -27,6 +28,13 @@ class Company extends Model
         'bank_name',
         'bank_branch',
         'address',
+        'full_address',
+        'city',
+        'taluka',
+        'district',
+        'pincode',
+        'state_code',
+        'country',
         'logo_path',
     ];
 

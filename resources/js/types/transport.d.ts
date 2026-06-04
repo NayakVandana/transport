@@ -16,6 +16,13 @@ export interface Company {
     bank_name?: string | null;
     bank_branch?: string | null;
     address?: string | null;
+    full_address?: string | null;
+    city?: string | null;
+    taluka?: string | null;
+    district?: string | null;
+    pincode?: string | null;
+    state_code?: string | null;
+    country?: string | null;
     logo_url?: string | null;
     documents?: EntityDocument[];
 }

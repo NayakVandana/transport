@@ -1,4 +1,5 @@
 import LogoUploadField from '@/Components/LogoUploadField';
+import AddressFormFields from '@/Components/AddressFormFields';
 import { FormPageHeader } from '@/Components/ListPageHeader';
 import FormPage, {
     FormActions,
@@ -22,6 +23,7 @@ import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import type { Company, EntityDocument, ExpenseOption } from '@/types/transport';
 import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
 import { validateCompanyForm, type CompanyFormData } from '@/lib/companyValidation';
+import { addressFromEntity, defaultAddressForm, normalizeAddressPayload } from '@/lib/addressValidation';
 import { Head, Link, router } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useState } from 'react';
 
@@ -41,7 +43,7 @@ const defaultData: CompanyFormData = {
     bank_ifsc: '',
     bank_name: '',
     bank_branch: '',
-    address: '',
+    ...defaultAddressForm(),
 };
 
 function companyToFormData(company: Company): CompanyFormData {
@@ -63,7 +65,7 @@ function companyToFormData(company: Company): CompanyFormData {
         bank_ifsc: company.bank_ifsc ?? '',
         bank_name: company.bank_name ?? '',
         bank_branch: company.bank_branch ?? '',
-        address: company.address ?? '',
+        ...addressFromEntity(company),
     };
 }
 
@@ -150,7 +152,7 @@ export default function CompanyEdit() {
             const res = await appApiPost<ApiEnvelope<{ company: Company }>>(
                 '/company/company-update',
                 {
-                    ...data,
+                    ...normalizeAddressPayload(data),
                     entry_next_sequence: Number(data.entry_next_sequence),
                     igst_rate: Number(data.igst_rate),
                 },
@@ -330,15 +332,11 @@ export default function CompanyEdit() {
                                         </FormField>
                                     </FormGrid>
 
-                                    <FormField width="full">
-                                        <InputLabel value="Address" />
-                                        <TextInput
-                                            className={inputClass('address')}
-                                            value={data.address}
-                                            onChange={(e) => setField('address', e.target.value)}
-                                        />
-                                        <InputError message={errors.address} className="mt-1" />
-                                    </FormField>
+                                    <AddressFormFields
+                                        data={data}
+                                        errors={errors}
+                                        onChange={(field, value) => setField(field, value)}
+                                    />
                                 </section>
 
                                 <section className="space-y-4 border-t border-gray-100 pt-6">

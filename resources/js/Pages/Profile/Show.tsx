@@ -1,4 +1,5 @@
 import SavedDocumentsList from '@/Components/SavedDocumentsList';
+import AddressDetailSection from '@/Components/AddressDetailSection';
 import { DetailGrid, DetailItem } from '@/Components/DetailShow';
 import FormPage, { FormCard, FormSectionHeader } from '@/Components/FormPage';
 import { DetailPageHeader, HeaderCreateButton } from '@/Components/ListPageHeader';
@@ -85,6 +86,9 @@ export default function ProfileShow() {
                                     }
                                 />
                             </DetailGrid>
+                            <div className="mt-4">
+                                <AddressDetailSection data={user} />
+                            </div>
                         </FormCard>
 
                         {documents.length > 0 && (
