@@ -8,11 +8,7 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import { fieldInputClass } from '@/lib/apiFormErrors';
-import {
-    DEFAULT_COUNTRY,
-    normalizeCountry,
-    type AddressFormData,
-} from '@/lib/addressValidation';
+import { normalizeCountry, type AddressFormData } from '@/lib/addressValidation';
 
 type AddressFormFieldsProps = {
     data: AddressFormData;
@@ -91,12 +87,12 @@ export default function AddressFormFields({ data, errors, onChange }: AddressFor
                 <FormField width="md">
                     <InputLabel value="Country" />
                     <TextInput
-                        className={inputClass('country')}
+                        readOnly
+                        tabIndex={-1}
+                        aria-readonly="true"
+                        className={`${formControlClass} cursor-default bg-gray-50 text-gray-700`}
                         value={normalizeCountry(data.country)}
-                        onChange={(e) => onChange('country', e.target.value)}
-                        placeholder={DEFAULT_COUNTRY}
                     />
-                    <InputError message={errors.country} className="mt-1" />
                 </FormField>
             </FormGrid>
         </div>
