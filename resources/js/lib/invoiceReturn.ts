@@ -14,6 +14,19 @@ export function invoiceFromEntrybookHref(
     });
 }
 
+export function invoiceFromLoadingSlipHref(slip: {
+    id: number;
+    party_id?: number | null;
+    party?: { id?: number } | null;
+}): string {
+    const resolvedPartyId = slip.party_id ?? slip.party?.id;
+
+    return route('invoices.create', {
+        party: resolvedPartyId ?? undefined,
+        loading_slip: slip.id,
+    });
+}
+
 export function invoiceReturnQuery(isEdit: boolean, invoiceId?: number): Record<string, string | number> {
     if (isEdit && invoiceId) {
         return {

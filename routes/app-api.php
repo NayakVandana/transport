@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\App\FreightInvoiceApiController;
 use App\Http\Controllers\Api\App\InvoicePaymentApiController;
 use App\Http\Controllers\Api\App\ProfileApiController;
 use App\Http\Controllers\Api\App\UserDocumentApiController;
+use App\Http\Controllers\Api\App\LoadingSlipApiController;
 use App\Http\Controllers\Api\App\LocationApiController;
 use App\Http\Controllers\Api\App\VehicleApiController;
 use App\Http\Controllers\Api\App\VehicleDocumentApiController;
@@ -118,6 +119,15 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/daily-reports/daily-report-update', [DailyReportApiController::class, 'postDailyReportUpdate']);
     Route::post('/daily-reports/daily-reports-bulk-save', [DailyReportApiController::class, 'postDailyReportsBulkSave']);
     Route::post('/daily-reports/daily-report-destroy', [DailyReportApiController::class, 'postDailyReportDestroy']);
+
+    Route::post('/loading-slips/loading-slips-list', [LoadingSlipApiController::class, 'postLoadingSlipsList']);
+    Route::post('/loading-slips/loading-slip-meta', [LoadingSlipApiController::class, 'postLoadingSlipMeta']);
+    Route::post('/loading-slips/loading-slip-show', [LoadingSlipApiController::class, 'postLoadingSlipShow']);
+    Route::post('/loading-slips/loading-slip-store', [LoadingSlipApiController::class, 'postLoadingSlipStore']);
+    Route::post('/loading-slips/loading-slip-update', [LoadingSlipApiController::class, 'postLoadingSlipUpdate']);
+    Route::post('/loading-slips/loading-slip-destroy', [LoadingSlipApiController::class, 'postLoadingSlipDestroy']);
+    Route::post('/loading-slips/loading-slip-download-pdf', [LoadingSlipApiController::class, 'postLoadingSlipDownloadPdf']);
+    Route::post('/loading-slips/loading-slip-generate-invoice', [LoadingSlipApiController::class, 'postLoadingSlipGenerateInvoice']);
 
     Route::post('/locations/locations-list', [LocationApiController::class, 'postLocationsList']);
     Route::post('/locations/locations-export-csv', [LocationApiController::class, 'postLocationsExportCsv']);

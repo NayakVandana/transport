@@ -25,6 +25,7 @@ import type {
     Entrybook,
     FreightInvoice,
     FreightInvoiceLine,
+    LoadingSlip,
     Location,
     Vehicle,
 } from '@/types/transport';
@@ -92,6 +93,25 @@ function applyEntrybookToLine(
     };
 }
 
+function applyLoadingSlipToLines(slip: LoadingSlip): FreightInvoiceLine[] {
+    return (slip.lines ?? []).map((line) => ({
+        entrybook_id: null,
+        entry_number: '',
+        entry_date: slip.loading_date?.slice(0, 10) ?? slip.slip_date.slice(0, 10),
+        vehicle_number: line.vehicle_number ?? line.vehicle?.vehicle_number ?? '',
+        route_from: slip.route_from ?? '',
+        route_to: line.destination ?? slip.route_to ?? '',
+        product_name: 'AS PER INVOICES',
+        weight: 1,
+        rate: line.freight_rate,
+        advance_paid: line.advance,
+        empty_container_charge: 0,
+        detention: 0,
+        weightman: 0,
+        parking: 0,
+    }));
+}
+
 function lineBelongsToParty(
     line: FreightInvoiceLine,
     partyId: string,
@@ -117,10 +137,12 @@ export default function InvoiceForm({
     invoiceId,
     partyId: initialPartyId,
     entrybookId: initialEntrybookId,
+    loadingSlipId: initialLoadingSlipId,
 }: {
     invoiceId?: number;
     partyId?: number | null;
     entrybookId?: number | null;
+    loadingSlipId?: number | null;
 }) {
     const isEdit = Boolean(invoiceId);
     const [company, setCompany] = useState<Company | null>(null);
@@ -194,10 +216,15 @@ export default function InvoiceForm({
                             : [buildEmptyLine()],
                     });
                 } else {
-                    const metaRes = await appApiPost<ApiEnvelope<InvoiceMetaData>>(
-                        '/invoices/invoice-meta',
-                        {},
-                    );
+                    const [metaRes, slipRes] = await Promise.all([
+                        appApiPost<ApiEnvelope<InvoiceMetaData>>('/invoices/invoice-meta', {}),
+                        initialLoadingSlipId
+                            ? appApiPost<ApiEnvelope<{ loadingSlip: LoadingSlip }>>(
+                                  '/loading-slips/loading-slip-show',
+                                  { id: initialLoadingSlipId },
+                              )
+                            : Promise.resolve(null),
+                    ]);
 
                     if (!metaRes.success || !metaRes.data) {
                         setLoadError(
@@ -208,13 +235,19 @@ export default function InvoiceForm({
                     }
 
                     const meta = metaRes.data;
+                    const loadingSlip =
+                        slipRes && slipRes.success && slipRes.data?.loadingSlip
+                            ? slipRes.data.loadingSlip
+                            : undefined;
                     const preselectedEntry =
                         initialEntrybookId != null
                             ? meta.entrybooks.find((e) => e.id === initialEntrybookId)
                             : undefined;
-                    const defaultPartyId = preselectedEntry
-                        ? String(preselectedEntry.party_id ?? initialPartyId ?? meta.parties[0]?.id ?? '')
-                        : String(initialPartyId ?? meta.parties[0]?.id ?? '');
+                    const defaultPartyId = loadingSlip?.party_id
+                        ? String(loadingSlip.party_id)
+                        : preselectedEntry
+                          ? String(preselectedEntry.party_id ?? initialPartyId ?? meta.parties[0]?.id ?? '')
+                          : String(initialPartyId ?? meta.parties[0]?.id ?? '');
 
                     setCompany(meta.company);
                     setParties(meta.parties);
@@ -223,17 +256,21 @@ export default function InvoiceForm({
                     setEntrybooks(meta.entrybooks ?? []);
                     setBillNumber(meta.nextBillNumber ?? '');
 
+                    const slipLines = loadingSlip ? applyLoadingSlipToLines(loadingSlip) : null;
+
                     setData({
                         party_id: defaultPartyId,
                         bill_number: meta.nextBillNumber ?? '',
-                        invoice_date: todayDate(),
+                        invoice_date: loadingSlip?.slip_date?.slice(0, 10) ?? todayDate(),
                         sac_code: meta.company.sac_code,
                         status: 'draft',
                         prepared_by: '',
                         checked_by: '',
-                        lines: preselectedEntry
-                            ? [applyEntrybookToLine(buildEmptyLine(), preselectedEntry)]
-                            : [buildEmptyLine()],
+                        lines: slipLines?.length
+                            ? slipLines.map((line) => buildEmptyLine(line))
+                            : preselectedEntry
+                              ? [applyEntrybookToLine(buildEmptyLine(), preselectedEntry)]
+                              : [buildEmptyLine()],
                     });
                 }
             } catch {
@@ -244,7 +281,7 @@ export default function InvoiceForm({
         };
 
         void load();
-    }, [invoiceId, initialPartyId, initialEntrybookId]);
+    }, [invoiceId, initialPartyId, initialEntrybookId, initialLoadingSlipId]);
 
     const igstRate = Number(company?.igst_rate) || 5;
     const totals = useMemo(

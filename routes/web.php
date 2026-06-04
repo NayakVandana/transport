@@ -72,6 +72,11 @@ Route::get('/daily-reports/create', function (Request $request) {
 })->name('daily-reports.create');
 Route::get('/daily-reports/{id}/edit', fn (int $id) => Inertia::render('DailyReports/Form', ['dailyReportId' => $id]))->name('daily-reports.edit');
 
+Route::get('/loading-slips', fn () => Inertia::render('LoadingSlips/Index'))->name('loading-slips.index');
+Route::get('/loading-slips/create', fn () => Inertia::render('LoadingSlips/Form'))->name('loading-slips.create');
+Route::get('/loading-slips/{id}', fn (int $id) => Inertia::render('LoadingSlips/Show', ['loadingSlipId' => $id]))->name('loading-slips.show');
+Route::get('/loading-slips/{id}/edit', fn (int $id) => Inertia::render('LoadingSlips/Form', ['loadingSlipId' => $id]))->name('loading-slips.edit');
+
 Route::get('/locations', fn () => Inertia::render('Locations/Index'))->name('locations.index');
 Route::get('/locations/create', fn () => Inertia::render('Locations/Form'))->name('locations.create');
 
@@ -79,10 +84,12 @@ Route::get('/invoices', fn () => Inertia::render('Invoices/Index'))->name('invoi
 Route::get('/invoices/create', function (Request $request) {
     $party = $request->query('party');
     $entrybook = $request->query('entrybook');
+    $loadingSlip = $request->query('loading_slip');
 
     return Inertia::render('Invoices/Form', [
         'partyId' => is_numeric($party) ? (int) $party : null,
         'entrybookId' => is_numeric($entrybook) ? (int) $entrybook : null,
+        'loadingSlipId' => is_numeric($loadingSlip) ? (int) $loadingSlip : null,
     ]);
 })->name('invoices.create');
 Route::get('/invoices/{id}', fn (int $id) => Inertia::render('Invoices/Show', ['invoiceId' => $id]))->name('invoices.show');
