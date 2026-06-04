@@ -13,6 +13,7 @@ import { exportFilteredList } from '@/lib/listExport';
 import { buildListFilterParams, type ListFilters } from '@/lib/listFilters';
 import { formatAppCreatedAt } from '@/lib/dateUtils';
 import { formatMoney } from '@/lib/freightCalculator';
+import { formatPartyMobiles } from '@/lib/partyValidation';
 import type { Party } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
@@ -136,7 +137,11 @@ export default function PartiesIndex() {
                                     title={
                                         <PartyLink partyId={party.id} name={party.name} />
                                     }
-                                    subtitle={party.mobile ? `Mobile: ${party.mobile}` : 'No mobile'}
+                                    subtitle={
+                                        formatPartyMobiles(party)
+                                            ? `Mobile: ${formatPartyMobiles(party)}`
+                                            : 'No mobile'
+                                    }
                                     metric={{
                                         label: 'Outstanding',
                                         value: `₹ ${formatMoney(party.outstanding ?? 0)}`,
@@ -187,7 +192,9 @@ export default function PartiesIndex() {
                                     <td className="px-3 py-2 sm:px-6 sm:py-3 font-medium">
                                         <PartyLink partyId={party.id} name={party.name} />
                                     </td>
-                                    <td className="px-3 py-2 sm:px-6 sm:py-3">{party.mobile ?? '—'}</td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3">
+                                        {formatPartyMobiles(party) || '—'}
+                                    </td>
                                     <td className="px-3 py-2 sm:px-6 sm:py-3 text-right">
                                         {party.invoice_count ?? 0}
                                     </td>

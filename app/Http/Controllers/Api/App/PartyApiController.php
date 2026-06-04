@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Api\App;
 use App\Http\Controllers\Controller;
 use App\Models\Party;
 use App\Models\PartyDocument;
+use App\Support\DocumentStorage;
 use App\Support\DocumentValidation;
 use App\Support\ListExport;
 use App\Support\ListFilter;
 use App\Support\InvoicePaymentCalculator;
+use App\Support\LogoValidation;
 use App\Support\PartyAccountReport;
+use App\Support\PartyProfileData;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -157,19 +160,14 @@ class PartyApiController extends Controller
     public function postPartyStore(Request $request)
     {
         try {
-            $validation = Validator::make($request->all(), [
-                'name' => ['required', 'string', 'max:255'],
-                'mobile' => ['nullable', 'string', 'max:15'],
-                'address' => ['nullable', 'string'],
-                'state_code' => ['nullable', 'string', 'max:5'],
-            ]);
+            $validation = Validator::make($request->all(), $this->partyValidationRules());
 
             if ($validation->fails()) {
                 return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
             }
 
             $party = Party::query()->create([
-                ...$validation->validated(),
+                ...PartyProfileData::prepareForPersistence($validation->validated()),
                 'user_id' => $request->user()->id,
             ]);
 
@@ -186,10 +184,7 @@ class PartyApiController extends Controller
         try {
             $validation = Validator::make($request->all(), [
                 'id' => ['required', 'integer'],
-                'name' => ['required', 'string', 'max:255'],
-                'mobile' => ['nullable', 'string', 'max:15'],
-                'address' => ['nullable', 'string'],
-                'state_code' => ['nullable', 'string', 'max:5'],
+                ...$this->partyValidationRules(),
             ]);
 
             if ($validation->fails()) {
@@ -200,11 +195,47 @@ class PartyApiController extends Controller
                 ->where('user_id', $request->user()->id)
                 ->findOrFail($request->input('id'));
 
-            $data = $validation->validated();
+            $data = PartyProfileData::prepareForPersistence($validation->validated());
             unset($data['id']);
             $party->update($data);
 
             return $this->sendJsonResponse(true, 'Party updated.', [
+                'party' => $party->fresh(),
+            ], 200);
+        } catch (Exception $e) {
+            return $this->sendError($e);
+        }
+    }
+
+    public function postPartyLogoUpdate(Request $request)
+    {
+        try {
+            $validation = Validator::make($request->all(), [
+                'id' => ['required', 'integer'],
+                'logo' => ['required_without:remove_logo', 'nullable', ...LogoValidation::fileRule()],
+                'remove_logo' => ['nullable', 'boolean'],
+            ]);
+
+            if ($validation->fails()) {
+                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
+            }
+
+            $party = Party::query()
+                ->where('user_id', $request->user()->id)
+                ->findOrFail($request->input('id'));
+
+            if ($request->boolean('remove_logo')) {
+                $party->update(['logo_path' => null]);
+            } elseif ($request->hasFile('logo')) {
+                $party->update([
+                    'logo_path' => DocumentStorage::store(
+                        $request->file('logo'),
+                        "parties/{$request->user()->id}/{$party->id}/logo",
+                    ),
+                ]);
+            }
+
+            return $this->sendJsonResponse(true, 'Party logo updated.', [
                 'party' => $party->fresh(),
             ], 200);
         } catch (Exception $e) {
@@ -243,7 +274,18 @@ class PartyApiController extends Controller
         $search = ListFilter::searchFromRequest($request);
 
         $query = Party::query()->where('user_id', $userId);
-        ListFilter::applySearch($query, $search, ['name', 'mobile', 'address']);
+        ListFilter::applySearch($query, $search, [
+            'name',
+            'party_owner_name',
+            'mobile',
+            'email',
+            'pan_no',
+            'gst_no',
+            'city',
+            'district',
+            'full_address',
+            'address',
+        ]);
         ListFilter::applyDate($query, $dateFilters, 'created_at');
         $query->orderBy('name');
 
@@ -256,5 +298,29 @@ class PartyApiController extends Controller
             'search' => $search,
             ...$dateFilters,
         ]];
+    }
+
+    /** @return array<string, mixed> */
+    private function partyValidationRules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'party_owner_name' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'pan_no' => ['nullable', 'string', 'max:20'],
+            'gst_no' => ['nullable', 'string', 'max:20'],
+            'international_tax_id' => ['nullable', 'string', 'max:50'],
+            'mobiles' => ['nullable', 'array'],
+            'mobiles.*' => ['nullable', 'string', 'max:15'],
+            'mobile' => ['nullable', 'string', 'max:15'],
+            'full_address' => ['nullable', 'string'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'taluka' => ['nullable', 'string', 'max:100'],
+            'district' => ['nullable', 'string', 'max:100'],
+            'pincode' => ['nullable', 'string', 'max:10'],
+            'state_code' => ['nullable', 'string', 'max:5'],
+            'country' => ['nullable', 'string', 'max:100'],
+            'address' => ['nullable', 'string'],
+        ];
     }
 }

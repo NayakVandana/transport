@@ -154,9 +154,22 @@ export interface EntityDocument {
 export interface Party {
     id: number;
     name: string;
+    party_owner_name?: string | null;
+    logo_url?: string | null;
+    email?: string | null;
+    pan_no?: string | null;
+    gst_no?: string | null;
+    international_tax_id?: string | null;
     mobile?: string | null;
+    mobiles?: string[] | null;
     address?: string | null;
+    full_address?: string | null;
+    city?: string | null;
+    taluka?: string | null;
+    district?: string | null;
+    pincode?: string | null;
     state_code?: string | null;
+    country?: string | null;
     invoice_count?: number;
     balance_due?: number | string;
     received?: number | string;

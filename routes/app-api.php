@@ -51,6 +51,7 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/parties/party-account', [PartyApiController::class, 'postPartyAccount']);
     Route::post('/parties/party-store', [PartyApiController::class, 'postPartyStore']);
     Route::post('/parties/party-update', [PartyApiController::class, 'postPartyUpdate']);
+    Route::post('/parties/party-logo-update', [PartyApiController::class, 'postPartyLogoUpdate']);
     Route::post('/parties/party-destroy', [PartyApiController::class, 'postPartyDestroy']);
 
     Route::post('/parties/party-document-meta', [PartyDocumentApiController::class, 'postPartyDocumentMeta']);

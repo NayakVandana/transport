@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DocumentStorage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,10 +12,38 @@ class Party extends Model
     protected $fillable = [
         'user_id',
         'name',
+        'party_owner_name',
+        'logo_path',
+        'email',
+        'pan_no',
+        'gst_no',
+        'international_tax_id',
         'mobile',
+        'mobiles',
         'address',
+        'full_address',
+        'city',
+        'taluka',
+        'district',
+        'pincode',
         'state_code',
+        'country',
     ];
+
+    protected $hidden = [
+        'logo_path',
+    ];
+
+    protected $appends = [
+        'logo_url',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'mobiles' => 'array',
+        ];
+    }
 
     public function user(): BelongsTo
     {
@@ -39,5 +68,23 @@ class Party extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(PartyDocument::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (Party $party) {
+            if ($party->isDirty('logo_path')) {
+                DocumentStorage::delete($party->getOriginal('logo_path'));
+            }
+        });
+
+        static::deleting(function (Party $party) {
+            DocumentStorage::delete($party->logo_path);
+        });
+    }
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        return DocumentStorage::url($this->logo_path);
     }
 }

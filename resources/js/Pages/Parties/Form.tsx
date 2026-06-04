@@ -1,9 +1,11 @@
 import { FormPageHeader } from '@/Components/ListPageHeader';
+import LogoUploadField from '@/Components/LogoUploadField';
 import FormPage, {
     FormActions,
     FormCard,
     FormField,
     FormGrid,
+    FormSectionHeader,
     formControlClass,
 } from '@/Components/FormPage';
 import InputError from '@/Components/InputError';
@@ -20,7 +22,13 @@ import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import type { EntityDocument, ExpenseOption, Party } from '@/types/transport';
 import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
-import { validatePartyForm } from '@/lib/partyValidation';
+import {
+    emptyPartyForm,
+    partyFormPayload,
+    partyToFormData,
+    validatePartyForm,
+    type PartyFormData,
+} from '@/lib/partyValidation';
 import { Head, Link, router } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 
@@ -57,12 +65,8 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
     const [documentTypes, setDocumentTypes] = useState<ExpenseOption[]>([]);
     const [documents, setDocuments] = useState<EntityDocument[]>([]);
     const [documentDrafts, setDocumentDrafts] = useState<DocumentDraft[]>([]);
-    const [data, setData] = useState({
-        name: '',
-        mobile: '',
-        address: '',
-        state_code: '',
-    });
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [data, setData] = useState<PartyFormData>(emptyPartyForm());
 
     useEffect(() => {
         if (partyId) {
@@ -87,12 +91,8 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
                     setDocumentTypes(res.data.document_types ?? []);
                     setDocuments(res.data.documents ?? []);
                     setDocumentDrafts([]);
-                    setData({
-                        name: party.name ?? '',
-                        mobile: party.mobile ?? '',
-                        address: party.address ?? '',
-                        state_code: party.state_code ?? '',
-                    });
+                    setLogoUrl(party.logo_url ?? null);
+                    setData(partyToFormData(party));
                 })
                 .catch(() => {
                     setLoadError('Could not load party.');
@@ -114,13 +114,40 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
             .catch(() => {});
     }, [partyId]);
 
-    const setField = (field: keyof typeof data, value: string) => {
+    const setField = <K extends keyof PartyFormData>(field: K, value: PartyFormData[K]) => {
         setData((prev) => ({ ...prev, [field]: value }));
         setErrors((prev) => {
             const next = { ...prev };
             delete next[field];
             return next;
         });
+    };
+
+    const setMobile = (index: number, value: string) => {
+        setData((prev) => {
+            const mobiles = [...prev.mobiles];
+            mobiles[index] = value;
+            return { ...prev, mobiles };
+        });
+        setErrors((prev) => {
+            const next = { ...prev };
+            delete next[`mobiles.${index}`];
+            return next;
+        });
+    };
+
+    const addMobile = () => {
+        setData((prev) => ({ ...prev, mobiles: [...prev.mobiles, ''] }));
+    };
+
+    const removeMobile = (index: number) => {
+        setData((prev) => ({
+            ...prev,
+            mobiles:
+                prev.mobiles.length <= 1
+                    ? ['']
+                    : prev.mobiles.filter((_, mobileIndex) => mobileIndex !== index),
+        }));
     };
 
     const submit: FormEventHandler = async (e) => {
@@ -130,7 +157,7 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
 
         const clientErrors = validatePartyForm(data);
         if (Object.keys(clientErrors).length > 0) {
-            setErrors(clientErrors);
+            setErrors(clientErrors as Record<string, string>);
             return;
         }
 
@@ -143,7 +170,7 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
 
         try {
             const payload = {
-                ...data,
+                ...partyFormPayload(data),
                 ...(partyId ? { id: partyId } : {}),
             };
 
@@ -196,7 +223,7 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
         }
     };
 
-    const inputClass = (field: keyof typeof data) =>
+    const inputClass = (field: keyof PartyFormData) =>
         fieldInputClass(Boolean(errors[field]), formControlClass);
 
     return (
@@ -218,49 +245,217 @@ export default function PartyForm({ partyId }: { partyId?: number }) {
                             </p>
                         )}
 
-                        <form onSubmit={submit} className="space-y-5">
-                            <FormGrid>
-                                <FormField width="md">
-                                    <InputLabel value="Name" />
-                                    <TextInput
-                                        className={inputClass('name')}
-                                        value={data.name}
-                                        onChange={(e) => setField('name', e.target.value)}
-                                    />
-                                    <InputError message={errors.name} className="mt-1" />
-                                </FormField>
-                                <FormField width="md">
-                                    <InputLabel value="Mobile" />
-                                    <TextInput
-                                        className={inputClass('mobile')}
-                                        value={data.mobile}
-                                        onChange={(e) => setField('mobile', e.target.value)}
-                                    />
-                                    <InputError message={errors.mobile} className="mt-1" />
-                                </FormField>
-                            </FormGrid>
+                        <form onSubmit={submit} className="space-y-6">
+                            <div className="space-y-5">
+                                <FormSectionHeader title="Basic Details" />
+                                <FormGrid>
+                                    <FormField width="md">
+                                        <InputLabel value="Party Name" />
+                                        <TextInput
+                                            className={inputClass('name')}
+                                            value={data.name}
+                                            onChange={(e) => setField('name', e.target.value)}
+                                        />
+                                        <InputError message={errors.name} className="mt-1" />
+                                    </FormField>
+                                    <FormField width="md">
+                                        <InputLabel value="Party Owner Name" />
+                                        <TextInput
+                                            className={inputClass('party_owner_name')}
+                                            value={data.party_owner_name}
+                                            onChange={(e) =>
+                                                setField('party_owner_name', e.target.value)
+                                            }
+                                        />
+                                        <InputError
+                                            message={errors.party_owner_name}
+                                            className="mt-1"
+                                        />
+                                    </FormField>
+                                </FormGrid>
 
-                            <FormField width="full">
-                                <InputLabel value="Address" />
-                                <textarea
-                                    className={`${inputClass('address')} rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500`}
-                                    rows={4}
-                                    value={data.address}
-                                    onChange={(e) => setField('address', e.target.value)}
-                                />
-                                <InputError message={errors.address} className="mt-1" />
-                            </FormField>
+                                {partyId ? (
+                                    <LogoUploadField
+                                        label="Party logo"
+                                        logoUrl={logoUrl}
+                                        uploadPath="/parties/party-logo-update"
+                                        formFields={{ id: partyId }}
+                                        onUpdated={setLogoUrl}
+                                    />
+                                ) : (
+                                    <p className="text-sm text-gray-500">
+                                        Save the party first, then upload a logo.
+                                    </p>
+                                )}
+                            </div>
 
-                            <FormField width="sm">
-                                <InputLabel value="State code" />
-                                <TextInput
-                                    className={inputClass('state_code')}
-                                    value={data.state_code}
-                                    onChange={(e) => setField('state_code', e.target.value)}
-                                    placeholder="e.g. 27"
-                                />
-                                <InputError message={errors.state_code} className="mt-1" />
-                            </FormField>
+                            <div className="space-y-5">
+                                <FormSectionHeader title="Contact Details" />
+                                <FormField width="md">
+                                    <InputLabel value="Email" />
+                                    <TextInput
+                                        type="email"
+                                        className={inputClass('email')}
+                                        value={data.email}
+                                        onChange={(e) => setField('email', e.target.value)}
+                                    />
+                                    <InputError message={errors.email} className="mt-1" />
+                                </FormField>
+
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <InputLabel value="Mobile Numbers" />
+                                        <button
+                                            type="button"
+                                            onClick={addMobile}
+                                            className="text-sm text-indigo-600 hover:underline"
+                                        >
+                                            + Add mobile
+                                        </button>
+                                    </div>
+                                    {data.mobiles.map((mobile, index) => (
+                                        <div key={index} className="flex items-start gap-2">
+                                            <div className="min-w-0 flex-1">
+                                                <TextInput
+                                                    className={fieldInputClass(
+                                                        Boolean(errors[`mobiles.${index}`]),
+                                                        formControlClass,
+                                                    )}
+                                                    value={mobile}
+                                                    onChange={(e) => setMobile(index, e.target.value)}
+                                                    placeholder="Mobile number"
+                                                />
+                                                <InputError
+                                                    message={errors[`mobiles.${index}`]}
+                                                    className="mt-1"
+                                                />
+                                            </div>
+                                            {data.mobiles.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeMobile(index)}
+                                                    className="mt-2 text-sm text-red-600 hover:underline"
+                                                >
+                                                    Remove
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-5">
+                                <FormSectionHeader title="Tax Details" />
+                                <FormGrid cols={3}>
+                                    <FormField width="md">
+                                        <InputLabel value="PAN No" />
+                                        <TextInput
+                                            className={inputClass('pan_no')}
+                                            value={data.pan_no}
+                                            onChange={(e) => setField('pan_no', e.target.value)}
+                                        />
+                                        <InputError message={errors.pan_no} className="mt-1" />
+                                    </FormField>
+                                    <FormField width="md">
+                                        <InputLabel value="GST No" />
+                                        <TextInput
+                                            className={inputClass('gst_no')}
+                                            value={data.gst_no}
+                                            onChange={(e) => setField('gst_no', e.target.value)}
+                                        />
+                                        <InputError message={errors.gst_no} className="mt-1" />
+                                    </FormField>
+                                    <FormField width="md">
+                                        <InputLabel value="International Tax ID" />
+                                        <TextInput
+                                            className={inputClass('international_tax_id')}
+                                            value={data.international_tax_id}
+                                            onChange={(e) =>
+                                                setField('international_tax_id', e.target.value)
+                                            }
+                                        />
+                                        <InputError
+                                            message={errors.international_tax_id}
+                                            className="mt-1"
+                                        />
+                                    </FormField>
+                                </FormGrid>
+                            </div>
+
+                            <div className="space-y-5">
+                                <FormSectionHeader title="Address" />
+                                <FormField width="full">
+                                    <InputLabel value="Full Address" />
+                                    <textarea
+                                        className={`${inputClass('full_address')} rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500`}
+                                        rows={4}
+                                        value={data.full_address}
+                                        onChange={(e) => setField('full_address', e.target.value)}
+                                    />
+                                    <InputError message={errors.full_address} className="mt-1" />
+                                </FormField>
+
+                                <FormGrid cols={3}>
+                                    <FormField width="md">
+                                        <InputLabel value="City" />
+                                        <TextInput
+                                            className={inputClass('city')}
+                                            value={data.city}
+                                            onChange={(e) => setField('city', e.target.value)}
+                                        />
+                                        <InputError message={errors.city} className="mt-1" />
+                                    </FormField>
+                                    <FormField width="md">
+                                        <InputLabel value="Taluka" />
+                                        <TextInput
+                                            className={inputClass('taluka')}
+                                            value={data.taluka}
+                                            onChange={(e) => setField('taluka', e.target.value)}
+                                        />
+                                        <InputError message={errors.taluka} className="mt-1" />
+                                    </FormField>
+                                    <FormField width="md">
+                                        <InputLabel value="District" />
+                                        <TextInput
+                                            className={inputClass('district')}
+                                            value={data.district}
+                                            onChange={(e) => setField('district', e.target.value)}
+                                        />
+                                        <InputError message={errors.district} className="mt-1" />
+                                    </FormField>
+                                </FormGrid>
+
+                                <FormGrid cols={3}>
+                                    <FormField width="sm">
+                                        <InputLabel value="Pincode" />
+                                        <TextInput
+                                            className={inputClass('pincode')}
+                                            value={data.pincode}
+                                            onChange={(e) => setField('pincode', e.target.value)}
+                                        />
+                                        <InputError message={errors.pincode} className="mt-1" />
+                                    </FormField>
+                                    <FormField width="sm">
+                                        <InputLabel value="State Code" />
+                                        <TextInput
+                                            className={inputClass('state_code')}
+                                            value={data.state_code}
+                                            onChange={(e) => setField('state_code', e.target.value)}
+                                            placeholder="e.g. 27"
+                                        />
+                                        <InputError message={errors.state_code} className="mt-1" />
+                                    </FormField>
+                                    <FormField width="md">
+                                        <InputLabel value="Country" />
+                                        <TextInput
+                                            className={inputClass('country')}
+                                            value={data.country}
+                                            onChange={(e) => setField('country', e.target.value)}
+                                        />
+                                        <InputError message={errors.country} className="mt-1" />
+                                    </FormField>
+                                </FormGrid>
+                            </div>
 
                             <EntityDocumentsSection
                                 documentTypes={documentTypes}

@@ -7,18 +7,21 @@ type LogoUploadFieldProps = {
     label: string;
     logoUrl?: string | null;
     uploadPath: string;
+    formFields?: Record<string, string | number>;
     onUpdated: (logoUrl: string | null) => void;
 };
 
 type LogoUploadResponse = ApiEnvelope<{
     user?: { logo_url?: string | null };
     company?: { logo_url?: string | null };
+    party?: { logo_url?: string | null };
 }>;
 
 export default function LogoUploadField({
     label,
     logoUrl,
     uploadPath,
+    formFields,
     onUpdated,
 }: LogoUploadFieldProps) {
     const inputRef = useRef<HTMLInputElement>(null);
@@ -40,6 +43,10 @@ export default function LogoUploadField({
                 return;
             }
 
+            Object.entries(formFields ?? {}).forEach(([key, value]) => {
+                formData.append(key, String(value));
+            });
+
             const res = await appApiPostFormData<LogoUploadResponse>(uploadPath, formData);
 
             if (!res.success) {
@@ -50,6 +57,7 @@ export default function LogoUploadField({
             const nextUrl =
                 res.data?.user?.logo_url ??
                 res.data?.company?.logo_url ??
+                res.data?.party?.logo_url ??
                 null;
 
             onUpdated(nextUrl ?? null);

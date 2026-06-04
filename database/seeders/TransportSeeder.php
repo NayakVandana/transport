@@ -78,25 +78,46 @@ class TransportSeeder extends Seeder
         $parties = [
             [
                 'name' => 'A/C. VAISHNAVI TRANSPORT VP',
-                'mobile' => '9821596969',
-                'address' => "C-519, 5TH FLOOR, STEEL CHAMBER\nSTEEL MARKET, KALAMBOLI\nNAVI MUMBAI-410218\nMAHARASHTRA-27",
+                'party_owner_name' => 'Mr. Ramesh Vaishnavi',
+                'email' => 'accounts@vaishnavitransport.in',
+                'pan_no' => 'AAFCV1234K',
+                'gst_no' => '27AAFCV1234K1Z5',
+                'international_tax_id' => null,
+                'mobiles' => ['9821596969', '9821596970'],
+                'full_address' => "C-519, 5TH FLOOR, STEEL CHAMBER\nSTEEL MARKET, KALAMBOLI",
+                'city' => 'Navi Mumbai',
+                'taluka' => 'Panvel',
+                'district' => 'Raigad',
+                'pincode' => '410218',
                 'state_code' => '27',
+                'country' => 'India',
             ],
             [
                 'name' => 'SHREE LOGISTICS PVT LTD',
-                'mobile' => '9876543210',
-                'address' => "Office 204, Trade Centre\nVapi Silvassa Road\nGujarat - 396191",
+                'party_owner_name' => 'Ms. Priya Shah',
+                'email' => 'billing@shreelogistics.com',
+                'pan_no' => 'AABCS5678L',
+                'gst_no' => '24AABCS5678L1Z2',
+                'international_tax_id' => null,
+                'mobiles' => ['9876543210'],
+                'full_address' => "Office 204, Trade Centre\nVapi Silvassa Road",
+                'city' => 'Vapi',
+                'taluka' => 'Vapi',
+                'district' => 'Valsad',
+                'pincode' => '396191',
                 'state_code' => '24',
+                'country' => 'India',
             ],
         ];
 
-        return array_map(
-            fn (array $data) => Party::query()->updateOrCreate(
+        return array_map(function (array $data) use ($userId) {
+            $prepared = \App\Support\PartyProfileData::prepareForPersistence($data);
+
+            return Party::query()->updateOrCreate(
                 ['user_id' => $userId, 'name' => $data['name']],
-                $data,
-            ),
-            $parties,
-        );
+                $prepared,
+            );
+        }, $parties);
     }
 
     /** @return array<string, Vehicle> */

@@ -168,8 +168,11 @@
                 @if ($party->state_code)
                     <div>{{ $party->state_code }}</div>
                 @endif
-                @if ($party->mobile)
-                    <div style="margin-top: 3px;">Mob: {{ $party->mobile }}</div>
+                @php
+                    $mobileNumbers = $party->mobiles ?? ($party->mobile ? [$party->mobile] : []);
+                @endphp
+                @if ($mobileNumbers !== [])
+                    <div style="margin-top: 3px;">Mob: {{ implode(', ', $mobileNumbers) }}</div>
                 @endif
             </td>
             <td style="width: 45%;" align="right">

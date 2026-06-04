@@ -7,6 +7,7 @@ import PageHeaderBar, { HeaderBackLink, InlineBackLink } from '@/Components/Page
 import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { formatPartyMobiles } from '@/lib/partyValidation';
 import type { EntityDocument, ExpenseOption, Party } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
@@ -50,18 +51,20 @@ export default function PartyProfileShow({ partyId }: { partyId: number }) {
             .finally(() => setLoading(false));
     }, [partyId]);
 
+    const mobileLabel = party ? formatPartyMobiles(party) : null;
+
     usePageHeader(
         <PageHeaderBar
             layout="compact"
             title={party?.name ?? 'Party'}
-            subtitle={party?.mobile}
+            subtitle={mobileLabel ?? undefined}
             actions={
                 <div className="hidden shrink-0 sm:block">
                     <HeaderBackLink href={route('parties.index')} />
                 </div>
             }
         />,
-        [party?.name, party?.mobile],
+        [party?.name, mobileLabel],
     );
 
     const editHref = `${route('parties.edit', partyId)}?return=profile`;
@@ -98,17 +101,63 @@ export default function PartyProfileShow({ partyId }: { partyId: number }) {
                                 </PageToolbar>
 
                                 <FormCard className="!shadow-none ring-1 ring-gray-200">
+                                    <FormSectionHeader title="Basic Details" />
+                                    <div className="mb-4 flex items-start gap-4">
+                                        {party.logo_url ? (
+                                            <img
+                                                src={party.logo_url}
+                                                alt={`${party.name} logo`}
+                                                className="h-20 w-20 rounded-lg border border-gray-200 bg-gray-50 object-contain"
+                                            />
+                                        ) : null}
+                                        <DetailGrid className="flex-1">
+                                            <DetailItemLocal label="Party Name" value={party.name} />
+                                            <DetailItemLocal
+                                                label="Party Owner Name"
+                                                value={party.party_owner_name}
+                                            />
+                                        </DetailGrid>
+                                    </div>
+                                </FormCard>
+
+                                <FormCard className="!shadow-none ring-1 ring-gray-200">
                                     <FormSectionHeader title="Contact Details" />
                                     <DetailGrid>
-                                        <DetailItemLocal label="Name" value={party.name} />
-                                        <DetailItemLocal label="Mobile" value={party.mobile} />
-                                        <DetailItemLocal label="State Code" value={party.state_code} />
+                                        <DetailItemLocal label="Email" value={party.email} />
+                                        <DetailItemLocal label="Mobile" value={mobileLabel} />
                                     </DetailGrid>
-                                    {party.address?.trim() && (
-                                        <DetailGrid className="mt-4">
-                                            <DetailItemLocal label="Address" value={party.address} />
+                                </FormCard>
+
+                                <FormCard className="!shadow-none ring-1 ring-gray-200">
+                                    <FormSectionHeader title="Tax Details" />
+                                    <DetailGrid>
+                                        <DetailItemLocal label="PAN No" value={party.pan_no} />
+                                        <DetailItemLocal label="GST No" value={party.gst_no} />
+                                        <DetailItemLocal
+                                            label="International Tax ID"
+                                            value={party.international_tax_id}
+                                        />
+                                    </DetailGrid>
+                                </FormCard>
+
+                                <FormCard className="!shadow-none ring-1 ring-gray-200">
+                                    <FormSectionHeader title="Address" />
+                                    {(party.full_address?.trim() || party.address?.trim()) && (
+                                        <DetailGrid className="mb-4">
+                                            <DetailItemLocal
+                                                label="Full Address"
+                                                value={party.full_address ?? party.address}
+                                            />
                                         </DetailGrid>
                                     )}
+                                    <DetailGrid>
+                                        <DetailItemLocal label="City" value={party.city} />
+                                        <DetailItemLocal label="Taluka" value={party.taluka} />
+                                        <DetailItemLocal label="District" value={party.district} />
+                                        <DetailItemLocal label="Pincode" value={party.pincode} />
+                                        <DetailItemLocal label="State Code" value={party.state_code} />
+                                        <DetailItemLocal label="Country" value={party.country} />
+                                    </DetailGrid>
                                 </FormCard>
 
                                 {documents.length > 0 && (

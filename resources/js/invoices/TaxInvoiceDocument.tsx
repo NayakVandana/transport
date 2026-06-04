@@ -68,6 +68,12 @@ export default function TaxInvoiceDocument({
     const party = invoice.party!;
     const lines = invoice.lines ?? [];
     const addressLines = (party.address ?? '').split('\n').filter((line) => line.trim() !== '');
+    const mobileNumbers =
+        party.mobiles && party.mobiles.length > 0
+            ? party.mobiles
+            : party.mobile
+              ? [party.mobile]
+              : [];
 
     return (
         <div
@@ -98,7 +104,9 @@ export default function TaxInvoiceDocument({
                                         <div key={line}>{line}</div>
                                     ))}
                                     {party.state_code && <div>{party.state_code}</div>}
-                                    {party.mobile && <div className="mt-1">Mob: {party.mobile}</div>}
+                                    {mobileNumbers.length > 0 && (
+                                        <div className="mt-1">Mob: {mobileNumbers.join(', ')}</div>
+                                    )}
                                 </div>
                                 <div className="w-full shrink-0 sm:w-auto sm:max-w-[14rem]">
                                     <table className="w-full border-collapse sm:ml-auto">
