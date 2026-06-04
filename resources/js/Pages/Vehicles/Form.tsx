@@ -450,7 +450,7 @@ export default function VehicleForm({ vehicleId }: { vehicleId?: number }) {
                                         />
                                     </Field>
                                     <Field
-                                        label="Pollution Expiry"
+                                        label="PUC Expiry"
                                         required
                                         error={errors.pollution_expiry}
                                     >

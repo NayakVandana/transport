@@ -47,7 +47,7 @@ class VehicleApiController extends Controller
                 'vehicles',
                 'Vehicles Export',
                 $filterSummary,
-                ['Number', 'Type', 'Brand', 'Model', 'Capacity', 'Fuel', 'Status'],
+                ['Number', 'Type', 'Brand', 'Model', 'Capacity', 'Fuel', 'Insurance Expiry', 'Permit Expiry', 'PUC Expiry', 'Fitness Expiry', 'Status'],
                 $vehicles->map(fn ($vehicle) => [
                     $vehicle->vehicle_number,
                     $vehicle->vehicle_type ?? '',
@@ -55,9 +55,13 @@ class VehicleApiController extends Controller
                     $vehicle->model ?? '',
                     $vehicle->capacity ?? '',
                     $vehicle->fuel_type ?? '',
+                    ListExport::formatDate($vehicle->insurance_expiry),
+                    ListExport::formatDate($vehicle->permit_expiry),
+                    ListExport::formatDate($vehicle->pollution_expiry),
+                    ListExport::formatDate($vehicle->fitness_expiry),
                     ucfirst($vehicle->status),
                 ]),
-                ['TOTAL', $vehicles->count().' vehicles', '', '', '', '', ''],
+                ['TOTAL', $vehicles->count().' vehicles', '', '', '', '', '', '', '', '', ''],
             );
         } catch (Exception $e) {
             return $this->sendError($e);
@@ -74,7 +78,7 @@ class VehicleApiController extends Controller
                 'vehicles',
                 'Vehicles Report',
                 $filterSummary,
-                ['Number', 'Type', 'Brand', 'Model', 'Capacity', 'Fuel', 'Status'],
+                ['Number', 'Type', 'Brand', 'Model', 'Capacity', 'Fuel', 'Insurance', 'Permit', 'PUC', 'Fitness', 'Status'],
                 $vehicles->map(fn ($vehicle) => [
                     $vehicle->vehicle_number,
                     $vehicle->vehicle_type ?? '—',
@@ -82,6 +86,10 @@ class VehicleApiController extends Controller
                     $vehicle->model ?? '—',
                     $vehicle->capacity ?? '—',
                     $vehicle->fuel_type ?? '—',
+                    ListExport::formatDate($vehicle->insurance_expiry) ?: '—',
+                    ListExport::formatDate($vehicle->permit_expiry) ?: '—',
+                    ListExport::formatDate($vehicle->pollution_expiry) ?: '—',
+                    ListExport::formatDate($vehicle->fitness_expiry) ?: '—',
                     ucfirst($vehicle->status),
                 ]),
                 $vehicles->count(),

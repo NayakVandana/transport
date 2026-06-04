@@ -141,8 +141,8 @@ export default function VehiclesIndex() {
 
             <PageContainer className="space-y-4">
                     <p className="text-sm text-gray-600">
-                        Manage vehicle details, insurance, and permit expiry dates. Active vehicles
-                        appear in the invoice dropdown.
+                        Manage vehicle details, insurance, permit, and PUC expiry dates. Active
+                        vehicles appear in the invoice dropdown.
                     </p>
 
                     {displayError && (
@@ -223,6 +223,10 @@ export default function VehiclesIndex() {
                                             label: 'Permit',
                                             value: formatAppDateTime(v.permit_expiry),
                                         },
+                                        {
+                                            label: 'PUC',
+                                            value: formatAppDateTime(v.pollution_expiry),
+                                        },
                                     ]}
                                     actions={
                                         <>
@@ -249,6 +253,7 @@ export default function VehiclesIndex() {
                                     <th className="px-4 py-3 text-left font-medium text-gray-500">Brand / Model</th>
                                     <th className="px-4 py-3 text-left font-medium text-gray-500">Insurance Expiry</th>
                                     <th className="px-4 py-3 text-left font-medium text-gray-500">Permit Expiry</th>
+                                    <th className="px-4 py-3 text-left font-medium text-gray-500">PUC Expiry</th>
                                     <th className="px-4 py-3 text-left font-medium text-gray-500">Status</th>
                                     <th className="px-4 py-3 text-left font-medium text-gray-500">Created</th>
                                     <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
@@ -273,6 +278,9 @@ export default function VehiclesIndex() {
                                     </td>
                                     <td className="px-4 py-3 text-gray-600">
                                         {formatAppDateTime(v.permit_expiry)}
+                                    </td>
+                                    <td className="px-4 py-3 text-gray-600">
+                                        {formatAppDateTime(v.pollution_expiry)}
                                     </td>
                                     <td className="px-4 py-3">
                                         <span

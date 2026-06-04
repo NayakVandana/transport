@@ -138,7 +138,7 @@ export default function VehicleShow({ vehicleId }: { vehicleId: number }) {
                                             value={formatAppDateTime(vehicle.permit_expiry)}
                                         />
                                         <DetailItemLocal
-                                            label="Pollution Expiry"
+                                            label="PUC Expiry"
                                             value={formatAppDateTime(vehicle.pollution_expiry)}
                                         />
                                         <DetailItemLocal

@@ -12,7 +12,7 @@ return [
         'insurance_expiry' => 'Insurance Expiry',
         'permit_number' => 'Permit Number',
         'permit_expiry' => 'Permit Expiry',
-        'pollution_expiry' => 'Pollution Expiry',
+        'pollution_expiry' => 'PUC Expiry',
         'fitness_expiry' => 'Fitness Expiry',
         'status' => 'Status',
     ],
@@ -59,8 +59,8 @@ return [
             'date' => 'Permit expiry must be a valid date.',
         ],
         'pollution_expiry' => [
-            'required' => 'Please select the pollution certificate (PUC) expiry date.',
-            'date' => 'Pollution expiry must be a valid date.',
+            'required' => 'Please select the PUC expiry date.',
+            'date' => 'PUC expiry must be a valid date.',
         ],
         'fitness_expiry' => [
             'required' => 'Please select the fitness certificate expiry date.',
