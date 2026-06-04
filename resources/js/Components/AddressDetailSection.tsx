@@ -37,19 +37,19 @@ export default function AddressDetailSection({ data }: AddressDetailSectionProps
     return (
         <>
             <FormSectionHeader title="Address" />
+            <DetailGrid>
+                <DetailItemLocal label="State Code" value={data.state_code} />
+                <DetailItemLocal label="District" value={data.district} />
+                <DetailItemLocal label="Taluka" value={data.taluka} />
+                <DetailItemLocal label="City" value={data.city} />
+                <DetailItemLocal label="Pincode" value={data.pincode} />
+                <DetailItemLocal label="Country" value={normalizeCountry(data.country)} />
+            </DetailGrid>
             {fullAddress && (
-                <DetailGrid className="mb-4">
+                <DetailGrid className="mt-4">
                     <DetailItemLocal label="Full Address" value={fullAddress} />
                 </DetailGrid>
             )}
-            <DetailGrid>
-                <DetailItemLocal label="City" value={data.city} />
-                <DetailItemLocal label="Taluka" value={data.taluka} />
-                <DetailItemLocal label="District" value={data.district} />
-                <DetailItemLocal label="Pincode" value={data.pincode} />
-                <DetailItemLocal label="State Code" value={data.state_code} />
-                <DetailItemLocal label="Country" value={normalizeCountry(data.country)} />
-            </DetailGrid>
         </>
     );
 }

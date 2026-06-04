@@ -33,6 +33,8 @@ class TransportSeeder extends Seeder
 
         $userId = (int) $user->id;
 
+        $this->call(AddressLocalitySeeder::class);
+
         $company = $this->seedCompany($userId);
         $parties = $this->seedParties($userId);
         $vehicles = $this->seedVehicles($userId);

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\App\AddressLocalityApiController;
 use App\Http\Controllers\Api\App\AuthApiController;
 use App\Http\Controllers\Api\App\CompanyDocumentApiController;
 use App\Http\Controllers\Api\App\CompanyApiController;
@@ -35,6 +36,8 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
 
     Route::post('/dashboard/dashboard-summary', [DashboardApiController::class, 'postDashboardSummary']);
     Route::post('/dashboard/dashboard-chart', [DashboardApiController::class, 'postDashboardChart']);
+
+    Route::post('/address/address-locality-options', [AddressLocalityApiController::class, 'postAddressLocalityOptions']);
 
     Route::post('/company/company-show', [CompanyApiController::class, 'postCompanyShow']);
     Route::post('/company/company-update', [CompanyApiController::class, 'postCompanyUpdate']);

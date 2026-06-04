@@ -8,7 +8,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { formatPartyMobiles } from '@/lib/partyValidation';
-import { normalizeCountry } from '@/lib/addressValidation';
+import AddressDetailSection from '@/Components/AddressDetailSection';
 import type { EntityDocument, ExpenseOption, Party } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
@@ -142,23 +142,7 @@ export default function PartyProfileShow({ partyId }: { partyId: number }) {
                                 </FormCard>
 
                                 <FormCard className="!shadow-none ring-1 ring-gray-200">
-                                    <FormSectionHeader title="Address" />
-                                    {(party.full_address?.trim() || party.address?.trim()) && (
-                                        <DetailGrid className="mb-4">
-                                            <DetailItemLocal
-                                                label="Full Address"
-                                                value={party.full_address ?? party.address}
-                                            />
-                                        </DetailGrid>
-                                    )}
-                                    <DetailGrid>
-                                        <DetailItemLocal label="City" value={party.city} />
-                                        <DetailItemLocal label="Taluka" value={party.taluka} />
-                                        <DetailItemLocal label="District" value={party.district} />
-                                        <DetailItemLocal label="Pincode" value={party.pincode} />
-                                        <DetailItemLocal label="State Code" value={party.state_code} />
-                                        <DetailItemLocal label="Country" value={normalizeCountry(party.country)} />
-                                    </DetailGrid>
+                                    <AddressDetailSection data={party} />
                                 </FormCard>
 
                                 {documents.length > 0 && (
