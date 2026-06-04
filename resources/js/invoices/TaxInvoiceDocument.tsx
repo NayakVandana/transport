@@ -217,7 +217,7 @@ export default function TaxInvoiceDocument({
                                                     <tr>
                                                         <td
                                                             colSpan={10}
-                                                            className="px-1 pb-2 pl-4 text-[10px] sm:pl-8"
+                                                            className="px-1 pb-2 text-right text-[10px]"
                                                         >
                                                             {Number(row.advance_paid) > 0 && (
                                                                 <span>
@@ -267,7 +267,8 @@ export default function TaxInvoiceDocument({
 
                     <tr>
                         <td colSpan={2} className="py-2">
-                            <table className="ml-auto w-full max-w-xs border-collapse">
+                            <div className="flex justify-end">
+                            <table className="w-full max-w-xs border-collapse sm:w-auto">
                                 <tbody>
                                     <tr>
                                         <td className="py-0.5 pr-4 text-right">Total Weight</td>
@@ -343,6 +344,7 @@ export default function TaxInvoiceDocument({
                                     </tr>
                                 </tbody>
                             </table>
+                            </div>
                         </td>
                     </tr>
 

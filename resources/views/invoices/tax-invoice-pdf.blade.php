@@ -117,12 +117,16 @@
 
         .sub-line td {
             font-size: 7.5px;
-            padding: 2px 2px 4px 18px;
+            padding: 2px 2px 4px 2px;
+            text-align: right;
         }
 
         .summary-wrap { width: 100%; margin-top: 4px; }
+        .summary-wrap .summary-spacer { width: 65%; }
+        .summary-wrap .summary-cell { width: 35%; vertical-align: top; }
         .summary {
             width: 210px;
+            margin-left: auto;
         }
 
         .summary td { padding: 2px 0; }
@@ -236,7 +240,7 @@
                 </tr>
                 @if ((float) $row->advance_paid > 0 || (float) $row->empty_container_charge > 0 || (float) $row->detention > 0 || (float) $row->weightman > 0 || (float) $row->parking > 0)
                     <tr class="sub-line">
-                        <td colspan="10">
+                        <td colspan="10" class="right">
                             @if ((float) $row->advance_paid > 0)
                                 Advance : {{ ListExport::formatMoney($row->advance_paid) }}
                             @endif
@@ -274,7 +278,8 @@
     {{-- Summary --}}
     <table class="summary-wrap">
         <tr>
-            <td align="right">
+            <td class="summary-spacer">&nbsp;</td>
+            <td class="summary-cell" align="right">
                 <table class="summary">
                     <tr>
                         <td class="label">Total Weight</td>
