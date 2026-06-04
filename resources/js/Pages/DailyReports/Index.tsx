@@ -4,18 +4,15 @@ import ListExportButtons from '@/Components/ListExportButtons';
 import ListFilterBar from '@/Components/ListFilterBar';
 import ListingTableShell from '@/Components/ListingTableShell';
 import MasterDataSelect from '@/Components/MasterDataSelect';
+import ListPageHeader from '@/Components/ListPageHeader';
 import PartyLink from '@/Components/PartyLink';
-import ListPageHeader, {
-    headerCompactPrimaryClass,
-    headerCompactSecondaryClass,
-} from '@/Components/ListPageHeader';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { formatAppDateTime, formatDateString, formatReportDayLabel } from '@/lib/dateUtils';
 import { defaultDateFilters, useFilteredList } from '@/hooks/useFilteredList';
 import { usePageHeader } from '@/hooks/usePageHeader';
-import { apiFieldErrors, fieldInputClass, hasApiFieldErrors } from '@/lib/apiFormErrors';
+import { apiFieldErrors, fieldInputClass } from '@/lib/apiFormErrors';
 import {
     validateDailyReportDraftRow,
     type DailyReportDraftRow,
@@ -64,8 +61,15 @@ const defaultFilters: DailyReportFilters = {
 const cellInputBase =
     'block w-full min-w-0 rounded-md border-gray-300 py-1.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500';
 
+const cellTextareaBase =
+    'block w-full min-w-0 rounded-md border-gray-300 py-1.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 min-h-[4.5rem] resize-y';
+
 function cellInputClass(hasError: boolean): string {
     return fieldInputClass(hasError, cellInputBase);
+}
+
+function cellTextareaClass(hasError: boolean): string {
+    return fieldInputClass(hasError, cellTextareaBase);
 }
 
 function TotalCard({ label, value }: { label: string; value: string }) {
@@ -93,8 +97,8 @@ function toDraftRow(row: DailyReport): DraftRow {
     };
 }
 
-function draftRowsToSnapshot(rows: DraftRow[]): string {
-    return JSON.stringify(rows);
+function rowSnapshot(row: DraftRow): string {
+    return JSON.stringify(row);
 }
 
 function rowKey(row: DraftRow, index: number): string {
@@ -114,34 +118,28 @@ function displayText(value: string | null | undefined): string {
     return trimmed ? trimmed : '—';
 }
 
-function parseBulkSaveRowErrors(data: unknown): Record<number, RowFieldErrors> {
-    const parsed = apiFieldErrors(data);
-    const byIndex: Record<number, RowFieldErrors> = {};
-
-    for (const [key, message] of Object.entries(parsed)) {
-        const match = key.match(/^rows\.(\d+)\.(\w+)$/);
-        if (!match) {
-            continue;
-        }
-
-        const index = Number(match[1]);
-        const field = match[2] as keyof DailyReportDraftRow;
-
-        byIndex[index] ??= {};
-        byIndex[index][field] = message;
-    }
-
-    return byIndex;
+function rowPayload(row: DraftRow, serialNumber: number) {
+    return {
+        report_date: row.report_date,
+        serial_number: serialNumber,
+        vehicle_id: row.vehicle_id,
+        description: row.description.trim() || null,
+        current_party_id: row.current_party_id ? Number(row.current_party_id) : null,
+        planning_party_id: row.planning_party_id ? Number(row.planning_party_id) : null,
+        location: row.location.trim() || null,
+        detention: Number(row.detention || 0),
+        day: row.day.trim() ? Number(row.day) : null,
+    };
 }
 
 export default function DailyReportsIndex() {
     const [actionError, setActionError] = useState<string | null>(null);
     const [searchInput, setSearchInput] = useState('');
     const [draftRows, setDraftRows] = useState<DraftRow[]>([]);
-    const [savedSnapshot, setSavedSnapshot] = useState('');
+    const [savedSnapshots, setSavedSnapshots] = useState<string[]>([]);
     const [rowErrors, setRowErrors] = useState<Record<number, RowFieldErrors>>({});
-    const [saving, setSaving] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
+    const [savingRowIndex, setSavingRowIndex] = useState<number | null>(null);
+    const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null);
 
     const {
         data,
@@ -184,21 +182,27 @@ export default function DailyReportsIndex() {
     );
     const routesHref = route('locations.create');
     const totals = data?.totals ?? { count: 0, detention: 0 };
-    const reportDate = filters.date_from || today;
-    const showInputs = isSheetMode && isEditing;
 
-    const dirty = useMemo(
-        () => draftRows.length > 0 && draftRowsToSnapshot(draftRows) !== savedSnapshot,
-        [draftRows, savedSnapshot],
-    );
+    const editingRowDirty = useMemo(() => {
+        if (editingRowIndex === null) {
+            return false;
+        }
+
+        const row = draftRows[editingRowIndex];
+        if (!row) {
+            return false;
+        }
+
+        return rowSnapshot(row) !== (savedSnapshots[editingRowIndex] ?? '');
+    }, [draftRows, savedSnapshots, editingRowIndex]);
 
     useEffect(() => {
         const rows = data?.dailyReports.data ?? [];
         const draft = rows.map(toDraftRow);
         setDraftRows(draft);
-        setSavedSnapshot(draftRowsToSnapshot(draft));
+        setSavedSnapshots(draft.map(rowSnapshot));
         setRowErrors({});
-        setIsEditing(false);
+        setEditingRowIndex(null);
     }, [data?.dailyReports.data]);
 
     const updateDraftRow = useCallback(
@@ -229,99 +233,118 @@ export default function DailyReportsIndex() {
         [],
     );
 
-    const handleStartEdit = () => {
-        setActionError(null);
-        setRowErrors({});
-        setIsEditing(true);
-    };
+    const isRowEditing = (index: number) => editingRowIndex === index;
 
-    const handleCancel = () => {
-        setDraftRows(JSON.parse(savedSnapshot) as DraftRow[]);
-        setRowErrors({});
-        setActionError(null);
-        setIsEditing(false);
-    };
-
-    const handleSave = async () => {
-        setActionError(null);
-        setRowErrors({});
-
-        const nextRowErrors: Record<number, RowFieldErrors> = {};
-
-        draftRows.forEach((row, index) => {
-            const fieldErrors = validateDailyReportDraftRow(row);
-            if (Object.keys(fieldErrors).length > 0) {
-                nextRowErrors[index] = fieldErrors;
-            }
-        });
-
-        if (Object.keys(nextRowErrors).length > 0) {
-            setRowErrors(nextRowErrors);
-            setActionError('Fix the highlighted rows before saving.');
+    const revertRow = (index: number) => {
+        const saved = savedSnapshots[index];
+        if (!saved) {
             return;
         }
 
-        setSaving(true);
+        setDraftRows((prev) =>
+            prev.map((row, rowIndex) =>
+                rowIndex === index ? (JSON.parse(saved) as DraftRow) : row,
+            ),
+        );
+        setRowErrors((prev) => {
+            const next = { ...prev };
+            delete next[index];
+            return next;
+        });
+    };
 
-        try {
-            const res = await appApiPost<
-                ApiEnvelope<{
-                    dailyReports: { data: DailyReport[] };
-                    totals: DailyReportTotals;
-                }>
-            >('/daily-reports/daily-reports-bulk-save', {
-                report_date: reportDate,
-                rows: draftRows.map((row, index) => ({
-                    vehicle_id: row.vehicle_id,
-                    serial_number: index + 1,
-                    description: row.description || null,
-                    current_party_id: row.current_party_id ? Number(row.current_party_id) : null,
-                    planning_party_id: row.planning_party_id ? Number(row.planning_party_id) : null,
-                    location: row.location || null,
-                    detention: Number(row.detention || 0),
-                    day: row.day.trim() ? Number(row.day) : null,
-                })),
-            });
+    const handleCancelEditRow = (index: number) => {
+        revertRow(index);
+        setEditingRowIndex(null);
+        setActionError(null);
+    };
 
-            if (!res.success || !res.data) {
-                const apiErrors = parseBulkSaveRowErrors(res.data);
-                if (Object.keys(apiErrors).length > 0) {
-                    setRowErrors(apiErrors);
-                }
+    const handleStartEditRow = (index: number) => {
+        setActionError(null);
 
-                if (!hasApiFieldErrors(res.data)) {
-                    setActionError(res.message || 'Could not save daily report.');
-                } else if (Object.keys(apiErrors).length === 0) {
-                    setActionError(res.message || 'Could not save daily report.');
-                }
+        if (editingRowIndex !== null && editingRowIndex !== index) {
+            const dirty =
+                rowSnapshot(draftRows[editingRowIndex]) !==
+                (savedSnapshots[editingRowIndex] ?? '');
 
+            if (dirty && !window.confirm('Discard unsaved changes on the current row?')) {
                 return;
             }
 
-            const refreshed = (res.data.dailyReports?.data ?? []).map(toDraftRow);
-            setDraftRows(refreshed);
-            setSavedSnapshot(draftRowsToSnapshot(refreshed));
-            setRowErrors({});
-            setIsEditing(false);
-
-            await fetchList();
-        } catch {
-            setActionError('Could not save daily report.');
-        } finally {
-            setSaving(false);
+            revertRow(editingRowIndex);
         }
+
+        setEditingRowIndex(index);
     };
 
-    const confirmLeaveEdit = () => {
-        if (!isEditing || !dirty) {
+    const confirmLeaveDirtyRows = () => {
+        if (!editingRowDirty) {
             return true;
         }
 
-        return window.confirm('You have unsaved changes. Continue anyway?');
+        return window.confirm('You have unsaved row changes. Continue anyway?');
+    };
+
+    const handleSaveRow = async (index: number) => {
+        const row = draftRows[index];
+        if (!row) {
+            return;
+        }
+
+        setActionError(null);
+
+        const fieldErrors = validateDailyReportDraftRow(row);
+        if (Object.keys(fieldErrors).length > 0) {
+            setRowErrors((prev) => ({ ...prev, [index]: fieldErrors }));
+            return;
+        }
+
+        setSavingRowIndex(index);
+
+        try {
+            const payload = rowPayload(row, index + 1);
+            const endpoint = row.id
+                ? '/daily-reports/daily-report-update'
+                : '/daily-reports/daily-report-store';
+            const body = row.id ? { id: row.id, ...payload } : payload;
+
+            const res = await appApiPost<ApiEnvelope<{ dailyReport: DailyReport }>>(endpoint, body);
+
+            if (!res.success || !res.data?.dailyReport) {
+                setRowErrors((prev) => ({
+                    ...prev,
+                    [index]: apiFieldErrors(res.data) as RowFieldErrors,
+                }));
+                if (Object.keys(apiFieldErrors(res.data)).length === 0) {
+                    setActionError(res.message || 'Could not save row.');
+                }
+                return;
+            }
+
+            const updated = toDraftRow(res.data.dailyReport);
+            setDraftRows((prev) => prev.map((current, rowIndex) => (rowIndex === index ? updated : current)));
+            setSavedSnapshots((prev) =>
+                prev.map((snapshot, rowIndex) =>
+                    rowIndex === index ? rowSnapshot(updated) : snapshot,
+                ),
+            );
+            setRowErrors((prev) => {
+                const next = { ...prev };
+                delete next[index];
+                return next;
+            });
+            setEditingRowIndex(null);
+
+            await fetchList();
+        } catch {
+            setActionError('Could not save row.');
+        } finally {
+            setSavingRowIndex(null);
+        }
     };
 
     const guardedDateChange = (value: Parameters<typeof applyDateChange>[0]) => {
-        if (!confirmLeaveEdit()) {
+        if (!confirmLeaveDirtyRows()) {
             return;
         }
 
@@ -329,51 +352,14 @@ export default function DailyReportsIndex() {
     };
 
     const guardedUpdateField = (field: 'vehicle_id' | 'party_id', value: string) => {
-        if (!confirmLeaveEdit()) {
+        if (!confirmLeaveDirtyRows()) {
             return;
         }
 
         updateField(field, value);
     };
 
-    usePageHeader(
-        <ListPageHeader
-            title="Daily Report"
-            actions={
-                isSheetMode ? (
-                    isEditing ? (
-                        <>
-                            <PrimaryButton
-                                type="button"
-                                className={headerCompactPrimaryClass}
-                                disabled={saving}
-                                onClick={() => void handleSave()}
-                            >
-                                {saving ? 'Saving…' : 'Save All'}
-                            </PrimaryButton>
-                            <SecondaryButton
-                                type="button"
-                                className={headerCompactSecondaryClass}
-                                disabled={saving}
-                                onClick={handleCancel}
-                            >
-                                Cancel
-                            </SecondaryButton>
-                        </>
-                    ) : (
-                        <PrimaryButton
-                            type="button"
-                            className={headerCompactPrimaryClass}
-                            onClick={handleStartEdit}
-                        >
-                            Edit
-                        </PrimaryButton>
-                    )
-                ) : undefined
-            }
-        />,
-        [isSheetMode, isEditing, saving],
-    );
+    usePageHeader(<ListPageHeader title="Daily Report" />);
 
     const displayError = actionError ?? error;
 
@@ -406,21 +392,17 @@ export default function DailyReportsIndex() {
         field: keyof DailyReportDraftRow,
         display: ReactNode,
         input: ReactNode,
-    ) => (showInputs ? renderCellInput(index, field, input) : display);
+    ) => (isRowEditing(index) ? renderCellInput(index, field, input) : display);
 
-    const routeSelect = (
-        index: number,
-        field: 'description' | 'location',
-        value: string,
-    ) => (
+    const locationSelect = (index: number, value: string) => (
         <MasterDataSelect
             value={value}
             options={routeOptions}
-            emptyLabel="Select route"
-            addLabel="+ Add route"
+            emptyLabel="Select location"
+            addLabel="+ Add location"
             addHref={routesHref}
-            className={cellInputClass(Boolean(rowErrors[index]?.[field]))}
-            onChange={(next) => updateDraftRow(index, field, next)}
+            className={cellInputClass(Boolean(rowErrors[index]?.location))}
+            onChange={(next) => updateDraftRow(index, 'location', next)}
         />
     );
 
@@ -442,6 +424,62 @@ export default function DailyReportsIndex() {
             ))}
         </select>
     );
+
+    const descriptionTextarea = (index: number, value: string) => (
+        <textarea
+            rows={2}
+            className={cellTextareaClass(Boolean(rowErrors[index]?.description))}
+            value={value}
+            placeholder="Trip / load description"
+            onChange={(e) => updateDraftRow(index, 'description', e.target.value)}
+        />
+    );
+
+    const renderRowActions = (index: number, fullWidth = false) => {
+        if (!isRowEditing(index)) {
+            return (
+                <SecondaryButton
+                    type="button"
+                    className={
+                        fullWidth
+                            ? 'w-full !px-3 !py-1.5 text-xs normal-case tracking-normal'
+                            : '!px-3 !py-1.5 text-xs normal-case tracking-normal'
+                    }
+                    disabled={editingRowIndex !== null && editingRowIndex !== index}
+                    onClick={() => handleStartEditRow(index)}
+                >
+                    Edit
+                </SecondaryButton>
+            );
+        }
+
+        const dirty = rowSnapshot(draftRows[index]) !== (savedSnapshots[index] ?? '');
+        const saving = savingRowIndex === index;
+        const btnClass = fullWidth
+            ? 'w-full !px-3 !py-1.5 text-xs normal-case tracking-normal'
+            : '!px-3 !py-1.5 text-xs normal-case tracking-normal';
+
+        return (
+            <div className={fullWidth ? 'flex flex-col gap-2' : 'flex flex-col items-end gap-1.5 sm:flex-row sm:justify-end'}>
+                <PrimaryButton
+                    type="button"
+                    className={btnClass}
+                    disabled={!dirty || saving}
+                    onClick={() => void handleSaveRow(index)}
+                >
+                    {saving ? 'Saving…' : 'Save'}
+                </PrimaryButton>
+                <SecondaryButton
+                    type="button"
+                    className={btnClass}
+                    disabled={saving}
+                    onClick={() => handleCancelEditRow(index)}
+                >
+                    Cancel
+                </SecondaryButton>
+            </div>
+        );
+    };
 
     return (
         <>
@@ -467,7 +505,7 @@ export default function DailyReportsIndex() {
                         placeholder: 'Search vehicle, party, location…',
                         onChange: setSearchInput,
                         onSubmit: () => {
-                            if (!confirmLeaveEdit()) {
+                            if (!confirmLeaveDirtyRows()) {
                                 return;
                             }
 
@@ -499,7 +537,7 @@ export default function DailyReportsIndex() {
                     filterSummary={filterSummary}
                     hasActiveFilters={hasActiveFilters}
                     onClear={() => {
-                        if (!confirmLeaveEdit()) {
+                        if (!confirmLeaveDirtyRows()) {
                             return;
                         }
 
@@ -513,8 +551,8 @@ export default function DailyReportsIndex() {
 
                 {!isSheetMode && (
                     <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                        Select a single date to edit all vehicles in one sheet. Multi-day ranges are
-                        read-only here.
+                        Select a single date to show all active vehicles. Click Edit on a row to
+                        update it.
                     </p>
                 )}
 
@@ -535,13 +573,14 @@ export default function DailyReportsIndex() {
                                 row.report_date,
                                 row.day.trim() ? Number(row.day) : null,
                             );
+                            const editing = isRowEditing(index);
 
                             return (
                                 <div
                                     key={rowKey(row, index)}
                                     className={`rounded-lg border bg-white p-4 shadow-sm ${
                                         hasRowError ? 'border-red-200 bg-red-50/40' : 'border-gray-200'
-                                    }`}
+                                    } ${editing ? 'ring-2 ring-indigo-200' : ''}`}
                                 >
                                     <div className="mb-3 flex items-start justify-between gap-2">
                                         <div>
@@ -564,10 +603,10 @@ export default function DailyReportsIndex() {
                                                 {renderCell(
                                                     index,
                                                     'description',
-                                                    <p className="text-sm text-gray-700">
+                                                    <p className="whitespace-pre-wrap text-sm text-gray-700">
                                                         {displayText(row.description)}
                                                     </p>,
-                                                    routeSelect(index, 'description', row.description),
+                                                    descriptionTextarea(index, row.description),
                                                 )}
                                             </div>
                                         </div>
@@ -627,7 +666,7 @@ export default function DailyReportsIndex() {
                                                     <p className="text-sm text-gray-700">
                                                         {displayText(row.location)}
                                                     </p>,
-                                                    routeSelect(index, 'location', row.location),
+                                                    locationSelect(index, row.location),
                                                 )}
                                             </div>
                                         </div>
@@ -680,12 +719,14 @@ export default function DailyReportsIndex() {
                                                             placeholder="Optional"
                                                         />,
                                                     )}
-                                                    {showInputs ? (
+                                                    {editing ? (
                                                         <p className="mt-0.5 text-xs text-gray-500">{dayLabel}</p>
                                                     ) : null}
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {renderRowActions(index, true)}
                                     </div>
                                 </div>
                             );
@@ -698,7 +739,7 @@ export default function DailyReportsIndex() {
                                 <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                                     Vehicle
                                 </th>
-                                <th className="min-w-[10rem] px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                                <th className="min-w-[12rem] px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                                     Description
                                 </th>
                                 <th className="min-w-[9rem] px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
@@ -719,6 +760,9 @@ export default function DailyReportsIndex() {
                                 <th className="min-w-[6rem] px-3 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                                     Day
                                 </th>
+                                <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">
+                                    Actions
+                                </th>
                             </tr>
                         }
                         tbody={draftRows.map((row, index) => {
@@ -727,6 +771,7 @@ export default function DailyReportsIndex() {
                                 row.report_date,
                                 row.day.trim() ? Number(row.day) : null,
                             );
+                            const editing = isRowEditing(index);
 
                             return (
                                 <tr
@@ -734,9 +779,11 @@ export default function DailyReportsIndex() {
                                     className={
                                         hasRowError
                                             ? 'bg-red-50/70'
-                                            : index % 2 === 1
-                                              ? 'bg-gray-50/60'
-                                              : 'bg-white'
+                                            : editing
+                                              ? 'bg-indigo-50/40'
+                                              : index % 2 === 1
+                                                ? 'bg-gray-50/60'
+                                                : 'bg-white'
                                     }
                                 >
                                     <td className="whitespace-nowrap px-3 py-2 text-sm font-medium text-gray-700">
@@ -745,12 +792,14 @@ export default function DailyReportsIndex() {
                                     <td className="whitespace-nowrap px-3 py-2 font-mono text-sm text-gray-900">
                                         {row.vehicle_number || '—'}
                                     </td>
-                                    <td className="max-w-[12rem] px-3 py-2 align-top text-sm text-gray-700">
+                                    <td className="min-w-[12rem] max-w-[16rem] px-3 py-2 align-top text-sm text-gray-700">
                                         {renderCell(
                                             index,
                                             'description',
-                                            displayText(row.description),
-                                            routeSelect(index, 'description', row.description),
+                                            <span className="whitespace-pre-wrap">
+                                                {displayText(row.description)}
+                                            </span>,
+                                            descriptionTextarea(index, row.description),
                                         )}
                                     </td>
                                     <td className="px-3 py-2 align-top text-sm text-gray-700">
@@ -788,7 +837,7 @@ export default function DailyReportsIndex() {
                                             index,
                                             'location',
                                             displayText(row.location),
-                                            routeSelect(index, 'location', row.location),
+                                            locationSelect(index, row.location),
                                         )}
                                     </td>
                                     <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-700">
@@ -827,9 +876,12 @@ export default function DailyReportsIndex() {
                                                 placeholder="Optional"
                                             />,
                                         )}
-                                        {showInputs ? (
+                                        {editing ? (
                                             <p className="mt-0.5 text-xs text-gray-500">{dayLabel}</p>
                                         ) : null}
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-2 text-right align-top">
+                                        {renderRowActions(index)}
                                     </td>
                                 </tr>
                             );
