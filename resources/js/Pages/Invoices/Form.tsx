@@ -17,6 +17,7 @@ import {
     lineFreight,
 } from '@/lib/freightCalculator';
 import { invoiceReturnQuery, masterListHref } from '@/lib/invoiceReturn';
+import { formatAppDateTime } from '@/lib/dateUtils';
 import { todayDate } from '@/lib/quickAdd';
 import type {
     Company,
@@ -91,6 +92,27 @@ function applyEntrybookToLine(
     };
 }
 
+function lineBelongsToParty(
+    line: FreightInvoiceLine,
+    partyId: string,
+    books: Entrybook[],
+): boolean {
+    if (!partyId || !line.entrybook_id) {
+        return false;
+    }
+
+    const entry = books.find((book) => book.id === line.entrybook_id);
+
+    return entry != null && String(entry.party_id) === partyId;
+}
+
+function entrybookOptionLabel(entry: Entrybook): string {
+    const vehicle = entry.vehicle?.vehicle_number ?? '—';
+    const date = formatAppDateTime(entry.entry_date, '—');
+
+    return `${entry.entry_number} · ${vehicle} · ${date}`;
+}
+
 export default function InvoiceForm({
     invoiceId,
     partyId: initialPartyId,
@@ -134,7 +156,9 @@ export default function InvoiceForm({
                             '/invoices/invoice-show',
                             { id: invoiceId },
                         ),
-                        appApiPost<ApiEnvelope<InvoiceMetaData>>('/invoices/invoice-meta', {}),
+                        appApiPost<ApiEnvelope<InvoiceMetaData>>('/invoices/invoice-meta', {
+                            invoice_id: invoiceId,
+                        }),
                     ]);
 
                     if (!showRes.success || !showRes.data?.invoice) {
@@ -289,24 +313,21 @@ export default function InvoiceForm({
     const partyEntrybooks = useMemo(
         () =>
             data.party_id
-                ? entrybooks.filter((e) => String(e.party_id) === data.party_id)
+                ? entrybooks.filter((entry) => String(entry.party_id) === data.party_id)
                 : [],
         [entrybooks, data.party_id],
     );
 
-    const selectEntryNumber = (index: number, entryNumber: string) => {
-        if (!entryNumber) {
+    const selectEntrybook = (index: number, entrybookId: string) => {
+        if (!entrybookId) {
             const lines = [...data.lines];
             lines[index] = { ...lines[index], entry_number: '', entrybook_id: null };
             setField('lines', lines);
             return;
         }
 
-        const entry = partyEntrybooks.find((e) => e.entry_number === entryNumber);
+        const entry = partyEntrybooks.find((book) => book.id === Number(entrybookId));
         if (!entry) {
-            const lines = [...data.lines];
-            lines[index] = { ...lines[index], entry_number: entryNumber, entrybook_id: null };
-            setField('lines', lines);
             return;
         }
 
@@ -340,12 +361,7 @@ export default function InvoiceForm({
     const changeParty = (partyId: string) => {
         setData((prev) => {
             const lines = prev.lines.map((line) => {
-                if (!line.entrybook_id) {
-                    return line;
-                }
-
-                const entry = entrybooks.find((e) => e.id === line.entrybook_id);
-                if (entry && String(entry.party_id) === partyId) {
+                if (lineBelongsToParty(line, partyId, entrybooks)) {
                     return line;
                 }
 
@@ -362,28 +378,33 @@ export default function InvoiceForm({
         setErrors((prev) => {
             const next = { ...prev };
             delete next.party_id;
+            Object.keys(next)
+                .filter((key) => key.startsWith('lines.'))
+                .forEach((key) => delete next[key]);
             return next;
         });
     };
 
     const entrybookOptions = useMemo(
         () =>
-            partyEntrybooks.map((e) => ({
-                value: e.entry_number,
-                label: e.entry_number,
+            partyEntrybooks.map((entry) => ({
+                value: String(entry.id),
+                label: entrybookOptionLabel(entry),
             })),
         [partyEntrybooks],
     );
 
-    const entryOptionsForLine = (lineIndex: number, currentValue: string) => {
+    const entryOptionsForLine = (lineIndex: number, currentEntrybookId: string) => {
         const used = new Set(
             data.lines
-                .map((line, i) => (i !== lineIndex ? line.entry_number : ''))
+                .map((line, index) =>
+                    index !== lineIndex && line.entrybook_id ? String(line.entrybook_id) : '',
+                )
                 .filter(Boolean),
         );
 
         return entrybookOptions.filter(
-            (option) => option.value === currentValue || !used.has(option.value),
+            (option) => option.value === currentEntrybookId || !used.has(option.value),
         );
     };
 
@@ -550,15 +571,21 @@ export default function InvoiceForm({
                                                 <div>
                                                     <InputLabel value="Entry no." />
                                                     <MasterDataSelect
-                                                        value={line.entry_number ?? ''}
+                                                        value={
+                                                            line.entrybook_id
+                                                                ? String(line.entrybook_id)
+                                                                : ''
+                                                        }
                                                         options={entryOptionsForLine(
                                                             i,
-                                                            line.entry_number ?? '',
+                                                            line.entrybook_id
+                                                                ? String(line.entrybook_id)
+                                                                : '',
                                                         )}
-                                                        emptyLabel="Select entry or enter manually below"
+                                                        emptyLabel="Select entry for this party"
                                                         addLabel="+ Add entry"
                                                         addHref={entrybooksHref}
-                                                        onChange={(v) => selectEntryNumber(i, v)}
+                                                        onChange={(v) => selectEntrybook(i, v)}
                                                     />
                                                 </div>
 

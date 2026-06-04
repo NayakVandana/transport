@@ -352,12 +352,12 @@ class TransportSeeder extends Seeder
 
             foreach ($invoiceData['lines'] as $index => $line) {
                 $entrybook = $entrybooks[$line['entrybook']] ?? null;
-                $entryNumbersForSequence[] = $line['entrybook'];
+                $entryNumbersForSequence[] = $entrybook?->entry_number ?? $line['entrybook'];
 
                 $invoice->lines()->create([
                     'serial_number' => $index + 1,
                     'entrybook_id' => $entrybook?->id,
-                    'entry_number' => $line['entrybook'],
+                    'entry_number' => $entrybook?->entry_number ?? $line['entrybook'],
                     'entry_date' => $line['entry_date'],
                     'vehicle_number' => $line['vehicle_number'],
                     'route_from' => $line['route_from'],
@@ -458,7 +458,7 @@ class TransportSeeder extends Seeder
                 'entry_number' => '003',
                 'entry_date' => '2025-08-20',
                 'vehicle_number' => 'MH04JU9931',
-                'party_index' => 0,
+                'party_index' => 1,
                 'route_from' => 'NHAVA SHEVA',
                 'route_to' => 'VAPI',
                 'freight' => 18500,
@@ -468,11 +468,31 @@ class TransportSeeder extends Seeder
                 'entry_number' => '004',
                 'entry_date' => '2025-08-25',
                 'vehicle_number' => 'MH04JU9932',
-                'party_index' => 1,
+                'party_index' => 0,
                 'route_from' => 'MUNDRA',
                 'route_to' => 'HAZIRA',
                 'freight' => 22000,
                 'advance' => 11000,
+            ],
+            [
+                'entry_number' => '005',
+                'entry_date' => '2025-09-01',
+                'vehicle_number' => 'MH04JU9931',
+                'party_index' => 0,
+                'route_from' => 'VAPI',
+                'route_to' => 'PIPAVAV',
+                'freight' => 19500,
+                'advance' => 8000,
+            ],
+            [
+                'entry_number' => '006',
+                'entry_date' => '2025-09-02',
+                'vehicle_number' => 'MH04JU9932',
+                'party_index' => 1,
+                'route_from' => 'HAZIRA',
+                'route_to' => 'RAJKOT',
+                'freight' => 21000,
+                'advance' => 9000,
             ],
         ];
 

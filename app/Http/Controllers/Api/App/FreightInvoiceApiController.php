@@ -39,6 +39,7 @@ class FreightInvoiceApiController extends Controller
 
             $invoices = $query->paginate($perPage, ['*'], 'page', $currentPage);
             InvoicePaymentCalculator::attachSummariesToInvoices($invoices->getCollection());
+            $this->attachEntryNumbersToInvoices($invoices->getCollection());
             $parties = Party::query()
                 ->where('user_id', $userId)
                 ->orderBy('name')
@@ -143,8 +144,10 @@ class FreightInvoiceApiController extends Controller
                 return $this->sendJsonResponse(false, 'Set up your company profile before creating invoices.', null, 200);
             }
 
+            $invoiceId = $request->filled('invoice_id') ? (int) $request->input('invoice_id') : null;
+
             return $this->sendJsonResponse(true, 'Invoice form data loaded.', [
-                ...$this->formLookups($request, $company),
+                ...$this->formLookups($request, $company, $invoiceId),
                 'nextBillNumber' => $this->suggestBillNumber($request),
             ], 200);
         } catch (Exception $e) {
@@ -441,9 +444,9 @@ class FreightInvoiceApiController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function formLookups(Request $request, Company $company): array
+    private function formLookups(Request $request, Company $company, ?int $invoiceId = null): array
     {
-        $userId = $request->user()->id;
+        $userId = (int) $request->user()->id;
         $nextSequence = EntryNumberGenerator::resolveNextSequence($company);
 
         return [
@@ -452,17 +455,33 @@ class FreightInvoiceApiController extends Controller
             'vehicles' => Vehicle::query()->forUser($userId)->orderBy('vehicle_number')->get(['id', 'vehicle_number']),
             'locations' => Location::query()->forUser($userId)->orderBy('name')->get(['id', 'name']),
             'routeLocations' => Location::query()->forUser($userId)->orderBy('name')->get(['id', 'name']),
-            'entrybooks' => Entrybook::query()
-                ->where('user_id', $userId)
-                ->with(['vehicle:id,vehicle_number', 'party:id,name'])
-                ->orderByDesc('entry_date')
-                ->orderByDesc('id')
-                ->get(['id', 'entry_number', 'entry_date', 'vehicle_id', 'party_id', 'route_from', 'route_to', 'freight', 'advance', 'balance']),
+            'entrybooks' => $this->availableEntrybooks($userId, $invoiceId),
             'entrySettings' => [
                 'prefix' => $company->entry_number_prefix,
                 'nextSequence' => $nextSequence,
             ],
         ];
+    }
+
+    /** @return Collection<int, Entrybook> */
+    private function availableEntrybooks(int $userId, ?int $invoiceId = null)
+    {
+        return Entrybook::query()
+            ->where('user_id', $userId)
+            ->with(['vehicle:id,vehicle_number', 'party:id,name'])
+            ->where(function ($query) use ($invoiceId) {
+                $query->whereDoesntHave('invoiceLine');
+
+                if ($invoiceId) {
+                    $query->orWhereHas(
+                        'invoiceLine',
+                        fn ($lineQuery) => $lineQuery->where('freight_invoice_id', $invoiceId),
+                    );
+                }
+            })
+            ->orderByDesc('entry_date')
+            ->orderByDesc('id')
+            ->get(['id', 'entry_number', 'entry_date', 'vehicle_id', 'party_id', 'route_from', 'route_to', 'freight', 'advance', 'balance']);
     }
 
     /** @return Collection<int, Party> */
@@ -547,7 +566,11 @@ class FreightInvoiceApiController extends Controller
 
         $query = FreightInvoice::query()
             ->where('user_id', $userId)
-            ->with(['party:id,name', 'company:id,name']);
+            ->with([
+                'party:id,name',
+                'company:id,name',
+                'lines:id,freight_invoice_id,entry_number,serial_number',
+            ]);
         ListFilter::applyDate($query, $dateFilters, 'invoice_date');
         ListFilter::applySearch($query, $search, ['bill_number']);
         if ($partyId !== '') {
@@ -583,6 +606,21 @@ class FreightInvoiceApiController extends Controller
             'party_id' => $partyId,
             ...$dateFilters,
         ]];
+    }
+
+    /** @param  Collection<int, FreightInvoice>  $invoices */
+    private function attachEntryNumbersToInvoices(Collection $invoices): void
+    {
+        foreach ($invoices as $invoice) {
+            $entryNumbers = $invoice->lines
+                ->pluck('entry_number')
+                ->filter(fn (?string $number) => $number !== null && $number !== '')
+                ->values()
+                ->all();
+
+            $invoice->setAttribute('entry_numbers', $entryNumbers);
+            $invoice->unsetRelation('lines');
+        }
     }
 
     /** @param  Collection<int, FreightInvoice>  $invoices */

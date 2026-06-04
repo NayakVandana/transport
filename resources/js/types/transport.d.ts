@@ -288,6 +288,7 @@ export interface FreightInvoice {
     received?: string | number;
     outstanding?: string | number;
     payment_status?: InvoicePaymentStatus;
+    entry_numbers?: string[];
     created_at?: string | null;
 }
 

@@ -36,6 +36,14 @@ type InvoicesListData = {
     filterSummary: string;
 };
 
+function formatEntryNumbers(entryNumbers?: string[]): string {
+    if (!entryNumbers?.length) {
+        return '—';
+    }
+
+    return entryNumbers.join(', ');
+}
+
 const defaultFilters: InvoiceFilters = {
     search: '',
     status: '',
@@ -218,6 +226,10 @@ export default function InvoicesIndex() {
                                     }}
                                     fields={[
                                         {
+                                            label: 'Entry Nos',
+                                            value: formatEntryNumbers(inv.entry_numbers),
+                                        },
+                                        {
                                             label: 'Date',
                                             value: formatAppDateTime(inv.invoice_date),
                                         },
@@ -261,6 +273,7 @@ export default function InvoicesIndex() {
                                 <tr>
                                     <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Bill No</th>
                                     <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Party</th>
+                                    <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Entry Nos</th>
                                     <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Date</th>
                                     <th className="px-3 py-2 sm:px-6 sm:py-3 text-left font-medium text-gray-500">Payment</th>
                                     <th className="px-3 py-2 sm:px-6 sm:py-3 text-right font-medium text-gray-500">Balance Due</th>
@@ -282,6 +295,9 @@ export default function InvoicesIndex() {
                                     </td>
                                     <td className="px-3 py-2 sm:px-6 sm:py-3">
                                         <PartyLink partyId={inv.party_id} name={inv.party?.name} />
+                                    </td>
+                                    <td className="px-3 py-2 sm:px-6 sm:py-3 font-mono text-sm text-gray-700">
+                                        {formatEntryNumbers(inv.entry_numbers)}
                                     </td>
                                     <td className="px-3 py-2 sm:px-6 sm:py-3">{formatAppDateTime(inv.invoice_date)}</td>
                                     <td className="px-3 py-2 sm:px-6 sm:py-3">
