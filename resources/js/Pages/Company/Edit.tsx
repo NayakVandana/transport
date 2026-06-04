@@ -18,6 +18,7 @@ import EntityDocumentsSection, {
     uploadDocumentDrafts,
     type DocumentDraft,
 } from '@/Components/EntityDocumentsSection';
+import { clearHeaderCompanyCache } from '@/hooks/useHeaderCompany';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import type { Company, EntityDocument, ExpenseOption } from '@/types/transport';
@@ -187,6 +188,7 @@ export default function CompanyEdit() {
                 }
             }
 
+            clearHeaderCompanyCache();
             router.visit(route('company.show'));
         } catch {
             setLoadError('Could not save company.');

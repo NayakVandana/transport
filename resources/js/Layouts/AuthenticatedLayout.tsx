@@ -1,8 +1,10 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
 import SidebarNavLink from '@/Components/SidebarNavLink';
+import TopHeaderIdentity from '@/Components/TopHeaderIdentity';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
 import { clearAuthUserCache, useAuthUser } from '@/auth/useAuthUser';
 import { getUserApiToken, setUserApiToken } from '@/auth/authToken';
+import { clearHeaderCompanyCache, useHeaderCompany } from '@/hooks/useHeaderCompany';
 import { loginUrl } from '@/utils/requireAuth';
 import { Link, router } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode, useEffect, useState } from 'react';
@@ -218,6 +220,7 @@ export default function Authenticated({
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
     const { user, loading } = useAuthUser();
+    const { company } = useHeaderCompany();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const hasToken = Boolean(getUserApiToken());
 
@@ -250,6 +253,7 @@ export default function Authenticated({
 
         setUserApiToken(null);
         clearAuthUserCache();
+        clearHeaderCompanyCache();
         router.visit(route('login'));
     };
 
@@ -285,20 +289,35 @@ export default function Authenticated({
             </aside>
 
             <div className="app-main-shell flex min-h-screen min-w-0 flex-col lg:pl-64">
-                <header className="app-topbar sticky top-0 z-30 flex min-h-14 w-full shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-3 py-2 shadow-sm sm:h-16 sm:gap-4 sm:px-6 sm:py-0 lg:px-8">
-                    <button
-                        type="button"
-                        onClick={() => setSidebarOpen(true)}
-                        className="shrink-0 rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 lg:hidden"
-                    >
-                        <span className="sr-only">Open sidebar</span>
-                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
+                <header className="app-topbar sticky top-0 z-30 w-full shrink-0 border-b border-gray-200 bg-white shadow-sm">
+                    <div className="flex min-h-12 items-center justify-between gap-2 px-3 py-2 sm:px-6 lg:px-8">
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setSidebarOpen(true)}
+                                className="shrink-0 rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 lg:hidden"
+                            >
+                                <span className="sr-only">Open sidebar</span>
+                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            </button>
+
+                            <Link
+                                href={route('dashboard')}
+                                className="flex shrink-0 items-center gap-2 lg:hidden"
+                            >
+                                <ApplicationLogo className="h-8 w-auto fill-current text-indigo-600" />
+                            </Link>
+                        </div>
+
+                        <TopHeaderIdentity user={user} company={company} onLogout={handleLogout} />
+                    </div>
 
                     {header && (
-                        <div className="app-page-header min-w-0 flex-1">{header}</div>
+                        <div className="app-page-header border-t border-gray-100 px-3 py-2.5 sm:px-6 sm:py-3 lg:px-8">
+                            {header}
+                        </div>
                     )}
                 </header>
 
