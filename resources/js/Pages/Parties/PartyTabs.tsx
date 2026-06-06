@@ -5,6 +5,7 @@ export const partyTabs = [
     { id: 'ledger', label: 'Ledger', route: 'parties.ledger' },
     { id: 'invoices', label: 'Invoices', route: 'parties.invoices' },
     { id: 'entries', label: 'Entries', route: 'parties.entries' },
+    { id: 'loading-slips', label: 'Loading Slips', route: 'parties.loading-slips' },
     { id: 'payments', label: 'Payments', route: 'parties.payments' },
     { id: 'profile', label: 'Profile', route: 'parties.profile' },
 ] as const;

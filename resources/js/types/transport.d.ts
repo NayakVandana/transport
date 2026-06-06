@@ -236,6 +236,7 @@ export interface Party {
 export interface PartyOverview {
     invoice_count: number;
     entry_count?: number;
+    loading_slip_count?: number;
     balance_due: number;
     received: number;
     outstanding: number;
@@ -269,6 +270,20 @@ export interface PartyEntrybookRow {
     bill_number?: string | null;
 }
 
+export interface PartyLoadingSlipRow {
+    id: number;
+    slip_date: string;
+    loading_date?: string | null;
+    route_from: string;
+    route_to: string;
+    total_freight: number;
+    total_advance: number;
+    total_balance: number;
+    status: 'draft' | 'invoiced';
+    freight_invoice_id?: number | null;
+    bill_number?: string | null;
+}
+
 export interface PartyPaymentRow {
     id: number;
     payment_date: string;
@@ -298,6 +313,7 @@ export interface PartyAccountData {
     overview: PartyOverview;
     invoices: PartyInvoiceRow[];
     entrybooks: PartyEntrybookRow[];
+    loadingSlips: PartyLoadingSlipRow[];
     payments: PartyPaymentRow[];
     ledger: PartyLedgerEntry[];
     filters: { date_from?: string; date_to?: string };

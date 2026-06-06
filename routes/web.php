@@ -41,6 +41,7 @@ Route::get('/parties/{id}/overview', fn (int $id) => Inertia::render('Parties/Sh
 Route::get('/parties/{id}/ledger', fn (int $id) => Inertia::render('Parties/Show', ['partyId' => $id, 'activeTab' => 'ledger']))->name('parties.ledger');
 Route::get('/parties/{id}/invoices', fn (int $id) => Inertia::render('Parties/Show', ['partyId' => $id, 'activeTab' => 'invoices']))->name('parties.invoices');
 Route::get('/parties/{id}/entries', fn (int $id) => Inertia::render('Parties/Show', ['partyId' => $id, 'activeTab' => 'entries']))->name('parties.entries');
+Route::get('/parties/{id}/loading-slips', fn (int $id) => Inertia::render('Parties/Show', ['partyId' => $id, 'activeTab' => 'loading-slips']))->name('parties.loading-slips');
 Route::get('/parties/{id}/payments', fn (int $id) => Inertia::render('Parties/Show', ['partyId' => $id, 'activeTab' => 'payments']))->name('parties.payments');
 Route::get('/parties/{id}/profile', fn (int $id) => Inertia::render('Parties/ProfileShow', ['partyId' => $id]))->name('parties.profile');
 Route::get('/parties/{id}/edit', fn (int $id) => Inertia::render('Parties/Form', ['partyId' => $id]))->name('parties.edit');

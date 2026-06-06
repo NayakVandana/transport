@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\FreightInvoice;
 use App\Models\Entrybook;
 use App\Models\InvoicePayment;
+use App\Models\LoadingSlip;
 use App\Models\Party;
 use Illuminate\Http\Request;
 
@@ -149,11 +150,35 @@ class PartyAccountReport
             ->values()
             ->all();
 
+        $loadingSlipRows = LoadingSlip::query()
+            ->with(['freightInvoice:id,bill_number'])
+            ->where('user_id', $userId)
+            ->where('party_id', $partyId)
+            ->orderByDesc('slip_date')
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (LoadingSlip $slip) => [
+                'id' => $slip->id,
+                'slip_date' => $slip->slip_date->format('Y-m-d'),
+                'loading_date' => $slip->loading_date?->format('Y-m-d'),
+                'route_from' => $slip->route_from ?? '',
+                'route_to' => $slip->route_to ?? '',
+                'total_freight' => round((float) $slip->total_freight, 2),
+                'total_advance' => round((float) $slip->total_advance, 2),
+                'total_balance' => round((float) $slip->total_balance, 2),
+                'status' => $slip->status,
+                'freight_invoice_id' => $slip->freight_invoice_id,
+                'bill_number' => $slip->freightInvoice?->bill_number,
+            ])
+            ->values()
+            ->all();
+
         return [
             'party' => $party,
             'overview' => [
                 'invoice_count' => count($invoiceRows),
                 'entry_count' => count($entrybookRows),
+                'loading_slip_count' => count($loadingSlipRows),
                 'balance_due' => $partyTotals['balance_due'],
                 'received' => $partyTotals['received'],
                 'outstanding' => $partyTotals['outstanding'],
@@ -162,6 +187,7 @@ class PartyAccountReport
             ],
             'invoices' => $invoiceRows,
             'entrybooks' => $entrybookRows,
+            'loadingSlips' => $loadingSlipRows,
             'payments' => $paymentRows,
             'ledger' => $ledger,
             'filters' => $dateFilters,

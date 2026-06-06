@@ -25,6 +25,7 @@ import type {
     PartyEntrybookRow,
     PartyInvoiceRow,
     PartyLedgerEntry,
+    PartyLoadingSlipRow,
 } from '@/types/transport';
 import { Head, Link } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
@@ -254,6 +255,22 @@ export default function PartyShow({
                                                 </PageToolbarActions>
                                             </PageToolbar>
                                             <EntrybooksTable rows={account.entrybooks} partyId={partyId} />
+                                        </div>
+                                    )}
+
+                                    {tab === 'loading-slips' && (
+                                        <div>
+                                            <PageToolbar className="border-b px-3 py-2 sm:px-4 sm:py-3">
+                                                <h3 className="text-sm font-semibold text-gray-800 sm:text-base">
+                                                    Loading Slips
+                                                </h3>
+                                                <PageToolbarActions>
+                                                    <Link href={route('loading-slips.create')}>
+                                                        <PrimaryButton>New Slip</PrimaryButton>
+                                                    </Link>
+                                                </PageToolbarActions>
+                                            </PageToolbar>
+                                            <LoadingSlipsTable rows={account.loadingSlips ?? []} />
                                         </div>
                                     )}
 
@@ -647,6 +664,117 @@ function InvoicesTable({ rows }: { rows: PartyInvoiceRow[] }) {
                         >
                             View
                         </Link>
+                    </td>
+                </tr>
+            ))}
+        />
+    );
+}
+
+function LoadingSlipsTable({ rows }: { rows: PartyLoadingSlipRow[] }) {
+    return (
+        <ListingTableShell
+            embedded
+            className="overflow-hidden"
+            isEmpty={rows.length === 0}
+            mobileCountLabel={`${rows.length} slip${rows.length === 1 ? '' : 's'}`}
+            emptyMessage="No loading slips for this party."
+            mobile={rows.map((row, index) => (
+                <ListingMobileCard
+                    key={row.id}
+                    variant="flat"
+                    index={index + 1}
+                    title={formatAppDateTime(row.slip_date)}
+                    subtitle={[row.route_from, row.route_to].filter(Boolean).join(' → ') || '—'}
+                    metric={{
+                        label: 'Freight',
+                        value: `₹ ${formatMoney(row.total_freight)}`,
+                    }}
+                    fields={[
+                        {
+                            label: 'Status',
+                            value: row.status === 'invoiced' ? 'Invoiced' : 'Draft',
+                        },
+                        {
+                            label: 'Bill',
+                            value: row.bill_number ?? (row.status === 'invoiced' ? '—' : 'Pending'),
+                        },
+                    ]}
+                    actions={
+                        <>
+                            <ListingMobileAction
+                                href={route('loading-slips.show', row.id)}
+                                variant="primary"
+                            >
+                                View
+                            </ListingMobileAction>
+                            {row.status === 'draft' && (
+                                <ListingMobileAction href={route('loading-slips.edit', row.id)}>
+                                    Edit
+                                </ListingMobileAction>
+                            )}
+                        </>
+                    }
+                />
+            ))}
+            thead={
+                <tr>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Date</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Route</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Freight</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Status</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-500">Bill</th>
+                    <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
+                </tr>
+            }
+            tbody={rows.map((row) => (
+                <tr key={row.id}>
+                    <td className="px-4 py-3">{formatAppDateTime(row.slip_date)}</td>
+                    <td className="px-4 py-3">
+                        {[row.route_from, row.route_to].filter(Boolean).join(' → ') || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right">₹ {formatMoney(row.total_freight)}</td>
+                    <td className="px-4 py-3">
+                        <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                                row.status === 'invoiced'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-gray-100 text-gray-800'
+                            }`}
+                        >
+                            {row.status === 'invoiced' ? 'Invoiced' : 'Draft'}
+                        </span>
+                    </td>
+                    <td className="px-4 py-3">
+                        {row.freight_invoice_id && row.bill_number ? (
+                            <Link
+                                href={route('invoices.show', row.freight_invoice_id)}
+                                className="text-indigo-600 hover:underline"
+                            >
+                                {row.bill_number}
+                            </Link>
+                        ) : (
+                            'Pending'
+                        )}
+                    </td>
+                    <td className="space-x-3 whitespace-nowrap px-4 py-3 text-right">
+                        <Link
+                            href={route('loading-slips.show', row.id)}
+                            className="text-indigo-600 hover:underline"
+                        >
+                            View
+                        </Link>
+                        {row.status === 'draft' && (
+                            <>
+                                <span className="text-gray-300">|</span>
+                                <Link
+                                    href={route('loading-slips.edit', row.id)}
+                                    className="text-indigo-600 hover:underline"
+                                >
+                                    Edit
+                                </Link>
+                            </>
+                        )}
                     </td>
                 </tr>
             ))}
