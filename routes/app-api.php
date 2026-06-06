@@ -127,7 +127,6 @@ Route::middleware(['auth:sanctum'])->prefix('v1/app')->group(function () {
     Route::post('/loading-slips/loading-slip-update', [LoadingSlipApiController::class, 'postLoadingSlipUpdate']);
     Route::post('/loading-slips/loading-slip-destroy', [LoadingSlipApiController::class, 'postLoadingSlipDestroy']);
     Route::post('/loading-slips/loading-slip-download-pdf', [LoadingSlipApiController::class, 'postLoadingSlipDownloadPdf']);
-    Route::post('/loading-slips/loading-slip-generate-invoice', [LoadingSlipApiController::class, 'postLoadingSlipGenerateInvoice']);
 
     Route::post('/locations/locations-list', [LocationApiController::class, 'postLocationsList']);
     Route::post('/locations/locations-export-csv', [LocationApiController::class, 'postLocationsExportCsv']);

@@ -1,14 +1,12 @@
 import PageContainer from '@/Components/PageContainer';
 import { FormPageHeader } from '@/Components/ListPageHeader';
 import PartyLink from '@/Components/PartyLink';
-import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { appApiPost, type ApiEnvelope } from '@/api/appClient';
-import { formatMoney } from '@/lib/freightCalculator';
 import { downloadLoadingSlipPdf } from '@/lib/loadingSlipPdf';
 import type { Company, LoadingSlip } from '@/types/transport';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 function formatSlipDate(value?: string | null): string {
@@ -29,7 +27,6 @@ export default function LoadingSlipShow({ loadingSlipId }: { loadingSlipId: numb
     const [error, setError] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
     const [downloading, setDownloading] = useState(false);
-    const [generating, setGenerating] = useState(false);
 
     usePageHeader(<FormPageHeader title="Loading Slip" backHref={route('loading-slips.index')} />);
 
@@ -55,16 +52,6 @@ export default function LoadingSlipShow({ loadingSlipId }: { loadingSlipId: numb
         catch { setActionError('Could not download PDF.'); } finally { setDownloading(false); }
     };
 
-    const handleGenerateInvoice = async () => {
-        setGenerating(true);
-        setActionError(null);
-        try {
-            const res = await appApiPost<ApiEnvelope<{ invoice: { id: number } }>>('/loading-slips/loading-slip-generate-invoice', { id: loadingSlipId });
-            if (!res.success || !res.data?.invoice) { setActionError(res.message || 'Could not generate invoice.'); return; }
-            router.visit(route('invoices.show', res.data.invoice.id));
-        } catch { setActionError('Could not generate invoice.'); } finally { setGenerating(false); }
-    };
-
     const lines = slip?.lines ?? [];
     const officeAddress = company?.full_address ?? company?.address ?? '';
 
@@ -79,10 +66,7 @@ export default function LoadingSlipShow({ loadingSlipId }: { loadingSlipId: numb
                         <div className="flex flex-wrap items-center gap-3">
                             <SecondaryButton type="button" onClick={() => void handleDownload()} disabled={downloading}>{downloading ? 'Downloading…' : 'Download PDF'}</SecondaryButton>
                             {slip.status === 'draft' && (
-                                <>
-                                    <Link href={route('loading-slips.edit', slip.id)}><SecondaryButton type="button">Edit</SecondaryButton></Link>
-                                    <PrimaryButton type="button" onClick={() => void handleGenerateInvoice()} disabled={generating}>{generating ? 'Generating…' : 'Generate invoice'}</PrimaryButton>
-                                </>
+                                <Link href={route('loading-slips.edit', slip.id)}><SecondaryButton type="button">Edit</SecondaryButton></Link>
                             )}
                             {slip.freight_invoice && (
                                 <Link href={route('invoices.show', slip.freight_invoice.id)} className="text-sm font-medium text-indigo-600 hover:text-indigo-900">

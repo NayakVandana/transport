@@ -4,13 +4,10 @@ namespace App\Http\Controllers\Api\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
-use App\Models\FreightInvoice;
 use App\Models\LoadingSlip;
 use App\Models\Location;
 use App\Models\Party;
 use App\Models\Vehicle;
-use App\Support\AmountInWords;
-use App\Support\FreightInvoiceCalculator;
 use App\Support\ListFilter;
 use App\Support\LoadingSlipPdf;
 use App\Support\RoutePairRegistry;
@@ -186,114 +183,6 @@ class LoadingSlipApiController extends Controller
         }
     }
 
-    public function postLoadingSlipGenerateInvoice(Request $request)
-    {
-        try {
-            $validation = Validator::make($request->all(), [
-                'id' => ['required', 'integer'],
-                'bill_number' => ['nullable', 'string', 'max:50', 'unique:freight_invoices,bill_number'],
-                'status' => ['nullable', 'in:draft,finalized'],
-            ]);
-            if ($validation->fails()) {
-                return $this->sendJsonResponse(false, $validation->errors()->first(), $validation->errors()->getMessages(), 200);
-            }
-
-            $userId = (int) $request->user()->id;
-            $company = Company::query()->where('user_id', $userId)->first();
-            if (! $company) {
-                return $this->sendJsonResponse(false, 'Set up your company profile before creating invoices.', null, 200);
-            }
-
-            $slip = $this->findSlipForUser($userId, (int) $request->input('id'));
-            if ($slip->freight_invoice_id) {
-                return $this->sendJsonResponse(true, 'Invoice already exists for this loading slip.', [
-                    'invoice' => FreightInvoice::query()->with(['company', 'party', 'lines'])->find($slip->freight_invoice_id),
-                    'loadingSlip' => $slip,
-                ], 200);
-            }
-
-            if (! $slip->party_id) {
-                return $this->sendJsonResponse(false, 'Select a party on the loading slip before generating an invoice.', null, 200);
-            }
-            if ($slip->lines->isEmpty()) {
-                return $this->sendJsonResponse(false, 'Add at least one vehicle line before generating an invoice.', null, 200);
-            }
-
-            $billNumber = $request->input('bill_number') ?: $this->suggestBillNumber($userId);
-            $invoiceStatus = $request->input('status') ?: 'draft';
-
-            $invoiceLines = $slip->lines->map(fn ($line) => [
-                'entry_date' => $slip->loading_date?->toDateString() ?? $slip->slip_date?->toDateString(),
-                'vehicle_number' => $line->vehicle_number,
-                'route_from' => $slip->route_from,
-                'route_to' => $line->destination ?: $slip->route_to,
-                'product_name' => 'AS PER INVOICES',
-                'weight' => 1,
-                'rate' => (float) $line->freight_rate,
-                'advance_paid' => (float) $line->advance,
-                'empty_container_charge' => 0,
-                'detention' => 0,
-                'weightman' => 0,
-                'parking' => 0,
-            ])->all();
-
-            [$totals, $lineFreights] = FreightInvoiceCalculator::forPersistence($invoiceLines, (float) $company->igst_rate);
-
-            $invoice = DB::transaction(function () use ($userId, $company, $slip, $billNumber, $invoiceStatus, $invoiceLines, $totals, $lineFreights) {
-                $invoice = FreightInvoice::query()->create([
-                    'user_id' => $userId,
-                    'company_id' => $company->id,
-                    'party_id' => $slip->party_id,
-                    'bill_number' => $billNumber,
-                    'invoice_date' => $slip->slip_date,
-                    'sac_code' => $company->sac_code,
-                    'status' => $invoiceStatus,
-                    'igst_rate' => $company->igst_rate,
-                    ...$totals,
-                    'balance_in_words' => AmountInWords::rupees($totals['balance_amount']),
-                ]);
-
-                foreach ($invoiceLines as $index => $line) {
-                    $routeFrom = trim((string) ($line['route_from'] ?? ''));
-                    $routeTo = trim((string) ($line['route_to'] ?? ''));
-                    if ($routeFrom !== '' && $routeTo !== '') {
-                        $pair = RoutePairRegistry::registerTripLocations($userId, $routeFrom, $routeTo);
-                        $routeFrom = $pair['from'];
-                        $routeTo = $pair['to'];
-                    }
-
-                    $invoice->lines()->create([
-                        'serial_number' => $index + 1,
-                        'entry_date' => $line['entry_date'] ?? null,
-                        'vehicle_number' => $line['vehicle_number'] ?? null,
-                        'route_from' => $routeFrom !== '' ? $routeFrom : null,
-                        'route_to' => $routeTo !== '' ? $routeTo : null,
-                        'product_name' => $line['product_name'] ?? null,
-                        'weight' => 1,
-                        'rate' => $line['rate'] ?? 0,
-                        'freight' => $lineFreights[$index] ?? 0,
-                        'advance_paid' => $line['advance_paid'] ?? 0,
-                        'empty_container_charge' => 0,
-                        'detention' => 0,
-                        'weightman' => 0,
-                        'parking' => 0,
-                    ]);
-                }
-
-                $slip->update(['freight_invoice_id' => $invoice->id, 'status' => 'invoiced']);
-
-                return $invoice;
-            });
-
-            return $this->sendJsonResponse(true, 'Invoice generated from loading slip.', [
-                'invoice' => $invoice->load(['company', 'party', 'lines']),
-                'loadingSlip' => $this->findSlipForUser($userId, $slip->id),
-            ], 200);
-        } catch (Exception $e) {
-            return $this->sendError($e);
-        }
-    }
-
     private function findSlipForUser(int $userId, int $id): LoadingSlip
     {
         return LoadingSlip::query()
@@ -460,19 +349,6 @@ class LoadingSlipApiController extends Controller
         if ($slip->route_from && $slip->route_to) {
             RoutePairRegistry::registerTripLocations($userId, $slip->route_from, $slip->route_to);
         }
-    }
-
-    private function suggestBillNumber(int $userId): string
-    {
-        $year = now()->format('y');
-        $prefix = 'R'.$year.(now()->month >= 4 ? now()->addYear()->format('y') : $year);
-        $last = FreightInvoice::query()->where('user_id', $userId)->where('bill_number', 'like', $prefix.'-%')->orderByDesc('bill_number')->value('bill_number');
-        $seq = 1;
-        if ($last && preg_match('/-(\d+)$/', $last, $m)) {
-            $seq = (int) $m[1] + 1;
-        }
-
-        return sprintf('%s-%04d', $prefix, $seq);
     }
 
     /** @param  array<string, mixed>  $validated */
