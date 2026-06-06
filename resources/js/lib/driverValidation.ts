@@ -10,6 +10,9 @@ import {
 export type DriverFormData = {
     name: string;
     email: string;
+    show_photo: boolean;
+    show_email: boolean;
+    show_address: boolean;
     aadhaar_no: string;
     pan_no: string;
     mobiles: string[];
@@ -24,6 +27,9 @@ export function emptyDriverForm(): DriverFormData {
     return {
         name: '',
         email: '',
+        show_photo: true,
+        show_email: true,
+        show_address: true,
         aadhaar_no: '',
         pan_no: '',
         mobiles: [''],
@@ -47,6 +53,9 @@ export function driverToFormData(driver: Driver): DriverFormData {
     return {
         name: driver.name ?? '',
         email: driver.email ?? '',
+        show_photo: driver.show_photo !== false,
+        show_email: driver.show_email !== false,
+        show_address: driver.show_address !== false,
         aadhaar_no: driver.aadhaar_no ?? '',
         pan_no: driver.pan_no ?? '',
         mobiles,
@@ -118,5 +127,8 @@ export function driverFormPayload(data: DriverFormData) {
         license_number: data.license_number.trim() || null,
         license_expiry: data.license_expiry.trim() || null,
         joining_date: data.joining_date.trim() || null,
+        show_photo: data.show_photo,
+        show_email: data.show_email,
+        show_address: data.show_address,
     };
 }

@@ -53,6 +53,9 @@ export default function DriverShow({ driverId }: { driverId: number }) {
     }, [driverId]);
 
     const mobileLabel = driver ? formatDriverMobiles(driver) : null;
+    const showPhoto = driver?.show_photo !== false;
+    const showEmail = driver?.show_email !== false;
+    const showAddress = driver?.show_address !== false;
 
     usePageHeader(
         <PageHeaderBar
@@ -103,7 +106,7 @@ export default function DriverShow({ driverId }: { driverId: number }) {
                                 <FormCard className="!shadow-none ring-1 ring-gray-200">
                                     <FormSectionHeader title="Basic Details" />
                                     <div className="mb-4 flex items-start gap-4">
-                                        {driver.photo_url ? (
+                                        {showPhoto && driver.photo_url ? (
                                             <img
                                                 src={driver.photo_url}
                                                 alt={`${driver.name} photo`}
@@ -135,7 +138,9 @@ export default function DriverShow({ driverId }: { driverId: number }) {
                                 <FormCard className="!shadow-none ring-1 ring-gray-200">
                                     <FormSectionHeader title="Contact Details" />
                                     <DetailGrid>
-                                        <DetailItemLocal label="Email" value={driver.email} />
+                                        {showEmail && (
+                                            <DetailItemLocal label="Email" value={driver.email} />
+                                        )}
                                         <DetailItemLocal label="Mobile" value={mobileLabel} />
                                     </DetailGrid>
                                 </FormCard>
@@ -162,9 +167,11 @@ export default function DriverShow({ driverId }: { driverId: number }) {
                                     </DetailGrid>
                                 </FormCard>
 
-                                <FormCard className="!shadow-none ring-1 ring-gray-200">
-                                    <AddressDetailSection data={driver} />
-                                </FormCard>
+                                {showAddress && (
+                                    <FormCard className="!shadow-none ring-1 ring-gray-200">
+                                        <AddressDetailSection data={driver} />
+                                    </FormCard>
+                                )}
 
                                 {documents.length > 0 && (
                                     <FormCard className="!shadow-none ring-1 ring-gray-200">

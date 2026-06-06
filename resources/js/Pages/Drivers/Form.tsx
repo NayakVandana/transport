@@ -271,6 +271,16 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                                         Save the driver first, then upload a photo.
                                     </p>
                                 )}
+
+                                <label className="flex items-center gap-2 text-sm text-gray-700">
+                                    <input
+                                        type="checkbox"
+                                        className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                        checked={data.show_photo}
+                                        onChange={(e) => setField('show_photo', e.target.checked)}
+                                    />
+                                    Show photo on driver profile
+                                </label>
                             </div>
 
                             <div className="space-y-5">
@@ -285,6 +295,16 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                                     />
                                     <InputError message={errors.email} className="mt-1" />
                                 </FormField>
+
+                                <label className="flex items-center gap-2 text-sm text-gray-700">
+                                    <input
+                                        type="checkbox"
+                                        className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                        checked={data.show_email}
+                                        onChange={(e) => setField('show_email', e.target.checked)}
+                                    />
+                                    Show email on driver profile
+                                </label>
 
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between gap-2">
@@ -426,6 +446,16 @@ export default function DriverForm({ driverId }: { driverId?: number }) {
                                 errors={errors}
                                 onChange={(field, value) => setField(field, value)}
                             />
+
+                            <label className="flex items-center gap-2 text-sm text-gray-700">
+                                <input
+                                    type="checkbox"
+                                    className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                    checked={data.show_address}
+                                    onChange={(e) => setField('show_address', e.target.checked)}
+                                />
+                                Show address on driver profile
+                            </label>
 
                             {documentTypes.length > 0 && (
                                 <EntityDocumentsSection

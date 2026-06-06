@@ -14,6 +14,9 @@ class DriverProfileData
             'mobiles' => ['nullable', 'array'],
             'mobiles.*' => ['nullable', 'string', 'max:15'],
             'mobile' => ['nullable', 'string', 'max:15'],
+            'show_photo' => ['nullable', 'boolean'],
+            'show_email' => ['nullable', 'boolean'],
+            'show_address' => ['nullable', 'boolean'],
             ...AddressProfileData::validationRules(),
         ];
     }
@@ -30,6 +33,16 @@ class DriverProfileData
 
         $validated['mobiles'] = $mobiles === [] ? null : $mobiles;
         $validated['mobile'] = $mobiles[0] ?? null;
+
+        $validated['show_photo'] = array_key_exists('show_photo', $validated)
+            ? (bool) $validated['show_photo']
+            : true;
+        $validated['show_email'] = array_key_exists('show_email', $validated)
+            ? (bool) $validated['show_email']
+            : true;
+        $validated['show_address'] = array_key_exists('show_address', $validated)
+            ? (bool) $validated['show_address']
+            : true;
 
         return AddressProfileData::prepareForPersistence($validated);
     }

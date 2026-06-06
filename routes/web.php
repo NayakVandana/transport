@@ -72,6 +72,11 @@ Route::get('/daily-reports/create', function (Request $request) {
 })->name('daily-reports.create');
 Route::get('/daily-reports/{id}/edit', fn (int $id) => Inertia::render('DailyReports/Form', ['dailyReportId' => $id]))->name('daily-reports.edit');
 
+Route::get('/loading-slips', fn () => Inertia::render('LoadingSlips/Index'))->name('loading-slips.index');
+Route::get('/loading-slips/create', fn () => Inertia::render('LoadingSlips/Form'))->name('loading-slips.create');
+Route::get('/loading-slips/{id}', fn (int $id) => Inertia::render('LoadingSlips/Show', ['loadingSlipId' => $id]))->name('loading-slips.show');
+Route::get('/loading-slips/{id}/edit', fn (int $id) => Inertia::render('LoadingSlips/Form', ['loadingSlipId' => $id]))->name('loading-slips.edit');
+
 Route::get('/locations', fn () => Inertia::render('Locations/Index'))->name('locations.index');
 Route::get('/locations/create', fn () => Inertia::render('Locations/Form'))->name('locations.create');
 

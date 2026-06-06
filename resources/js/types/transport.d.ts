@@ -52,7 +52,9 @@ export interface Driver {
     id: number;
     name: string;
     photo_url?: string | null;
+    show_photo?: boolean;
     email?: string | null;
+    show_email?: boolean;
     aadhaar_no?: string | null;
     pan_no?: string | null;
     mobile?: string | null;
@@ -69,6 +71,7 @@ export interface Driver {
     pincode?: string | null;
     state_code?: string | null;
     country?: string | null;
+    show_address?: boolean;
     status: 'active' | 'inactive';
     created_at?: string | null;
     documents?: EntityDocument[];
@@ -107,6 +110,37 @@ export interface EntrybookTotals {
     freight: number;
     advance: number;
     balance: number;
+}
+
+export interface LoadingSlipLine {
+    id?: number;
+    serial_number: number;
+    vehicle_id?: number | null;
+    vehicle_number?: string | null;
+    destination?: string | null;
+    freight_rate: string | number;
+    advance: string | number;
+    balance: string | number;
+    vehicle?: Pick<Vehicle, 'id' | 'vehicle_number'>;
+}
+
+export interface LoadingSlip {
+    id: number;
+    slip_date: string;
+    loading_date?: string | null;
+    party_id?: number | null;
+    route_from?: string | null;
+    route_to?: string | null;
+    authorized_signatory?: string | null;
+    freight_invoice_id?: number | null;
+    status: 'draft' | 'invoiced';
+    total_freight: string | number;
+    total_advance: string | number;
+    total_balance: string | number;
+    party?: Pick<Party, 'id' | 'name'>;
+    freight_invoice?: Pick<FreightInvoice, 'id' | 'bill_number' | 'balance_amount' | 'status'> | null;
+    lines?: LoadingSlipLine[];
+    created_at?: string | null;
 }
 
 export interface DailyReport {

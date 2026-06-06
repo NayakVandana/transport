@@ -18,7 +18,9 @@ class Driver extends Model
         'user_id',
         'name',
         'photo_path',
+        'show_photo',
         'email',
+        'show_email',
         'aadhaar_no',
         'pan_no',
         'mobile',
@@ -35,6 +37,7 @@ class Driver extends Model
         'pincode',
         'state_code',
         'country',
+        'show_address',
         'status',
     ];
 
@@ -53,6 +56,9 @@ class Driver extends Model
             'joining_date' => 'date',
             'salary' => 'decimal:2',
             'mobiles' => 'array',
+            'show_photo' => 'boolean',
+            'show_email' => 'boolean',
+            'show_address' => 'boolean',
         ];
     }
 

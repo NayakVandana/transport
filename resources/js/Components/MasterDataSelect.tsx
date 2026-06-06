@@ -12,6 +12,8 @@ type Props = {
     addHref: string;
     onChange: (value: string) => void;
     className?: string;
+    id?: string;
+    autoComplete?: string;
 };
 
 export default function MasterDataSelect({
@@ -22,11 +24,14 @@ export default function MasterDataSelect({
     addHref,
     onChange,
     className = 'w-full rounded-md border-gray-300 text-sm shadow-sm',
+    id,
+    autoComplete = 'off',
 }: Props) {
+    const selectedValue = value ?? '';
     const known = new Set(options.map((o) => o.value));
     const allOptions =
-        value && !known.has(value)
-            ? [{ value, label: value }, ...options]
+        selectedValue && !known.has(selectedValue)
+            ? [{ value: selectedValue, label: selectedValue }, ...options]
             : options;
 
     const handleSelect = (selected: string) => {
@@ -50,13 +55,16 @@ export default function MasterDataSelect({
 
     return (
         <select
+            id={id}
+            name={id}
+            autoComplete={autoComplete}
             className={className}
-            value={value}
+            value={selectedValue}
             onChange={(e) => handleSelect(e.target.value)}
         >
             <option value="">{emptyLabel}</option>
             {allOptions.map((o) => (
-                <option key={o.value} value={o.value}>
+                <option key={`${id ?? 'select'}-${o.value}`} value={o.value}>
                     {o.label}
                 </option>
             ))}
